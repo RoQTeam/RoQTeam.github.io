@@ -2125,6 +2125,10 @@ video, .wipe-overlay {
 
 /* Section/Article */
 
+    .section_space {
+		padding-top: 3em;
+	}
+
 	section.special, article.special {
 		text-align: center;
 	}
@@ -2823,7 +2827,8 @@ video, .wipe-overlay {
 
 	.table-wrapper {
 		-webkit-overflow-scrolling: touch;
-		overflow-x: auto;
+		overflow: auto;
+		height:20em;
 	}
 
 	table {
@@ -3115,7 +3120,7 @@ video, .wipe-overlay {
 		-webkit-transition: background-color 0.2s ease-in-out;
 		-ms-transition: background-color 0.2s ease-in-out;
 		transition: background-color 0.2s ease-in-out;
-		background-color: rgba(53, 56, 73, 0.85);
+		background-color: rgba(53, 56, 73, 0.3);
 		height: 3.5em;
 		left: 0;
 		line-height: 3.5em;
@@ -3153,12 +3158,14 @@ video, .wipe-overlay {
 			right: 0.7em;
 			text-transform: uppercase;
 			top: 0.7em;
+
 		}
 
 			#header nav a {
 				border: 0;
 				display: inline-block;
-				padding: 0 1em;
+				padding: 0 0.5em;
+				font-size: clamp(0.4em, 1.2vw, 1em);
 			}
 
 				#header nav a:before {
