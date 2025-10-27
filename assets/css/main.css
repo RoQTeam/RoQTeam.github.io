@@ -3163,7 +3163,8 @@ video, .wipe-overlay {
 
 			#header nav a {
 				border: 0;
-				display: inline-block;
+				display: flex;
+				justify-content: center;
 				padding: 0 0.5em;
 				font-size: clamp(0.4em, 1.2vw, 1em);
 			}
@@ -3271,6 +3272,56 @@ video, .wipe-overlay {
 				}
 
 		}
+
+
+  /* Container */
+  .dropdown {
+    position: relative;
+    display: inline-block;
+  }
+
+  /* Button */
+  .dropbtn {
+    background-color: rgba(255, 255, 255, 0.075);
+    padding: 0 4em;
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+  }
+
+  .dropbtn:hover {
+    background-color: rgba(255, 140, 0, 0.5);
+  }
+
+  /* Dropdown content */
+  .dropdown-content {
+    display: none;
+	width: 100%;
+    position: absolute;
+    background-color: rgba(46, 49, 65, 0.5);
+	color: rgba(230, 230, 230, 0.5);
+	font-size: 0.8em;
+    z-index: 1;
+  }
+
+  .dropdown-content a {
+    color: rgb(51, 51, 51);
+    padding: 10px 16px;
+    text-decoration: none;
+	color: rgba(230, 230, 230, 0.6);
+    display: flex;
+	justify-content: center;
+  }
+
+  .dropdown-content a:hover {
+    background-color: rgba(255, 140, 0, 0.2);
+    color: rgba(0, 0, 0, 0.25)
+  }
+
+  /* Show dropdown on hover */
+  .dropdown:hover .dropdown-content {
+    display: block;
+  }
 
 /* Menu */
 
