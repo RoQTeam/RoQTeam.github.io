@@ -53,6 +53,8 @@ table {
 	border-spacing: 0;
 }
 
+
+
 body {
 	-webkit-text-size-adjust: none;
 }
@@ -2828,7 +2830,7 @@ video, .wipe-overlay {
 	.table-wrapper {
 		-webkit-overflow-scrolling: touch;
 		overflow: auto;
-		height:20em;
+		/* height:20em; */
 	}
 
 	table {
@@ -2891,6 +2893,18 @@ video, .wipe-overlay {
 			table.alt tfoot {
 				border-top: 0;
 			}
+
+		tr.abstract-row {
+		display: none;
+		background-color: rgba(255, 140, 0, 0.2);
+		}
+		tr.clickable {
+		cursor: pointer;
+		background-color: #eef;
+		}
+		tr.clickable:hover {
+		background-color: rgba(255, 140, 0, 0.3);
+		}
 
 /* Button */
 
@@ -3052,7 +3066,7 @@ video, .wipe-overlay {
 			background-color: #353849;
 			border-radius: 5px;
 			margin: 1.5em 3em 1.5em 0;
-			width: calc(50% - 1.5em);
+			width: calc(33.33333% - 1.5em);
 		}
 
 			.features article:nth-child(2n) {
@@ -3166,7 +3180,7 @@ video, .wipe-overlay {
 				display: flex;
 				justify-content: center;
 				padding: 0 0.5em;
-				font-size: clamp(0.4em, 1.2vw, 1em);
+				font-size: clamp(0.4em, 2vw, 1em);
 			}
 
 				#header nav a:before {
@@ -3237,6 +3251,7 @@ video, .wipe-overlay {
 					#header nav a {
 						height: inherit;
 						line-height: inherit;
+						font-size: clamp(0.4em, 3vw, 1em);
 					}
 
 						#header nav a[href="#menu"] {
@@ -3258,6 +3273,7 @@ video, .wipe-overlay {
 				white-space: nowrap;
 				text-indent: 4em;
 				position: relative;
+				font-size: clamp(0.4em, 3vw, 1em);
 			}
 
 				#header nav a[href="#menu"]:before {
