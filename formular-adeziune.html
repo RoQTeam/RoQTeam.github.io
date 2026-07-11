@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Declarație de adeziune — Asociația ROQTEAM</title>
+<style>
+  :root{
+    --paper:#FBFAF8;
+    --ink:#1A1B2E;
+    --ink-soft:#5B5C72;
+    --line:#E2E0DC;
+    --line-strong:#C9C6D4;
+    --accent:#3F3D8F;
+    --accent-soft:#ECEBF7;
+    --danger:#9B3A2E;
+    --field:#FFFFFF;
+    --radius:10px;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0;background:var(--paper);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.5;padding:32px 18px 80px;
+  }
+  .wrap{max-width:640px;margin:0 auto}
+
+  .masthead{border-bottom:2px solid var(--ink);padding-bottom:20px;margin-bottom:8px}
+  .kicker{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);font-weight:700;margin-bottom:10px}
+  .masthead h1{font-family:Georgia,"Times New Roman",serif;font-weight:600;font-size:29px;line-height:1.15;margin:0;letter-spacing:-.01em}
+  .masthead .sub{font-size:13px;color:var(--ink-soft);margin:4px 0 0;font-style:italic}
+  .masthead p{color:var(--ink-soft);font-size:15px;margin:14px 0 0}
+
+  .section{border-bottom:1px solid var(--line);padding:26px 0}
+  .section:last-of-type{border-bottom:none}
+  .section-head{display:flex;align-items:baseline;gap:12px;margin-bottom:18px}
+  .section-num{font-family:Georgia,serif;font-size:14px;color:var(--accent);font-weight:600;min-width:22px}
+  .section-title{font-size:16px;font-weight:600;margin:0}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .field{display:flex;flex-direction:column;gap:6px}
+  .field.full{grid-column:1 / -1}
+  label{font-size:13px;font-weight:600;color:var(--ink)}
+  label .opt{font-weight:400;color:var(--ink-soft)}
+  input[type=text],input[type=email],input[type=tel]{
+    font:inherit;font-size:15px;color:var(--ink);background:var(--field);
+    border:1px solid var(--line-strong);border-radius:var(--radius);padding:11px 12px;width:100%;
+    transition:border-color .15s,box-shadow .15s;
+  }
+  input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  .hint{font-size:12px;color:var(--ink-soft)}
+
+  .declar{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;margin-bottom:18px}
+  .declar p{font-size:13.5px;color:var(--ink);margin:0 0 10px;line-height:1.55}
+  .declar p:last-child{margin-bottom:0}
+  .declar .lead{font-weight:600;color:var(--ink)}
+
+  .consent{display:flex;gap:12px;align-items:flex-start;background:#fff;border:1px solid var(--line-strong);border-radius:var(--radius);padding:14px;margin-bottom:12px;cursor:pointer}
+  .consent input{margin-top:3px;width:18px;height:18px;accent-color:var(--accent);flex:0 0 auto}
+  .consent span{font-size:14px;color:var(--ink)}
+  .consent a{color:var(--accent);font-weight:600}
+
+  .sig-card{background:#fff;border:1px solid var(--line-strong);border-radius:var(--radius);padding:10px;position:relative}
+  .sig-canvas{display:block;width:100%;height:180px;border-radius:6px;background:#fff;touch-action:none;cursor:crosshair}
+  .sig-baseline{position:absolute;left:26px;right:26px;bottom:44px;border-top:1px dashed var(--line-strong)}
+  .sig-x{position:absolute;left:26px;bottom:46px;color:var(--ink-soft);font-size:16px}
+  .sig-bar{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
+  .sig-note{font-size:12px;color:var(--ink-soft)}
+  .btn-clear{font:inherit;font-size:13px;color:var(--ink-soft);background:none;border:none;cursor:pointer;text-decoration:underline;padding:4px}
+
+  .actions{padding-top:26px}
+  .submit{font:inherit;font-size:16px;font-weight:600;color:#fff;background:var(--accent);border:none;border-radius:var(--radius);padding:15px;width:100%;cursor:pointer;transition:background .15s,transform .05s}
+  .submit:hover{background:#33316f}
+  .submit:active{transform:translateY(1px)}
+  .submit:disabled{opacity:.6;cursor:not-allowed}
+  .form-note{text-align:center;font-size:12px;color:var(--ink-soft);margin-top:14px}
+
+  .err{color:var(--danger);font-size:12px;font-weight:600;min-height:1em}
+  .banner{border-radius:var(--radius);padding:14px 16px;font-size:14px;margin-bottom:22px;display:none}
+  .banner.ok{background:var(--accent-soft);border:1px solid var(--accent);color:#2c2a63;display:block}
+  .banner.bad{background:#F7E7E4;border:1px solid var(--danger);color:#7a2c22;display:block}
+
+  #done{display:none;text-align:center;padding:40px 0}
+  #done h2{font-family:Georgia,serif;font-size:26px;margin:0 0 12px}
+  #done p{color:var(--ink-soft);font-size:15px;max-width:440px;margin:0 auto}
+
+  @media (max-width:560px){
+    body{padding:24px 14px 64px}
+    .grid{grid-template-columns:1fr}
+    .masthead h1{font-size:24px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="masthead">
+    <div class="kicker">Asociația ROQTEAM</div>
+    <h1>Declarație de adeziune</h1>
+    <p class="sub">Cerere de dobândire a calității de membru · Anexa nr. 1 la Hotărârea CD nr. 3 / 10.07.2026</p>
+    <p>Completează cererea de mai jos. După trimitere primești pe email o copie semnată, iar o copie ajunge la asociație. Câmpurile marcate cu * sunt obligatorii.</p>
+  </div>
+
+  <div id="banner" class="banner"></div>
+
+  <form id="form" novalidate>
+
+    <!-- 01 -->
+    <div class="section">
+      <div class="section-head">
+        <span class="section-num">01</span>
+        <h2 class="section-title">Datele solicitantului</h2>
+      </div>
+      <div class="grid">
+        <div class="field full">
+          <label for="nume_prenume">Nume și prenume *</label>
+          <input type="text" id="nume_prenume" name="nume_prenume" autocomplete="name">
+        </div>
+        <div class="field">
+          <label for="localitate">Localitatea *</label>
+          <input type="text" id="localitate" name="localitate">
+        </div>
+        <div class="field">
+          <label for="judet">Județul / sectorul *</label>
+          <input type="text" id="judet" name="judet">
+        </div>
+        <div class="field">
+          <label for="tara">Țara *</label>
+          <input type="text" id="tara" name="tara" value="România">
+        </div>
+        <div class="field">
+          <label for="email">E-mail *</label>
+          <input type="email" id="email" name="email" autocomplete="email">
+        </div>
+        <div class="field">
+          <label for="telefon">Telefon *</label>
+          <input type="tel" id="telefon" name="telefon" autocomplete="tel">
+        </div>
+        <div class="field full">
+          <label for="profesie">Profesia / ocupația / instituția <span class="opt">(opțional)</span></label>
+          <input type="text" id="profesie" name="profesie">
+        </div>
+      </div>
+      <p class="hint" style="margin-top:8px">Pe adresa de e-mail primești copia semnată a adeziunii.</p>
+    </div>
+
+    <!-- 02 -->
+    <div class="section">
+      <div class="section-head">
+        <span class="section-num">02</span>
+        <h2 class="section-title">Declarații și angajamente</h2>
+      </div>
+
+      <div class="declar">
+        <p class="lead">Prin trimiterea acestei cereri și prin semnătura de mai jos, declar următoarele:</p>
+        <p>1. Solicit dobândirea calității de membru al Asociației ROQTEAM și sunt de acord cu scopul și obiectivele sale, inclusiv promovarea educației, cercetării și colaborării în domeniul tehnologiilor cuantice și al disciplinelor conexe.</p>
+        <p>2. Mă angajez să respect Statutul, regulamentele interne și hotărârile organelor de conducere ale Asociației și să nu aduc atingere intereselor, patrimoniului sau reputației sale.</p>
+        <p>3. Înțeleg că depunerea acestei declarații nu conferă automat calitatea de membru — aceasta se dobândește doar prin aprobarea Consiliului Director, potrivit Statutului.</p>
+        <p>4. Declar că informațiile furnizate sunt reale, exacte și actuale și mă oblig să comunic Asociației orice modificare a lor.</p>
+      </div>
+
+      <label class="consent">
+        <input type="checkbox" id="statut" name="statut">
+        <span>Am avut posibilitatea de a consulta <a href="#" id="link-statut" target="_blank" rel="noopener">Statutul Asociației ROQTEAM</a> și sunt de acord cu prevederile sale. *</span>
+      </label>
+
+      <label class="consent">
+        <input type="checkbox" id="gdpr" name="gdpr">
+        <span>Confirm că am primit, am citit și am înțeles <a href="#" id="link-gdpr" target="_blank" rel="noopener">Nota de informare privind prelucrarea datelor cu caracter personal</a> și sunt de acord cu prevederile sale. *</span>
+      </label>
+    </div>
+
+    <!-- 03 -->
+    <div class="section">
+      <div class="section-head">
+        <span class="section-num">03</span>
+        <h2 class="section-title">Semnătura solicitantului</h2>
+      </div>
+      <div class="sig-card">
+        <canvas id="sig" class="sig-canvas"></canvas>
+        <div class="sig-baseline"></div>
+        <span class="sig-x">×</span>
+        <div class="sig-bar">
+          <span class="sig-note">Semnează cu degetul (telefon) sau cu mouse-ul.</span>
+          <button type="button" class="btn-clear" id="clear-sig">Șterge semnătura</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <div class="err" id="err"></div>
+      <button type="submit" class="submit" id="submit">Trimite adeziunea</button>
+      <p class="form-note">O copie ajunge la tine, una la Asociația ROQTEAM.</p>
+      <p class="form-note">Ai răbdare, poate dura câteva momente. Mulțumim pentru înțelegere.</p>
+    </div>
+  </form>
+
+  <div id="done">
+    <h2>Cererea a fost trimisă</h2>
+    <p>Îți mulțumim. Vei primi în scurt timp pe e-mail o copie semnată a declarației de adeziune. Consiliul Director va analiza cererea potrivit Statutului și te va contacta.</p>
+  </div>
+
+</div>
+
+<script>
+
+const CONFIG = {
+  APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbyoiOMSPICcvJ-GdxIo4jpFsHd3o0nZqoyw3LIjHc3XuKmw0F1PJwd7qCRQR7PTjI7z/exec",
+  STATUT_URL: "https://drive.google.com/file/d/1gH-o1pOcRJ3bWj0IfsCyUywRIbexAkcB/view?uuspsharing",
+  GDPR_URL:   "https://drive.google.com/file/d/19ar7hq4ZpLrUb2sBijUqBndEbm8H-d1s/view?usp=sharing"
+};
+/* ==================================================================== */
+
+document.getElementById('link-statut').href = CONFIG.STATUT_URL;
+document.getElementById('link-gdpr').href = CONFIG.GDPR_URL;
+
+/* ---------- Semnătură ---------- */
+const canvas = document.getElementById('sig');
+const ctx = canvas.getContext('2d');
+let drawing = false, hasSig = false;
+function setupCanvas(){
+  const ratio = Math.max(window.devicePixelRatio || 1, 1);
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * ratio;
+  canvas.height = rect.height * ratio;
+  ctx.setTransform(ratio,0,0,ratio,0,0);
+  ctx.lineWidth = 2.2; ctx.lineCap='round'; ctx.lineJoin='round'; ctx.strokeStyle='#1A1B2E';
+}
+setupCanvas();
+let rt; window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>{setupCanvas();hasSig=false;},200);});
+function point(e){const r=canvas.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top};}
+canvas.addEventListener('pointerdown',e=>{drawing=true;const p=point(e);ctx.beginPath();ctx.moveTo(p.x,p.y);canvas.setPointerCapture(e.pointerId);});
+canvas.addEventListener('pointermove',e=>{if(!drawing)return;const p=point(e);ctx.lineTo(p.x,p.y);ctx.stroke();hasSig=true;});
+canvas.addEventListener('pointerup',()=>{drawing=false;});
+canvas.addEventListener('pointercancel',()=>{drawing=false;});
+document.getElementById('clear-sig').addEventListener('click',()=>{ctx.clearRect(0,0,canvas.width,canvas.height);hasSig=false;});
+
+/* ---------- Validare + trimitere ---------- */
+const form=document.getElementById('form'), errEl=document.getElementById('err');
+const banner=document.getElementById('banner'), submitBtn=document.getElementById('submit');
+function showBanner(t,m){banner.className='banner '+(t==='ok'?'ok':'bad');banner.textContent=m;window.scrollTo({top:0,behavior:'smooth'});}
+
+form.addEventListener('submit', async (e)=>{
+  e.preventDefault(); errEl.textContent='';
+  const required=['nume_prenume','localitate','judet','tara','email','telefon'];
+  for(const id of required){
+    if(!document.getElementById(id).value.trim()){
+      errEl.textContent='Te rugăm completează toate câmpurile marcate cu *.';
+      document.getElementById(id).focus(); return;
+    }
+  }
+  const email=document.getElementById('email').value.trim();
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){errEl.textContent='Adresa de e-mail nu pare validă.';return;}
+  if(!document.getElementById('statut').checked || !document.getElementById('gdpr').checked){
+    errEl.textContent='Trebuie să bifezi cele două confirmări marcate cu *.'; return;
+  }
+  if(!hasSig){errEl.textContent='Te rugăm adaugă semnătura.';return;}
+
+  const payload={
+    nume_prenume:document.getElementById('nume_prenume').value.trim(),
+    localitate:document.getElementById('localitate').value.trim(),
+    judet:document.getElementById('judet').value.trim(),
+    tara:document.getElementById('tara').value.trim(),
+    email:email,
+    telefon:document.getElementById('telefon').value.trim(),
+    profesie:document.getElementById('profesie').value.trim(),
+    acord_statut:true, acord_gdpr:true,
+    data_completare:new Date().toLocaleDateString('ro-RO'),
+    semnatura:canvas.toDataURL('image/png')
+  };
+
+  if(CONFIG.APPS_SCRIPT_URL.startsWith('PUNE_AICI')){
+    showBanner('bad','Formularul nu e conectat încă. Completează APPS_SCRIPT_URL în secțiunea CONFIG din cod.');
+    console.log('Payload:',payload); return;
+  }
+
+  submitBtn.disabled=true; submitBtn.textContent='Se trimite…';
+  try{
+    const res=await fetch(CONFIG.APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
+    const data=await res.json();
+    if(data && data.ok){
+      form.style.display='none'; banner.style.display='none';
+      document.getElementById('done').style.display='block';
+      window.scrollTo({top:0,behavior:'smooth'});
+    } else { throw new Error(data && data.error ? data.error : 'Răspuns neașteptat.'); }
+  }catch(err){
+    showBanner('bad','Ceva n-a mers la trimitere. Încearcă din nou. ('+err.message+')');
+    submitBtn.disabled=false; submitBtn.textContent='Trimite adeziunea';
+  }
+});
+</script>
+</body>
+</html>
