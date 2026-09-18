@@ -591,7 +591,13 @@
 			display: flex;
 			flex-wrap: wrap;
 			gap: 0.75em 1em;
+			margin: 0 0 0.9em 0;
+		}
+
+		.next-body .next-gcal {
 			margin: 0;
+			font-size: 0.72em;
+			color: var(--bq-fg-light);
 		}
 
 	.next-count {

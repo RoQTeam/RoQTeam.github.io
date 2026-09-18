@@ -259,11 +259,11 @@
 			var now = stamp(new Date().toISOString());
 			var lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//RoQTeam//BreaQ//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH'];
 			events.forEach(function (e, i) {
-				lines.push('BEGIN:VEVENT', 'UID:breaq-2026-' + i + '-' + stamp(e.start) + '@roqteam.github.io', 'DTSTAMP:' + now,
+				lines.push('BEGIN:VEVENT', 'UID:breaq-2026-' + i + '-' + stamp(e.start) + '@roqteam.ro', 'DTSTAMP:' + now,
 					'DTSTART:' + stamp(e.start), 'DTEND:' + stamp(e.end), 'SUMMARY:' + esc(e.summary));
 				if (e.location) lines.push('LOCATION:' + esc(e.location));
 				if (e.description) lines.push('DESCRIPTION:' + esc(e.description));
-				lines.push('URL:https://roqteam.github.io/breaq.html', 'END:VEVENT');
+				lines.push('URL:https://roqteam.ro/breaq.html', 'END:VEVENT');
 			});
 			lines.push('END:VCALENDAR');
 			var blob = new Blob([lines.join('\r\n') + '\r\n'], { type: 'text/calendar;charset=utf-8' });
@@ -564,14 +564,14 @@
 			var lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//RoQTeam//BreaQ//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH'];
 			events.forEach(function (e, i) {
 				lines.push('BEGIN:VEVENT');
-				lines.push('UID:' + panel.id + '-' + i + '-' + e.start + '@roqteam.github.io');
+				lines.push('UID:' + panel.id + '-' + i + '-' + e.start + '@roqteam.ro');
 				lines.push('DTSTAMP:' + stamp);
 				lines.push('DTSTART:' + e.start);
 				lines.push('DTEND:' + e.end);
 				lines.push(icsFold('SUMMARY:' + icsEscape(e.summary)));
 				if (location) lines.push(icsFold('LOCATION:' + icsEscape(location)));
 				if (e.description) lines.push(icsFold('DESCRIPTION:' + icsEscape(e.description)));
-				lines.push('URL:https://roqteam.github.io/breaq.html#schedule');
+				lines.push('URL:https://roqteam.ro/breaq.html#schedule');
 				lines.push('END:VEVENT');
 			});
 			lines.push('END:VCALENDAR');
