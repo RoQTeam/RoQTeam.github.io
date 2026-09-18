@@ -587,6 +587,13 @@
 		line-height: 1.6;
 	}
 
+		.next-body .next-actions {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 0.75em 1em;
+			margin: 0;
+		}
+
 	.next-count {
 		margin: 0 0 1.5em 0;
 	}

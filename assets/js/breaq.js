@@ -245,6 +245,39 @@
 		}
 	});
 
+	// "Add to calendar" links carrying their events as JSON: build an .ics on the fly.
+	forEach(document.querySelectorAll('[data-ics-events]'), function (link) {
+		link.addEventListener('click', function (ev) {
+			ev.preventDefault();
+			var events;
+			try { events = JSON.parse(link.getAttribute('data-ics-events')); } catch (e) { return; }
+			function stamp(iso) {
+				var d = new Date(iso);
+				return d.getUTCFullYear() + pad2(d.getUTCMonth() + 1) + pad2(d.getUTCDate()) + 'T' + pad2(d.getUTCHours()) + pad2(d.getUTCMinutes()) + '00Z';
+			}
+			function esc(t) { return String(t).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n'); }
+			var now = stamp(new Date().toISOString());
+			var lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//RoQTeam//BreaQ//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH'];
+			events.forEach(function (e, i) {
+				lines.push('BEGIN:VEVENT', 'UID:breaq-2026-' + i + '-' + stamp(e.start) + '@roqteam.github.io', 'DTSTAMP:' + now,
+					'DTSTART:' + stamp(e.start), 'DTEND:' + stamp(e.end), 'SUMMARY:' + esc(e.summary));
+				if (e.location) lines.push('LOCATION:' + esc(e.location));
+				if (e.description) lines.push('DESCRIPTION:' + esc(e.description));
+				lines.push('URL:https://roqteam.github.io/breaq.html', 'END:VEVENT');
+			});
+			lines.push('END:VCALENDAR');
+			var blob = new Blob([lines.join('\r\n') + '\r\n'], { type: 'text/calendar;charset=utf-8' });
+			var url = URL.createObjectURL(blob);
+			var a = document.createElement('a');
+			a.href = url;
+			a.download = link.getAttribute('data-ics-name') || 'breaq.ics';
+			document.body.appendChild(a);
+			a.click();
+			a.remove();
+			window.setTimeout(function () { URL.revokeObjectURL(url); }, 3000);
+		});
+	});
+
 	// The orbit animation is SMIL inside the SVG: pause it for people who prefer reduced motion.
 	if (reduceMotion) {
 		forEach(document.querySelectorAll('svg.orbits'), function (svg) {
