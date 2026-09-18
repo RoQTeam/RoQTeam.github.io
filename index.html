@@ -8,9 +8,16 @@
 		<style>
 			/* the year logos are square marks on a transparent background: no round crop */
 			.wrapper.spotlight .image.is-logo, .wrapper.spotlight .image.is-logo img { border-radius: 0; overflow: visible; }
-			/* straight seams between sections instead of the theme's diagonal wedges */
-			#wrapper .wrapper { margin: 0; }
+			/* Diagonal seams that interlock: the bottom edge of one section and the top edge of the next
+			   are cut on the same slanted line, alternating direction, so nothing shows through the gap. */
+			#wrapper .wrapper { --seam: 4em; margin: 0; }
 			#wrapper .wrapper:before, #wrapper .wrapper:after { display: none; }
+			#wrapper .wrapper + .wrapper { margin-top: calc(-1 * var(--seam)); }
+			#wrapper .wrapper:nth-child(odd) { clip-path: polygon(0 0, 100% var(--seam), 100% calc(100% - var(--seam)), 0 100%); }
+			#wrapper .wrapper:nth-child(even) { clip-path: polygon(0 var(--seam), 100% 0, 100% 100%, 0 calc(100% - var(--seam))); }
+			#wrapper .wrapper:first-child { clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--seam)), 0 100%); }
+			#wrapper .wrapper:last-child { clip-path: polygon(0 0, 100% var(--seam), 100% 100%, 0 100%); }
+			#wrapper .wrapper .inner { padding-top: 5.5em; padding-bottom: 3.5em; }
 			/* a calmer, even scrim over the background video (same as the BreaQ pages) */
 			.video-overlay { background: linear-gradient(105deg, rgba(38, 40, 56, 0.78) 0%, rgba(46, 49, 65, 0.62) 55%, rgba(26, 27, 32, 0.8) 100%); }
 		</style>
