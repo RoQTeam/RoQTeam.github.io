@@ -1,0 +1,27 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//RoQTeam//BreaQ 2026//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:BreaQ 2026
+BEGIN:VEVENT
+UID:breaq-2026-hackathon@roqteam.ro
+DTSTAMP:20260918T200000Z
+DTSTART:20261024T060000Z
+DTEND:20261025T120000Z
+SUMMARY:BreaQ 2026 Hackathon
+LOCATION:CAMPUS Research Institute\, Splaiul Independenței 313\, București
+DESCRIPTION:24-hour quantum hackathon. Details: https://roqteam.ro/breaq.html
+URL:https://roqteam.ro/breaq.html
+END:VEVENT
+BEGIN:VEVENT
+UID:breaq-2026-presentations@roqteam.ro
+DTSTAMP:20260918T200000Z
+DTSTART:20261114T070000Z
+DTEND:20261114T160000Z
+SUMMARY:BreaQ 2026 Presentations
+LOCATION:Military Technical Academy Ferdinand I\, Bulevardul George Coșbuc 39-49\, București
+DESCRIPTION:Talks by researchers and industry experts. Details: https://roqteam.ro/breaq.html
+URL:https://roqteam.ro/breaq.html
+END:VEVENT
+END:VCALENDAR

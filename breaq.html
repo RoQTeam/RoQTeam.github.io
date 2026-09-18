@@ -1,22 +1,33 @@
 <!DOCTYPE HTML>
 <html>
 	<head>
-		<title>RoQTeam</title>
+		<title>BreaQ 2026 · RoQTeam</title>
+		<meta name="description" content="BreaQ 2026: a 24-hour quantum hackathon on 24–25 October at the CAMPUS Research Institute and a day of talks on 14 November at the Military Technical Academy “Ferdinand I”, Bucharest. Free to attend." />
+		<meta property="og:type" content="website" />
+		<meta property="og:title" content="BreaQ 2026 · Breaking the Boundaries of Quantum Uncertainty" />
+		<meta property="og:description" content="BreaQ 2026: a 24-hour quantum hackathon on 24–25 October at the CAMPUS Research Institute and a day of talks on 14 November at the Military Technical Academy “Ferdinand I”, Bucharest. Free to attend." />
+		<meta property="og:image" content="https://roqteam.ro/images/share/breaq-2026.jpg" />
+		<meta property="og:url" content="https://roqteam.ro/breaq.html" />
+		<meta name="twitter:card" content="summary_large_image" />
+		<!-- Times below are approximate for the hackathon end and the talks; adjust with the programme -->
+		<script type="application/ld+json">
+		{"@context": "https://schema.org", "@type": "Event", "name": "BreaQ 2026", "description": "BreaQ 2026, RoQTeam's annual quantum event in Bucharest: a 24-hour quantum hackathon on 24–25 October at the CAMPUS Research Institute and a day of talks on 14 November at the Military Technical Academy “Ferdinand I”. Free to attend.", "image": "https://roqteam.ro/images/share/breaq-2026.jpg", "url": "https://roqteam.ro/breaq.html", "startDate": "2026-10-24T09:00:00+03:00", "endDate": "2026-11-14", "eventStatus": "https://schema.org/EventScheduled", "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode", "location": [{"@type": "Place", "name": "CAMPUS Research Institute", "address": {"@type": "PostalAddress", "streetAddress": "Splaiul Independenței 313", "addressLocality": "București", "postalCode": "060042", "addressCountry": "RO"}}, {"@type": "Place", "name": "Military Technical Academy “Ferdinand I”", "address": {"@type": "PostalAddress", "streetAddress": "Bulevardul George Coșbuc 39-49", "addressLocality": "București", "postalCode": "050141", "addressCountry": "RO"}}], "subEvent": [{"@type": "Event", "name": "BreaQ 2026 Hackathon", "startDate": "2026-10-24T09:00:00+03:00", "endDate": "2026-10-25T14:00:00+02:00", "location": {"@type": "Place", "name": "CAMPUS Research Institute", "address": "Splaiul Independenței 313, București"}}, {"@type": "Event", "name": "BreaQ 2026 Presentations", "startDate": "2026-11-14T09:00:00+02:00", "endDate": "2026-11-14T18:00:00+02:00", "location": {"@type": "Place", "name": "Military Technical Academy “Ferdinand I”", "address": "Bulevardul George Coșbuc 39-49, București"}}], "organizer": {"@type": "Organization", "name": "RoQTeam", "url": "https://roqteam.ro/", "email": "partnerships@roqteam.ro"}, "offers": {"@type": "Offer", "url": "https://forms.gle/o1wqxXgzeF2QGtxC7", "price": "0", "priceCurrency": "RON", "availability": "https://schema.org/InStock"}, "isAccessibleForFree": true}
+		</script>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
 		<link rel="stylesheet" href="assets/css/main.css" />
-		<link rel="icon" type="image/png" href="images/roqteam_logo_nw.png">
+		<link rel="stylesheet" href="assets/css/breaq.css" />
+		<link rel="icon" type="image/png" href="images/favicon-2026.png">
 		<noscript><link rel="stylesheet" href="assets/css/noscript.css" /></noscript>
 	</head>
-	<body class="is-preload">
+	<body class="is-preload page-art page-motion">
+		<div class="progress" aria-hidden="true"><i></i></div>
 
 		<!-- Video Background -->
 			<div class="video-bg video-overlay">
-				<video autoplay muted loop playsinline>
-				<source src="images/BreaQ_bg.mp4" type="video/mp4">
-				</video>
+				<!-- breaq.js attaches the source unless the screen is small, data saver is on, or reduced motion is preferred -->
+				<video autoplay muted loop playsinline preload="metadata" data-src="images/BreaQ_bg.mp4" aria-hidden="true"></video>
 			</div>
-			<img src="images/BreaQ_logo_wide.jpg" alt="" class="wipe-overlay">
 			<div class="video-overlay"></div>
 
 		<!-- Page Wrapper -->
@@ -25,21 +36,19 @@
 				<!-- Header -->
 					<header id="header">
 						<nav>
+							<a href="https://forms.gle/o1wqxXgzeF2QGtxC7" target="_blank" rel="noopener" class="hdr-cta">Register</a>
 							<div class="dropdown">
-								<button class="dropbtn">Menu</button>
-								<div class="dropdown-content">
+								<button class="dropbtn" type="button" aria-controls="site-menu" aria-expanded="false">Menu</button>
+								<div class="dropdown-content" id="site-menu">
 									<a href="index.html">Home</a>
 									<a href="#about">About</a>
-									<a href="#organizers">Organizers</a>
 									<a href="#sponsors">Sponsors</a>
-									<a href="#partners">Partners</a>
-									<a href="#speakers">Speakers</a>
-									<a href="#committee">Committee</a>
-									<a href="#schedule">Schedule</a>
-									<a href="#hackathon">Hackathon</a>
+									<a href="#committee">Core Team</a>
+									<a href="#last-edition">Last Edition</a>
+									<a href="#next">What’s next</a>
 									<a href="#venue">Venue</a>
 									<a href="#faq">FAQ</a>
-									<li><a href="https://forms.gle/o1wqxXgzeF2QGtxC7">Register</a></li>
+									<a href="breaq-2025.html">BreaQ 2025</a>
 									<a href="QFF24_main/index.html">QFF24</a>
 								</div>	
 							</div>
@@ -53,7 +62,16 @@
 					<section id="wrapper">
 						<header>
 							<div class="inner">
-								<h2>BreaQ</h2>
+								<div class="ch-hero-text">
+									<h2>BreaQ 2026</h2>
+									<p>Breaking the Boundaries of Quantum Uncertainty</p>
+									<div class="hero-row">
+										<span class="hero-fact"><b>24–25 October</b>Hackathon · CAMPUS Research Institute</span>
+										<span class="hero-fact"><b>14 November</b>Presentations · Military Technical Academy</span>
+										<a href="https://forms.gle/o1wqxXgzeF2QGtxC7" target="_blank" rel="noopener" class="button primary">Register</a>
+									</div>
+								</div>
+								<figure class="ch-hero-art"><img src="images/BreaQ_logo_2026-light.svg" alt="" /></figure>
 							</div>
 						</header>
 
@@ -63,687 +81,407 @@
 
 									<!-- About -->
 									<section id="about" class="section_space">
-										<h2>BreaQ</h2>
-										<h3 class="major">Breaking the Boundaries of Quantum Uncertainty</h3>
-
-										<p>BreaQ is more than an event — it’s a catalyst for Romania’s quantum future. Over several days, we’ll bring together scientists, students, innovators, and curious minds to explore the mysteries of quantum technologies. Through inspiring talks, hands‑on workshops, and a high‑energy hackathon, we’ll transform uncertainty into understanding, and ideas into action. Whether you’re a student, researcher, or simply curious about the quantum world, BreaQ is your chance to learn, connect, and collaborate with Romania’s growing quantum community.</p>
-
-										<a href="https://forms.gle/o1wqxXgzeF2QGtxC7" class="button primary">Register</a>
-										<br><br>
+										<h3 class="major">About BreaQ</h3>
+										<p>BreaQ is RoQTeam’s annual gathering for Romania’s quantum community: a day of talks by leading researchers and a 24‑hour hackathon. Students, researchers and the simply curious are all welcome.</p>
+										<dl class="glance">
+											<div>
+												<dt><span class="glance-ic icon solid fa-calendar-alt" aria-hidden="true"></span>When</dt>
+												<dd>24–25 October (hackathon) and 14 November (presentations), 2026</dd>
+											</div>
+											<div>
+												<dt><span class="glance-ic icon solid fa-map-marker-alt" aria-hidden="true"></span>Where</dt>
+												<dd>CAMPUS Research Institute and Military Technical Academy “Ferdinand I”, Bucharest</dd>
+											</div>
+											<div>
+												<dt><span class="glance-ic icon solid fa-ticket-alt" aria-hidden="true"></span>Cost</dt>
+												<dd>Free, meals included</dd>
+											</div>
+											<div>
+												<dt><span class="glance-ic icon solid fa-layer-group" aria-hidden="true"></span>Format</dt>
+												<dd>24‑hour hackathon and a day of presentations; further sessions announced with the programme</dd>
+											</div>
+										</dl>
+										<a href="https://forms.gle/o1wqxXgzeF2QGtxC7" target="_blank" rel="noopener" class="button primary">Register</a>
 									</section>
 
-									<br>
+									<!-- What to expect -->
 									<section class="section_space">
 										<h3 class="major">What to Expect</h3>
-										<ol>
+										<ul class="kit kit--wide">
 											<li>
-												<h4>Scientific Presentations & Workshops</h4>
-												<p>Engage with leading researchers and industry experts as they share the latest breakthroughs in quantum computing, communication, and sensing — from foundational theory to real-world applications — through dynamic presentations, interactive webinars, and self-paced courses designed for all experience levels.</p>
+												<span class="kit-ic icon solid fa-microphone-alt" aria-hidden="true"></span>
+												<div>
+													<h4>Presentations &amp; workshops</h4>
+													<p>Researchers and industry experts on quantum computing, communication and sensing, on 14 November at the Military Technical Academy.</p>
+												</div>
 											</li>
 											<li>
-												<h4>Quantum Hackathon</h4>
-												<p>A variety of hands-on challenges where participants tackle real-world quantum problems, guided by experienced mentors. Each task explores cutting-edge directions such as quantum algorithms, quantum hacking, and quantum machine learning, with opportunities to prototype solutions and compete for recognition and prizes.</p>
+												<span class="kit-ic icon solid fa-laptop-code" aria-hidden="true"></span>
+												<div>
+													<h4>Quantum hackathon</h4>
+													<p>Twenty‑four hours of hands‑on challenges with mentors and prizes, 24–25 October at the CAMPUS Research Institute.</p>
+												</div>
 											</li>
 											<li>
-												<h4>Networking & Collaboration</h4>
-												<p>Meet fellow enthusiasts, potential collaborators, and future employers. Build connections that last beyond the event horizon.</p>
+												<span class="kit-ic icon solid fa-users" aria-hidden="true"></span>
+												<div>
+													<h4>Networking</h4>
+													<p>Meet fellow enthusiasts, collaborators and future employers. Connections that last beyond the event horizon.</p>
+												</div>
 											</li>
-										</ol>
+										</ul>
 									</section>
-									
 
 									<!-- Organizers -->
 									<section id="organizers" class="section_space">
 										<h3 class="major">Organizers</h3>
-										<div class="box alt">
-											<div class="row gtr-uniform">
-												<div class="col-4"><span class="image fit"><img src="images/roqteam_logo.png" alt="" style="height: 100%;"/></span></div>
-												<div class="col-4"><span class="image fit"><img src="images/Logo_Campus.png" alt="" style="height: 100%;"/></span></div>
-												<div class="col-4"><span class="image fit"><img src="images/Stema_ATM.png" alt="" style="height: 100%;"/></span></div>
-											</div>
-										</div>
+										<ul class="logos logos--marks">
+											<li><img src="images/opt/roqteam_logo.webp" alt="RoQTeam" loading="lazy" /></li>
+											<li><img src="images/opt/Logo_Campus.webp" alt="CAMPUS Research Institute" loading="lazy" /></li>
+											<li><img src="images/opt/Stema_ATM.webp" alt="Military Technical Academy Ferdinand I" loading="lazy" /></li>
+										</ul>
 									</section>
-
 
 									<!-- Sponsors -->
 									<section id="sponsors" class="section_space">
 										<h3 class="major">Sponsors</h3>
-										<div class="box alt">
-											<div class="row gtr-uniform">
-												<div class="col-3" style="vertical-align: middle;"><span class="image fit" style="vertical-align: middle;"><img src="images/classiq.png" alt="" /></span></div>
-												<div class="col-3" style="vertical-align: middle;"><span class="image fit" style="vertical-align: middle;"><img src="images/Fsas.png" alt="" /></span></div>
-												<div class="col-3" style="vertical-align: middle;"><span class="image fit" style="vertical-align: middle;"><img src="images/sap.png" alt="" /></span></div>
-												<div class="col-3" style="vertical-align: middle;"><span class="image fit" style="vertical-align: middle;"><img src="images/Scaleway.png" alt="" /></span></div>											
-											</div>
-										</div>
+										<!-- Ranked row: the tile size says the tier, the caption names it. Supporters below are equal. -->
+										<ul class="logos logos--rank">
+											<li class="is-gold">
+												<span class="tile"><img src="images/opt/Fsas-wide.webp" alt="Fsas Technologies" loading="lazy" /></span>
+												<span class="tier-tag">Gold sponsor</span>
+											</li>
+											<li class="is-silver">
+												<span class="tile"><img src="images/opt/nxp.webp" alt="NXP" loading="lazy" /></span>
+												<span class="tier-tag">Silver sponsor</span>
+											</li>
+										</ul>
+										<h4 class="tier">Supporters <span>food, drinks and merch</span></h4>
+										<ul class="logos logos--tiles">
+											<li><img src="images/opt/artesana.webp" alt="Artesana" loading="lazy" /></li>
+											<li><img src="images/opt/kfea.webp" alt="KFEA" loading="lazy" /></li>
+											<li><img src="images/opt/monster.webp" alt="Monster Energy" loading="lazy" /></li>
+											<li><img src="images/opt/sap.webp" alt="SAP" loading="lazy" /></li>
+										</ul>
+										<p class="logos-note">More sponsors are announced as they confirm. Want to support BreaQ 2026? <a href="mailto:partnerships@roqteam.ro">Write to us</a>.</p>
 									</section>
 
 									<!-- Partners -->
 									<section id="partners" class="section_space">
 										<h3 class="major">Partners</h3>
-										<div class="box alt">
-											<div class="row gtr-uniform">
-												<div class="col-3" style="vertical-align: middle;"><span class="image fit" style="vertical-align: middle;"><img src="images/aqora_logo.png" alt="" /></span></div>
-												<div class="col-3" style="vertical-align: middle;"><span class="image fit" style="vertical-align: middle;"><img src="images/ITA.png" alt="" /></span></div>
-												<div class="col-3" style="vertical-align: middle;"><span class="image fit" style="vertical-align: middle;"><img src="images/STS.png" alt="" /></span></div>
-												<div class="col-3" style="vertical-align: middle;"><span class="image fit" style="vertical-align: middle;"><img src="images/2space.png" alt="" /></span></div>
-											</div>
-										</div>
-									</section> 
-
-								
-									<!-- Speakers -->
-									<section id="speakers" class="section_space">
-										<h3 class="major">Speakers</h3>
-										<div class="box alt">
-											<div class="row gtr-uniform">
-												<div class="col-3">
-													<span class="image fit"><img src="images/Radu-Ionicioiu.jpeg" alt="" /></span>
-													<h4>
-														Radu Ionicioiu, PhD 
-													</h4>
-													<p style="text-align: left; font-size: clamp(10px, 2vw, 15px)">
-														Senior Researcher (CS I) in Quantum Technologies
-														Horia Hulubei National Institute of Physics and Nuclear Engineering
-														(IFIN-HH)
-													</p>
-												</div>
-												<div class="col-3">
-													<span class="image fit"><img src="images/Stefan-Ataman.png" alt="" /></span>
-													<h4>
-														Ștefan Ataman, PhD 
-													</h4>
-													<p style="text-align: left; font-size: clamp(10px, 2vw, 15px)">
-														Senior Researcher (CS II), Extreme Light Infrastructure-Nuclear physics (ELI-NP)
-													</p>
-												</div>
-												<div class="col-3">
-													<span class="image fit"><img src="images/Gabriel-Pavel.png" alt="" /></span>
-													<h4>
-														Gabriel Pavel
-													</h4>
-													<p style="text-align: left; font-size: clamp(10px, 2vw, 15px)">
-														Regional Director Balkans, Hungary, Czech and Slovakia, Fsas Technologies - a Fujitsu company; 
-														Co-founder, CPO and Board Member, Apollo AI Technologies;
-														Owner, AMODENT SRL; 
-													</p>
-												</div>
-												<div class="col-3">
-													<span class="image fit"><img src="images/Nicu-Becherescu.png" alt="" /></span>
-													<h4>
-														Nicu Becherescu, PhD
-													</h4>
-													<p style="text-align: left; font-size: clamp(10px, 2vw, 15px)">
-														Business Development Manager,
-														Qruise
-													</p>
-												</div>
-												<div class="col-3">
-													<span class="image fit"><img src="images/Mona-Mihailescu.png" alt="" /></span>
-													<h4>
-														Mona Mihăilescu, PhD
-													</h4>
-													<p style="text-align: left; font-size: clamp(10px, 2vw, 15px)">
-														Professor at Department of Physics,
-														Faculty of Applied Sciences, Bucharest National Polytechnic University of Science and Technology (UNSTPB)
-													</p>
-												</div>
-												<div class="col-3">
-													<span class="image fit"><img src="images/Diana.png" alt="" /></span>
-													<h4>
-														Diana Maimut, PhD
-													</h4>
-													<p style="text-align: left; font-size: clamp(10px, 2vw, 15px)">
-														Cryptography Expert, Advanced Technologies Institute
-													</p>
-												</div>
-												<div class="col-3">
-													<span class="image fit"><img src="images/Cristina_Cirstoiu.png" alt="" /></span>
-													<h4>
-														Cristina Cirstoiu, PhD
-													</h4>
-													<p style="text-align: left; font-size: clamp(10px, 2vw, 15px)">
-														Lead Research and Development Scientist, Quantinuum, Quantum Software Research Theory team, Cambridge
-													</p>
-												</div>																								
-												<div class="col-3">
-													<span class="image fit"><img src="images/Thierry.png" alt="" /></span>
-													<h4>
-														Thierry Kaldenbach
-													</h4>
-													<p style="text-align: left; font-size: clamp(10px, 2vw, 15px)">
-														Quantum Computing Researcher, German Aerospace Center;
-														PhD Candidate, Leibniz Universitat Hannover
-													</p>
-												</div>
-												<div class="col-3">
-													<span class="image fit"><img src="images/Andreea-Iulia.png" alt="" /></span>
-													<h4>
-														Andreea-Iulia Lefterovici
-													</h4>
-													<p style="text-align: left; font-size: clamp(10px, 2vw, 15px)">
-														CEO Innovailia; PhD Candidate,
-														Leibniz Universitat Hannover
-													</p>
-												</div>
-												<div class="col-3">
-													<span class="image fit"><img src="images/Cosmin-Andrei.png" alt="" /></span>
-													<h4>
-														Cosmin Andrei
-													</h4>
-													<p style="text-align: left; font-size: clamp(10px, 2vw, 15px)">
-														PhD Candidate in Quantum Information, Oxford University
-													</p>
-												</div>
-												<!-- <div class="col-3">
-													<span class="image fit"><img src="images/Cristian-Ilie.png" alt="" /></span>
-													<h4>
-														Cristian Ilie
-													</h4>
-													<p style="text-align: left; font-size: clamp(10px, 2vw, 15px)">
-														Telecommunications Engineer, Special Telecommunications Service, PhD Candidate,
-														Bucharest National Polytechnic University of Science and Technology (UNSTPB)
-													</p>
-												</div>
-												<div class="col-3">
-													<span class="image fit"><img src="images/Alexandru-Ionita.png" alt="" /></span>
-													<h4>
-														Alexandru Ionita
-													</h4>
-													<p style="text-align: left; font-size: clamp(10px, 2vw, 15px)">
-														Quantum Machine Learning Researcher, AIMultimediaLab;
-														PhD Candidate, 
-														Bucharest National Polytechnic University of Science and Technology (UNSTPB)
-													</p>
-												</div> -->
-												<div class="col-3">
-													<span class="image fit"><img src="images/Ionut.png" alt="" /></span>
-													<h4>
-														Ionut Anita
-													</h4>
-													<p style="text-align: left; font-size: clamp(10px, 2vw, 15px)">
-														Computer Science Engineer, Special Telecommunications Service	
-													</p>
-												</div>
-											</div>
-										</div>
+										<ul class="logos logos--tiles">
+											<li><img src="images/opt/aqora_logo.webp" alt="Aqora" loading="lazy" /></li>
+											<li><img src="images/opt/ITA.webp" alt="Advanced Technologies Institute" loading="lazy" /></li>
+											<li><img src="images/opt/STS.webp" alt="Special Telecommunications Service" loading="lazy" /></li>
+											<li><img src="images/opt/2space.webp" alt="2Space" loading="lazy" /></li>
+										</ul>
 									</section>
 
 									<!-- Organizing Committee -->
 									<section id="committee" class="section_space">
-										<h3 class="major">Organizing Committee</h3>
-										<div class="box alt">
-											<div class="row gtr-uniform">
+										<h3 class="major">Core Team</h3>
+										<div class="sp-grid sp-grid--dense">
 
-												<div class="col-3" style="vertical-align: middle;">
-													<span class="image fit" style="vertical-align: middle;">
-														<img src="images/Berti.png" alt="" />
-													</span>
-													<h4>
-														Albert-Ioan Florea
-													</h4>
-													<p style="text-align: left; font-size: clamp(10px, 2vw, 15px)">
-														Research Assistant, Technical University of Munich
-													</p>
-												</div>
+											<figure class="sp-card" tabindex="0" style="--i: 0">
+												<div class="sp-photo"><img src="images/opt/Berti.webp" alt="Albert-Ioan Florea" loading="lazy" /></div>
+												<figcaption class="sp-info">
+													<h4 class="sp-name">Albert-Ioan Florea</h4>
+													<div class="sp-more"><div>
+														<p class="sp-role">Research Assistant, Technical University of Munich</p>
+													</div></div>
+												</figcaption>
+											</figure>
 
-												<div class="col-3" style="vertical-align: middle;">
-													<span class="image fit" style="vertical-align: middle;">
-														<img src="images/Alexandru-Ionita.png" alt="" />
-													</span>
-													<h4>
-														Alexandru Ionita
-													</h4>
-													<p style="text-align: left; font-size: clamp(10px, 2vw, 15px)">
-														Quantum Machine Learning Researcher, AIMultimediaLab;
-														PhD Candidate, 
-														Bucharest National Polytechnic University of Science and Technology (UNSTPB)
-													</p>
-												</div>
+											<figure class="sp-card" tabindex="0" style="--i: 1">
+												<div class="sp-photo"><img src="images/opt/Alexandru-Ionita.webp" alt="Alexandru Ionita" loading="lazy" /></div>
+												<figcaption class="sp-info">
+													<h4 class="sp-name">Alexandru Ionita</h4>
+													<div class="sp-more"><div>
+														<p class="sp-role">Quantum Machine Learning Researcher, AIMultimediaLab; PhD Candidate, Bucharest National Polytechnic University of Science and Technology (UNSTPB)</p>
+													</div></div>
+												</figcaption>
+											</figure>
 
-												<div class="col-3" style="vertical-align: middle;">
-													<span class="image fit" style="vertical-align: middle;">
-														<img src="images/Cristian-Ilie.png" alt="" />	
-													</span>
-													<h4>
-													Cristian Ilie
-													</h4>
-													<p style="text-align: left; font-size: clamp(10px, 2vw, 15px)">
-														Telecommunications Engineer, Special Telecommunications Service, PhD Candidate,
-														Bucharest National Polytechnic University of Science and Technology (UNSTPB)
-													</p>
-												</div>
+											<figure class="sp-card" tabindex="0" style="--i: 2">
+												<div class="sp-photo"><img src="images/opt/Cristian-Ilie.webp" alt="Cristian Ilie" loading="lazy" /></div>
+												<figcaption class="sp-info">
+													<h4 class="sp-name">Cristian Ilie</h4>
+													<div class="sp-more"><div>
+														<p class="sp-role">Telecommunications Engineer, Special Telecommunications Service; PhD Candidate, Bucharest National Polytechnic University of Science and Technology (UNSTPB)</p>
+													</div></div>
+												</figcaption>
+											</figure>
 
-												<div class="col-3" style="vertical-align: middle;">
-													<span class="image fit" style="vertical-align: middle;">
-														<img src="images/Filip.png" alt="" />
-													</span>
-													<h4>
-														Filip-Ioan Ceara
-													</h4>
-													<p style="text-align: left; font-size: clamp(10px, 2vw, 15px)">
-														Research and Develompent Expert, Advanced Technologies Institute  
-													</p>
-												</div>
+											<figure class="sp-card" tabindex="0" style="--i: 3">
+												<div class="sp-photo"><img src="images/opt/Filip.webp" alt="Filip-Ioan Ceara" loading="lazy" /></div>
+												<figcaption class="sp-info">
+													<h4 class="sp-name">Filip-Ioan Ceara</h4>
+													<div class="sp-more"><div>
+														<p class="sp-role">Research and Development Expert, Advanced Technologies Institute</p>
+													</div></div>
+												</figcaption>
+											</figure>
 
-											</div>
-										</div>
-									</section> 
-
-									<!-- Presentations Schedule - 15 of November -->
-									<section id="schedule" class="spotlight style2 left section_space">
-										<div class="content">
-											<header>
-												<h3 class="major">Schedule</h3>
-											</header>
-											<h3>November 15 - Military Technical Academy "Ferdinand I"</h3>
-											<div class="table-wrapper">
-												<table>
-													<thead>
-														<tr>
-															<th>Time</th>
-															<th>Presentation</th>
-															<th>Speaker</th>
-														</tr>
-													</thead>
-													<tbody>
-														<tr  class="clickable">
-															<td style="width: 15%;">9:30 - 9:45</td>
-															<td><b>The journey of a quantum community </b></td>
-															<td style="width: 20%;"><b>Cristian Ilie</b></td>
-														</tr>
-														<tr class="abstract-row">
-															<td colspan="3">
-															Introducing RoQTeam 
-															</td>
-														</tr>
-														<tr  class="clickable">
-															<td style="width: 15%;">9:45 - 10:45</td>
-															<td><b>Cybersecurity: before and after the quantum apocalypse</b> </td>
-															<td style="width: 20%;"><b>Radu Ionicioiu</b></td>
-														</tr>
-														<tr class="abstract-row">
-															<td colspan="3">
-															Quantum computers will soon be powerful enough to break current public-key infrastructure. This will compromise critical infrastructures, mobile banking, software updates, blockchain and digital signatures, among others.
-															How to prevent this incoming Quantum Apocalypse? I will talk about recent developments in quantum cryptography and the development of the future quantum internet.
-															</td>
-														</tr>
-														<tr  class="clickable">
-															<td style="width: 15%;">10:45 - 11:10</td>
-															<td><b>Coffee Break</b></td>
-															<td style="width: 20%;"><b></b></td>
-														</tr>
-														<tr class="abstract-row">
-															<td colspan="3">
-															Enjoy your entanglement time!
-															</td>
-														</tr>
-														<tr  class="clickable">
-															<td style="width: 15%;">11:10 - 11:30</td>
-															<td><b>Hybrid benchmarking of quantum algorithms</b> </td>
-															<td style="width: 20%;"><b>Andreea-Iulia Lefterovici</b></td>
-														</tr>
-														<tr class="abstract-row">
-															<td colspan="3">
-															Hybrid benchmarking is an alternative way to asymptotic worst-case analysis, gauging the performance of a fault tolerant quantum hardware platform for solving real-world instances of optimisation problem. The overall strategy is to evaluate how a quantum algorithm would perform under idealised assumptions and to identify the ranges where a quantum algorithm could potentially be useful. In this talk, I’ll present a methodology that goes beyond the asymptotic scaling for assessing the potential performance of quantum algorithms in ideal conditions.
-															</td>
-														</tr>
-														<tr  class="clickable">
-															<td style="width: 15%;">11:30 - 12:00</td>
-															<td><b>Fujitsu’s Quantum Mindset: Innovation Through Collaboration</b> </td>
-															<td style="width: 20%;"><b>Gabriel Pavel</b></td>
-														</tr>
-														<tr class="abstract-row">
-															<td colspan="3">
-															
-															</td>
-														</tr>
-														<tr  class="clickable">
-															<td style="width: 15%;">12:00 - 12:50</td>
-															<td><b>Computational quantum advantage for dynamical simulations</b> </td>
-															<td style="width: 20%;"><b>Cristina Cirstoiu</b></td>
-														</tr>
-														<tr class="abstract-row">
-															<td colspan="3">
-															Simulating quantum systems is a central challenge in physics and one of the most promising applications of quantum computers. Today’s quantum hardware can already tackle problems that stretch the limits of classical simulation. This talk gives an accessible overview of the capabilities and limitations of near-term quantum computing, the importance of benchmarking in characterizing performance, and the role of error correction in future scalability. In particular, I will discuss a digital dynamical simulation of a 2D quantum magnetism model on the 56-qubit trapped-ion Quantinuum H2 device. Using combined error suppression and mitigation techniques, we observe Floquet pre-thermalisation at timescales where state-of-the-art classical simulations become extremely difficult, if not infeasible for the particular setting considered.
-															</td>
-														</tr>
-														<tr  class="clickable">
-															<td style="width: 15%;">12:50 - 13:30</td>
-															<td><b>Lunch Break</b> </td>
-															<td style="width: 20%;"><b></b></td>
-														</tr>
-														<tr class="abstract-row">
-															<td colspan="3">
-															
-															</td>
-														</tr>
-														<tr  class="clickable">
-															<td style="width: 15%;">13:30 - 13:50</td>
-															<td><b>Weak Values: Interpretations to Applications</b> </td>
-															<td style="width: 20%;"><b>Andrei Cosmin</b></td>
-														</tr>
-														<tr class="abstract-row">
-															<td colspan="3">
-															This talk reviews weak measurements and post-selection with a focus on how weak values are interpreted and used in modern applications. I synthesize two strands that often talk past each other: (i) instrumental uses such as weak-value amplification and minimally invasive inference via weak-valued conditionals, and (ii) recent interpretational claims that treat weak values as properties of the system rather than of the meter.
-															</td>
-														</tr>
-														<tr  class="clickable">
-															<td style="width: 15%;">13:50 - 14:40</td>
-															<td><b>Breaking the standard quantum limit: quantum metrology and the brave new non-classical world</b> </td>
-															<td style="width: 20%;"><b>Stefan Ataman</b></td>
-														</tr>
-														<tr class="abstract-row">
-															<td colspan="3">
-															The shot-noise limit (SNL) ,also called the standard quantum limit (SQL), is a classical bound that limits the precision when it comes to parameter estimation. With the advent of quantum metrology, the SQL is not anymore a fundamental limit. Indeed, by venturing into the quantum regime one is able to reach the so-called sub-SNL regime. Thus, by taking advantage of this new regime, more precise measurements become possible. As extreme examples of quantum metrology we discuss the success of gravitational wave astronomy by employing squeezed states as well as microscopy at te Heisenberg limit by using highly entangled photons.
-															</td>
-														</tr>
-														<tr  class="clickable">
-															<td style="width: 15%;">14:40 - 15:20</td>
-															<td><b>Fast gradient-free optimization of excitations in variational quantum eigensolvers</b> </td>
-															<td style="width: 20%;"><b>Thierry Kaldenbach</b></td>
-														</tr>
-														<tr class="abstract-row">
-															<td colspan="3">
-															Finding molecular ground states and energies with variational quantum eigensolvers is central to chemistry applications on quantum computers. Physically motivated ansätze based on excitation operators respect physical symmetries, but existing quantum-aware optimizers, such as Rotosolve, have been limited to simpler operator types. To fill this gap, we introduce ExcitationSolve, a fast quantum-aware optimizer that is globally-informed, gradient-free, and hyperparameter-free. ExcitationSolve extends these optimizers to parameterized unitaries with generators $G$ of the form $G^3=G$ exhibited by excitation operators in approaches such as unitary coupled cluster. ExcitationSolve determines the global optimum along each variational parameter using the same quantum resources that gradient-based optimizers require for one update step. We provide optimization strategies for both fixed and adaptive variational ansätze, along with generalizations for simultaneously selecting and optimizing multiple excitations. On molecular ground state energy benchmarks, ExcitationSolve outperforms state-of-the-art optimizers by converging faster, achieving chemical accuracy for equilibrium geometries in a single parameter sweep, yielding shallower adaptive ansätze and remaining robust to real hardware noise. By uniting physical insight with efficient optimization, ExcitationSolve paves the way for scalable quantum chemistry calculations.
-															</td>
-														</tr>
-														<tr  class="clickable">
-															<td style="width: 15%;">15:20 - 15:40</td>
-															<td><b>Coffee Break</b> </td>
-															<td style="width: 20%;"><b></b></td>
-														</tr>
-														<tr class="abstract-row">
-															<td colspan="3">
-															Enjoy your entanglement time!
-															</td>
-														</tr>
-														<tr  class="clickable">
-															<td style="width: 15%;">15:40 - 16:10</td>
-															<td><b>Quantum Hacking: Securing the Future of Quantum Systems</b> </td>
-															<td style="width: 20%;"><b>Cristian Ilie</b></td>
-														</tr>
-														<tr class="abstract-row">
-															<td colspan="3">
-															Quantum technologies promise revolutionary advances in communication, computation, and sensing, but their real‑world implementations are not immune to attack. This talk surveys the emerging field of quantum hacking, highlighting vulnerabilities in devices, algorithms, and communication protocols. From side‑channel leaks and imperfect detectors to protocol manipulation and algorithmic tampering, we will explore how adversaries can exploit these weaknesses — and why building resilient, trustworthy quantum systems is essential for the future.
-															</td>
-														</tr>
-														<tr  class="clickable">
-															<td style="width: 15%;">16:10 - 16:40</td>
-															<td><b>Mastering ImperfeQtion: From Theory to Practice in the Quantum Wild</b> </td>
-															<td style="width: 20%;"><b>Diana Maimut</b></td>
-														</tr>
-														<tr class="abstract-row">
-															<td colspan="3">
-															Cryptographers and security practitioners are much more concerned nowadays with reducing the distance between the theory behind cryptographic algorithms and their implementations. Even though there is always a gap between theory and practice, an imperfection so to say, we advance in science through the pursuit of superiority and, thus, there's always room for improvement. The presentation aims at setting the stage for a security mindset in a quantum world.
-															</td>
-														</tr>
-														<tr  class="clickable">
-															<td style="width: 15%;">16:40 - 17:10</td>
-															<td><b>Post-Quantum Cryptography: NIST Standardization and the Mathematics Behind It</b> </td>
-															<td style="width: 20%;"><b>Ionut Anita</b></td>
-														</tr>
-														<tr class="abstract-row">
-															<td colspan="3">
-															This presentation reviews NIST’s progress toward post-quantum cryptography, covering the open call for proposals, the multi-round public evaluations, and the criteria used to select candidate algorithms for standardization. It highlights key milestones—such as the release of draft FIPS for PQC after several evaluation rounds—and summarizes ongoing work on additional signature schemes and on practical guidance for migration from quantum-vulnerable systems. Emphasis is placed on security objectives, expected timelines, interoperability, and concrete preparation steps.
-															</td>
-														</tr>
-														<tr  class="clickable">
-															<td style="width: 15%;">17:10 - 17:40</td>
-															<td><b>Quantum Machine Learning for Image Classification: Challenges and Perspectives</b> </td>
-															<td style="width: 20%;"><b>Alexandru Ionita</b></td>
-														</tr>
-														<tr class="abstract-row">
-															<td colspan="3">
-															Image classification has been transformed by classical neural networks and advances in computational hardware, motivating the exploration of quantum-enhanced learning models. Quantum machine learning is expected to provide advantages in generalization, representation efficiency, and optimization by leveraging high-dimensional Hilbert spaces and quantum correlations. Both purely quantum neural networks and hybrid quantum–classical models offer distinct pathways toward this goal: the former promise fundamentally new computational paradigms, while the latter enable practical integration of quantum resources within established frameworks. This work examines the comparative advantages and limitations of these approaches in the context of image classification and outlines key challenges and research directions for advancing quantum-enabled learning systems with near-term technology.
-															</td>
-														</tr>
-														
-																												
-													</tbody>
-													<tfoot>
-														<!-- <tr>
-															<td>23-24 Nov</td>
-															<td colspan="2"><b>In-person Hackathon</b> <br> <em>10:00-10:00 Military Technical Academy, Bucharest</em></td>
-														</tr> -->
-													</tfoot>
-												</table>
-											</div>
-											<br>
-											<h3>November 17 - CAMPUS Research Institute</h3>
-											<div class="table-wrapper">
-												<table>
-													<!-- <thead>
-														<tr>
-															<th>Time</th>
-															<th>Presentation</th>
-															<th>Speaker</th>
-														</tr>
-													</thead> -->
-													<tbody>
-														<tr  class="clickable">
-															<td style="width: 16%;">14:30 - 15:00<br> 16:30 - 17:00</td>
-															<td><b>Quantum Optics in Action: Bridging Theory and Experiment</b> </td>
-															<td style="width: 20%;"><b>Mona Mihailescu</b></td>
-														</tr>
-														<tr class="abstract-row">
-															<td colspan="3">
-															Participants will explore the quantum optics lab in two teams organized in advance through the Discord channel repsecting the specified time of arrival.
-															</td>
-														</tr>
-													</tbody>
-												</table>
-											</div>
-											<br>
-											<h3>November 19 - Online</h3>
-											<div class="table-wrapper">
-												<table>
-													<!-- <thead>
-														<tr>
-															<th>Time</th>
-															<th>Presentation</th>
-															<th>Speaker</th>
-														</tr>
-													</thead> -->
-													<tbody>
-														<tr  class="clickable">
-															<td style="width: 15%;">20:00 - 21:30</td>
-															<td><b>Classiq Workshop</b> </td>
-															<td style="width: 20%;"><b>Adam Gitter</b></td>
-														</tr>
-														<tr class="abstract-row">
-															<td colspan="3">
-															To Be Announced
-															</td>
-														</tr>
-													</tbody>
-												</table>
-											</div>
-											<br>
-											<h3>November 20 - Online</h3>
-											<div class="table-wrapper">
-												<table>
-													<!-- <thead>
-														<tr>
-															<th>Time</th>
-															<th>Presentation</th>
-															<th>Speaker</th>
-														</tr>
-													</thead> -->
-													<tbody>
-														<tr  class="clickable">
-															<td style="width: 15%;">17:30 - 18:20</td>
-															<td><b>Bridging the simulation-reality gap in quantum computing</b> </td>
-															<td style="width: 20%;"><b>Nicu Becherescu</b></td>
-														</tr>
-														<tr class="abstract-row">
-															<td colspan="3">
-															The performance of quantum devices often falls short of their theoretical design due to complex, interacting noise sources and imperfect calibrations. Qruise addresses this challenge by developing advanced software tools that close the gap between simulated models and real hardware behavior.
-															Our core products ( QruiseOS and QruiseML) provide an integrated environment for control, orchestration, and learning across heterogeneous quantum platforms. QruiseOS ensures flexible and hardware-agnostic system operation, while QruiseML leverages differentiable digital twins and machine learning to extract hidden parameters, accelerate calibration routines, and systematically optimize gate performance.
-															By combining physics-informed modeling with data-driven inference, Qruise enables quantum hardware teams to achieve higher fidelities, faster development cycles, and deeper insight into device dynamics, ultimately paving the way toward scalable, fault-tolerant quantum computing.
-															</td>
-														</tr>
-													</tbody>
-												</table>
-											</div>
-											<br>
-											<h3>November 22, 23 - CAMPUS Research Institute</h3>
-											<div class="table-wrapper">
-												<table>
-													<!-- <thead>
-														<tr>
-															<th>Time</th>
-															<th>Presentation</th>
-															<th>Speaker</th>
-														</tr>
-													</thead> -->
-													<tbody>
-														<tr>
-															<td style="width: 15%;">22.11 - 9:00</td>
-															<td><b>Welcome</b> </td>
-														</tr>
-														<tr>
-															<td style="width: 15%;">22.11 - 9:30</td>
-															<td><b>Coding begins</b> </td>
-														</tr>
-														<tr>
-															<td style="width: 15%;">23.11 - 9:30</td>
-															<td><b>Coding ends</b> </td>
-														</tr>
-														<tr>
-															<td style="width: 15%;">23.11 - 10:00</td>
-															<td><b>Presentations and judging</b> </td>
-														</tr>
-														<tr>
-															<td style="width: 15%;">23.11 - 13:00</td>
-															<td><b>Awards ceremony</b> </td>
-														</tr>
-													</tbody>
-												</table>
-											</div>
 										</div>
 									</section>
 
-									<!-- Hackathon -->
-									<section id="hackathon" class="spotlight style2 section_space">
-										<div class="content">
-											<div class="container">
-												<header>
-													<h3 class="major">Hackathon Challenges</h3>
-												</header>
+									<!-- Last edition -->
+									<section id="last-edition" class="section_space">
+										<h3 class="major">Last edition <span>BreaQ 2025</span></h3>
+										<p>Talks at the Military Technical Academy, a quantum optics lab visit, online workshops and a 24-hour hackathon at CAMPUS: this is what the first BreaQ looked like in November 2025.</p>
+										<!--
+											To add a photo: drop it in images/breaq2025/ and copy one <figure> below.
+											Set its aspect-ratio (width / height) so the strip lays out before the image loads.
+											The counter, progress bar and autoplay pick up new slides automatically.
+										-->
+										<div class="gal" data-gal>
+											<div class="gal-track" tabindex="0" role="region" aria-roledescription="carousel" aria-label="Photos from BreaQ 2025">
+												<figure class="gal-slide" style="aspect-ratio: 1600 / 1200">
+													<img src="images/opt/breaq25-01.webp" alt="Kickoff in the CAMPUS auditorium" loading="lazy" />
+													<figcaption><span class="gal-tag">Welcome</span>Kickoff in the CAMPUS auditorium.</figcaption>
+												</figure>
+												<figure class="gal-slide" style="aspect-ratio: 1600 / 1200">
+													<img src="images/opt/breaq25-02.webp" alt="Teams settle in for 24 hours" loading="lazy" />
+													<figcaption><span class="gal-tag">Hackathon</span>Teams settle in for 24 hours.</figcaption>
+												</figure>
+												<figure class="gal-slide" style="aspect-ratio: 1600 / 1200">
+													<img src="images/opt/breaq25-03.webp" alt="The fuel station: snacks and energy drinks" loading="lazy" />
+													<figcaption><span class="gal-tag">Hackathon</span>The fuel station: snacks and energy drinks.</figcaption>
+												</figure>
+												<figure class="gal-slide" style="aspect-ratio: 1200 / 1600">
+													<img src="images/opt/breaq25-04.webp" alt="Pen and paper before code" loading="lazy" />
+													<figcaption><span class="gal-tag">Hackathon</span>Pen and paper before code.</figcaption>
+												</figure>
+												<figure class="gal-slide" style="aspect-ratio: 1600 / 1200">
+													<img src="images/opt/breaq25-05.webp" alt="A break in the lounge" loading="lazy" />
+													<figcaption><span class="gal-tag">Evening</span>A break in the lounge.</figcaption>
+												</figure>
+												<figure class="gal-slide" style="aspect-ratio: 1600 / 901">
+													<img src="images/opt/breaq25-06.webp" alt="Debugging together, late in the day" loading="lazy" />
+													<figcaption><span class="gal-tag">Hackathon</span>Debugging together, late in the day.</figcaption>
+												</figure>
+												<figure class="gal-slide" style="aspect-ratio: 1200 / 1600">
+													<img src="images/opt/breaq25-07.webp" alt="Deep focus" loading="lazy" />
+													<figcaption><span class="gal-tag">Night</span>Deep focus.</figcaption>
+												</figure>
+												<figure class="gal-slide" style="aspect-ratio: 1600 / 1200">
+													<img src="images/opt/breaq25-08.webp" alt="A mentor at the whiteboard, close to midnight" loading="lazy" />
+													<figcaption><span class="gal-tag">Night</span>A mentor at the whiteboard, close to midnight.</figcaption>
+												</figure>
+												<figure class="gal-slide" style="aspect-ratio: 1600 / 901">
+													<img src="images/opt/breaq25-09.webp" alt="T‑shirts and lanyards for everyone" loading="lazy" />
+													<figcaption><span class="gal-tag">Morning</span>T‑shirts and lanyards for everyone.</figcaption>
+												</figure>
+												<figure class="gal-slide" style="aspect-ratio: 1600 / 901">
+													<img src="images/opt/breaq25-10.webp" alt="Pitching to the jury" loading="lazy" />
+													<figcaption><span class="gal-tag">Presentations</span>Pitching to the jury.</figcaption>
+												</figure>
+												<figure class="gal-slide" style="aspect-ratio: 1600 / 1200">
+													<img src="images/opt/breaq25-11.webp" alt="The auditorium on judging morning" loading="lazy" />
+													<figcaption><span class="gal-tag">Presentations</span>The auditorium on judging morning.</figcaption>
+												</figure>
+												<figure class="gal-slide" style="aspect-ratio: 1600 / 901">
+													<img src="images/opt/breaq25-12.webp" alt="Results, charts and hard questions" loading="lazy" />
+													<figcaption><span class="gal-tag">Presentations</span>Results, charts and hard questions.</figcaption>
+												</figure>
+												<figure class="gal-slide" style="aspect-ratio: 1600 / 1200">
+													<img src="images/opt/breaq25-13.webp" alt="Mentors, jury and winners" loading="lazy" />
+													<figcaption><span class="gal-tag">Awards</span>Mentors, jury and winners.</figcaption>
+												</figure>
+												<figure class="gal-slide" style="aspect-ratio: 1200 / 1600">
+													<img src="images/opt/breaq25-14.webp" alt="A winning team with their diploma" loading="lazy" />
+													<figcaption><span class="gal-tag">Awards</span>A winning team with their diploma.</figcaption>
+												</figure>
+												<figure class="gal-slide" style="aspect-ratio: 1600 / 1200">
+													<img src="images/opt/breaq25-15.webp" alt="The BreaQ 2025 hackathon crew" loading="lazy" />
+													<figcaption><span class="gal-tag">Group photo</span>The BreaQ 2025 hackathon crew.</figcaption>
+												</figure>
+											</div>
+											<div class="gal-bar">
+												<div class="gal-count" aria-live="polite"><span class="gal-cur">01</span><span class="gal-sep">/</span><span class="gal-total">15</span></div>
+												<div class="gal-progress" aria-hidden="true"><i></i></div>
+												<div class="gal-nav">
+													<button class="gal-btn gal-prev" type="button" aria-label="Previous photo">
+														<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+													</button>
+													<button class="gal-btn gal-next" type="button" aria-label="Next photo">
+														<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+													</button>
+												</div>
 											</div>
 										</div>
+										<a href="breaq-2025.html" class="special">The full BreaQ 2025 page: programme, speakers, photos</a>
 									</section>
-									<section class="row">
-										<article class="col-4">
-											<a href="#" class="image"><img src="images/quantum_cryptanalysis.png" alt="" width="100%"/></a>
-											<h4 class="major">Quantum Codebreaking</h4>
-											<p>Quantum cryptanalysis algorithms pose a great threat to currently deployed cryptosystems, especially on the public key side. Within this challenge, participants will use Classiq for implementing state-of-the-art quantum algorithms with direct applications in the field of cryptanalysis.</p>
-										</article>
-										<article class="col-4">
-											<a href="#" class="image"><img src="images/quantum_machine_learning.png" alt="" width="100%"/></a>
-											<h4 class="major">Entangled Learning</h4>
-											<p>Quantum machine learning harnesses superposition and entanglement to encode data in high-dimensional quantum feature spaces, potentially revealing correlations inaccessible to classical models. Participants will explore these advantages using PennyLane, developing and testing quantum models on a classically challenging dataset to probe the potential of quantum learning.</p>
-										</article>
-										<article class="col-4">
-											<a href="#" class="image"><img src="images/quantum_hacking.png" alt="" width="100%"/></a>
-											<h4 class="major">Breaking Quantum Realities</h4>
-											<p>Quantum hacking exposes weaknesses in quantum devices, algorithms, and communication protocols. Participants will explore how real‑world imperfections can be exploited, showing that even quantum technologies are not immune to attack.</p>
-										</article>
+
+									<!-- What's next -->
+									<section id="next" class="section_space">
+										<h3 class="major">What’s next</h3>
+										<div class="next-wrap">
+											<svg class="orbits" viewBox="0 0 400 400" role="img" aria-label="Speakers, schedule and challenges orbiting BreaQ 2026, to be announced">
+												<defs><filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="4" /></filter></defs>
+												<path id="o1" class="orbit" d="M 348.3 140.1 A 160 62 -22 1 1 51.7 259.9 A 160 62 -22 1 1 348.3 140.1" />
+												<path id="o2" class="orbit" d="M 326.1 298.5 A 160 62 38 1 1 73.9 101.5 A 160 62 38 1 1 326.1 298.5" />
+												<path id="o3" class="orbit" d="M 177.7 358.4 A 160 62 98 1 1 222.3 41.6 A 160 62 98 1 1 177.7 358.4" />
+												<circle class="core-glow" cx="200" cy="200" r="40" filter="url(#glow)"><animate attributeName="r" values="38;50;38" dur="5s" repeatCount="indefinite" /><animate attributeName="opacity" values="0.35;0.12;0.35" dur="5s" repeatCount="indefinite" /></circle>
+												<circle class="core" cx="200" cy="200" r="36" />
+												<text class="core-year" x="200" y="207" text-anchor="middle">2026</text>
+												<g class="sat">
+													<circle class="sat-halo" r="11" filter="url(#glow)" />
+													<circle class="sat-dot" r="5" />
+													<text class="sat-label" x="14" y="4">Speakers</text>
+													<animateMotion dur="18s" begin="-2s" repeatCount="indefinite"><mpath href="#o1" /></animateMotion>
+												</g>
+												<g class="sat">
+													<circle class="sat-halo" r="11" filter="url(#glow)" />
+													<circle class="sat-dot" r="5" />
+													<text class="sat-label" x="14" y="4">Schedule</text>
+													<animateMotion dur="22s" begin="-9s" repeatCount="indefinite"><mpath href="#o2" /></animateMotion>
+												</g>
+												<g class="sat">
+													<circle class="sat-halo" r="11" filter="url(#glow)" />
+													<circle class="sat-dot" r="5" />
+													<text class="sat-label" x="14" y="4">Challenges</text>
+													<animateMotion dur="26s" begin="-15s" repeatCount="indefinite"><mpath href="#o3" /></animateMotion>
+												</g>
+											</svg>
+											<div class="next-body">
+												<div class="next-count" data-countdown="2026-10-24T09:00:00+03:00">
+													<p class="next-count-label">Hackathon starts in</p>
+													<div class="next-digits">
+														<div><b data-unit="d">–</b><span>days</span></div>
+														<div><b data-unit="h">–</b><span>hours</span></div>
+														<div><b data-unit="m">–</b><span>minutes</span></div>
+														<div><b data-unit="s">–</b><span>seconds</span></div>
+													</div>
+												</div>
+												<p>Speakers, the full schedule and the hackathon challenges are announced in the coming weeks, here and on <a href="https://www.linkedin.com/company/roqteam/" target="_blank" rel="noopener">RoQTeam’s LinkedIn</a>. Want to give a talk? <a href="mailto:partnerships@roqteam.ro">Write to us</a>. Curious what a track looks like? <a href="breaq-2025.html#hackathon">See last year’s challenges</a>.</p>
+												<p class="next-actions"><a href="https://forms.gle/o1wqxXgzeF2QGtxC7" target="_blank" rel="noopener" class="button primary">Register to hear first</a> <a href="breaq-2026.ics" class="button" type="text/calendar">Add both dates to calendar</a></p>
+												<p class="next-gcal">Google Calendar, one tap: <a href="https://calendar.google.com/calendar/render?action=TEMPLATE&amp;text=BreaQ+2026+Hackathon&amp;dates=20261024T060000Z%2F20261025T120000Z&amp;location=CAMPUS+Research+Institute%2C+Splaiul+Independen%C8%9Bei+313%2C+Bucure%C8%99ti&amp;details=24-hour+quantum+hackathon.+Details%3A+https%3A%2F%2Froqteam.ro%2Fbreaq.html" target="_blank" rel="noopener">hackathon</a> · <a href="https://calendar.google.com/calendar/render?action=TEMPLATE&amp;text=BreaQ+2026+Presentations&amp;dates=20261114T070000Z%2F20261114T160000Z&amp;location=Military+Technical+Academy+Ferdinand+I%2C+Bulevardul+George+Co%C8%99buc+39-49%2C+Bucure%C8%99ti&amp;details=Talks+by+researchers+and+industry+experts.+Details%3A+https%3A%2F%2Froqteam.ro%2Fbreaq.html" target="_blank" rel="noopener">presentations</a> · iPhone and Mac: <a href="webcal://roqteam.ro/breaq-2026.ics">subscribe</a>, it updates itself if the times change</p>
+											</div>
+										</div>
 									</section>
 
 									<!-- Venues -->
-									<section id="venue" class="spotlight style1 section_space">
-										<div class="content">
-											<div class="container">
-												<header>
-													<h3 class="major">Venue</h3>
-												</header>
-												<div class="row">
-													<div class="col-12">
-														<h3>CAMPUS Research Institute</h3>
-														<p>Splaiul Independenței nr. 313, Sector 6, București, 060042</p>
+									<section id="venue" class="section_space">
+										<h3 class="major">Venue</h3>
+										<div class="venues">
+											<div class="venue">
+												<div class="venue-map">
+													<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1424.4616049212914!2d26.046913794546196!3d44.434737374678974!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x40b201c4f8a217a7%3A0x39b9e6d086b107fa!2sCentrul%20CAMPUS!5e0!3m2!1sen!2sro!4v1761516188194!5m2!1sen!2sro" title="Map: CAMPUS Research Institute" loading="lazy" referrerpolicy="no-referrer-when-downgrade" tabindex="-1"></iframe>
+													<div class="venue-info">
+														<p class="venue-when">24–25 October · Hackathon</p>
+														<h4>CAMPUS Research Institute</h4>
+														<p class="venue-addr">Splaiul Independenței nr. 313, Sector 6, București, 060042</p>
+														<p class="venue-links"><a class="ch-more" href="https://www.google.com/maps/search/?api=1&amp;query=Centrul%20CAMPUS%2C%20Splaiul%20Independen%C8%9Bei%20313%2C%20Bucure%C8%99ti" target="_blank" rel="noopener">Open in Google Maps</a><a class="ch-more" href="https://www.google.com/maps/dir/?api=1&amp;destination=Centrul%20CAMPUS%2C%20Splaiul%20Independen%C8%9Bei%20313%2C%20Bucure%C8%99ti" target="_blank" rel="noopener">Directions</a></p>
 													</div>
 												</div>
-												<div id="map" class="col-12">
-													<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1424.4616049212914!2d26.046913794546196!3d44.434737374678974!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x40b201c4f8a217a7%3A0x39b9e6d086b107fa!2sCentrul%20CAMPUS!5e0!3m2!1sen!2sro!4v1761516188194!5m2!1sen!2sro"  style="border:0; height: 100%; width: 100%; display:flex;justify-content: center;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>													
-												</div>
-												<br>
-												<div class="row">
-													<div class="col-12">
-														<h3>Military Technical Academy "Ferdinand I"</h3>
-														<p>Bulevardul George Coşbuc nr. 39-49, Sector 5, București, 050141</p>
+											</div>
+											<div class="venue">
+												<div class="venue-map">
+													<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3388.9287792557307!2d26.08474839551503!3d44.41802049790311!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x40b1ff0b54881f97%3A0xae84d2f47f65a3a7!2sMilitary%20Technical%20Academy%20Ferdinand%20I!5e0!3m2!1sen!2sro!4v1726344783855!5m2!1sen!2sro" title="Map: Military Technical Academy Ferdinand I" loading="lazy" referrerpolicy="no-referrer-when-downgrade" tabindex="-1"></iframe>
+													<div class="venue-info">
+														<p class="venue-when">14 November · Presentations</p>
+														<h4>Military Technical Academy "Ferdinand I"</h4>
+														<p class="venue-addr">Bulevardul George Coşbuc nr. 39-49, Sector 5, București, 050141</p>
+														<p class="venue-links"><a class="ch-more" href="https://www.google.com/maps/search/?api=1&amp;query=Academia%20Tehnic%C4%83%20Militar%C4%83%20Ferdinand%20I%2C%20Bulevardul%20George%20Co%C8%99buc%2039-49%2C%20Bucure%C8%99ti" target="_blank" rel="noopener">Open in Google Maps</a><a class="ch-more" href="https://www.google.com/maps/dir/?api=1&amp;destination=Academia%20Tehnic%C4%83%20Militar%C4%83%20Ferdinand%20I%2C%20Bulevardul%20George%20Co%C8%99buc%2039-49%2C%20Bucure%C8%99ti" target="_blank" rel="noopener">Directions</a></p>
 													</div>
-												</div>
-												<div id="map" class="col-12" style="align-items: center; align-content: center;">
-													<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3388.9287792557307!2d26.08474839551503!3d44.41802049790311!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x40b1ff0b54881f97%3A0xae84d2f47f65a3a7!2sMilitary%20Technical%20Academy%20Ferdinand%20I!5e0!3m2!1sen!2sro!4v1726344783855!5m2!1sen!2sro"  style="border:0;display:flex;justify-content: center; height: 100%; width: 100%;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
 												</div>
 											</div>
 										</div>
 									</section>
 
-
 									<!-- FAQ -->
 									<section id="faq" class="section_space">
-										<div class="container">
-											<header class="major">
-												<h3 class="major">FAQ</h3>
-											</header>
-											<div class="box alt">
-												<div class="row gtr-uniform">
-													<section class="col-6 col-6-medium col-12-xsmall">
-														<span class="icon solid alt major fa-person-booth"></span>
-														<h3>Who is this event for?</h3>
-														<p>This event is for anyone interested in quantum computing, from complete beginners to advanced experts, including students, researchers, professionals, and enthusiasts.</p>
-													</section>
-													<section class="col-6 col-6-medium col-12-xsmall">
-														<span class="icon solid alt major fa-money-bill-wave"></span>
-														<h3>What is the cost of attending the event?</h3>
-														<p>Participation in the event is free, you just have to bring your creativity and good will!</p>
-													</section>
-													<section class="col-6 col-6-medium col-12-xsmall">
-														<span class="icon solid alt major fa-search-location"></span>
-														<h3>Where is the event located?</h3>
-														<p>The event will be held at the Military Technical Academy “Ferdinand I” [Presentation session] and the CAMPUS Research Institute [24-hours Hackathon] in Bucharest, Romania. Check our venue section for more details.</p>
-													</section>
-													<section class="col-6 col-6-medium col-12-xsmall">
-														<span class="icon solid alt major fa-calendar-week"></span>
-														<h3>What are the event dates and times?</h3>
-														<p>The main components of the event will be on November 15 - the presentation session and on November 22, 23 - the 24-hours hackathon. Details can be found on our schedule section.</p>
-													</section>
-													<section class="col-6 col-6-medium col-12-xsmall">
-														<span class="icon solid alt major fa-network-wired"></span>
-														<h3>In what format will the event be held?</h3>
-														<p>The event is structured around two components: a presentation session that intertwines professionalism, creativity, and enthusiasm, and a hackathon, where participants will develop innovative solutions to diverse challenges through quantum technologies.</p>
-													</section>
-													<section class="col-6 col-6-medium col-12-xsmall">
-														<span class="icon brands alt major fa-discord"></span>
-														<h3>How can I contact the organizers for other questions?</h3>
-														<p>Once you are accepted as a participant, you will receive an invitation to the official Discord server. You can also email us at <em>romaniaquantumteam@gmail.com</em>. </p>
-													</section>
-													<section class="col-6 col-6-medium col-12-xsmall">
-														<span class="icon solid alt major fa-laptop"></span>
-														<h3>What should I bring to the in-person hackathon?</h3>
-														<p>Bring a valid ID for registration, your laptop, and be prepared to learn while having fun.</p>
-													</section>
-													<section class="col-6 col-6-medium col-12-xsmall">
-														<span class="icon solid alt major fa-pizza-slice"></span>
-														<h3>Are meals provided during the event?</h3>
-														<p>Yes, meals and refreshments will be provided. Please indicate any dietary restrictions during registration.</p>
-													</section>
-													<!-- <section class="col-6 col-6-medium col-12-xsmall">
-														<span class="icon solid alt major fa-parking"></span>
-														<h3>Is there parking available at the venue?</h3>
-														<p>No, the inside parking is available only for personnel at the Military Technical Academy.</p>
-													</section>
-													<section class="col-6 col-6-medium col-12-xsmall">
-														<span class="icon solid alt major fa-gifts"></span>
-														<h3>Will there be prizes for the winners?</h3>
-														<p>Yes, the prizes will be announced with the kickoff of the Hackathon. There will also be surprise prizes and awards, so stay tuned!</p>
-													</section> -->
-												</div>
-											</div>
-										</div>
+										<h3 class="major">FAQ</h3>
+										<ul class="faq">
+											<li class="faq-item">
+												<button class="faq-q" type="button" aria-expanded="false" aria-controls="faq-a-1">
+													<span class="faq-ic icon solid fa-person-booth" aria-hidden="true"></span>
+													<span class="faq-t">Who is this event for?</span>
+													<span class="faq-chev" aria-hidden="true"></span>
+												</button>
+												<div class="faq-a" id="faq-a-1"><div>
+													<p>Anyone interested in quantum computing, from complete beginners to advanced experts: students, researchers, professionals and enthusiasts.</p>
+												</div></div>
+											</li>
+											<li class="faq-item">
+												<button class="faq-q" type="button" aria-expanded="false" aria-controls="faq-a-2">
+													<span class="faq-ic icon solid fa-money-bill-wave" aria-hidden="true"></span>
+													<span class="faq-t">What does it cost?</span>
+													<span class="faq-chev" aria-hidden="true"></span>
+												</button>
+												<div class="faq-a" id="faq-a-2"><div>
+													<p>Nothing. Participation is free, you just have to bring your creativity and good will.</p>
+												</div></div>
+											</li>
+											<li class="faq-item">
+												<button class="faq-q" type="button" aria-expanded="false" aria-controls="faq-a-3">
+													<span class="faq-ic icon solid fa-search-location" aria-hidden="true"></span>
+													<span class="faq-t">Where is the event?</span>
+													<span class="faq-chev" aria-hidden="true"></span>
+												</button>
+												<div class="faq-a" id="faq-a-3"><div>
+													<p>In Bucharest: the hackathon at the CAMPUS Research Institute and the presentation session at the Military Technical Academy “Ferdinand I”. See the <a href="#venue">venue section</a> for maps.</p>
+												</div></div>
+											</li>
+											<li class="faq-item">
+												<button class="faq-q" type="button" aria-expanded="false" aria-controls="faq-a-4">
+													<span class="faq-ic icon solid fa-calendar-week" aria-hidden="true"></span>
+													<span class="faq-t">When does it happen?</span>
+													<span class="faq-chev" aria-hidden="true"></span>
+												</button>
+												<div class="faq-a" id="faq-a-4"><div>
+													<p>The 24‑hour hackathon is on 24–25 October 2026 at the CAMPUS Research Institute, and the presentation day on 14 November 2026 at the Military Technical Academy “Ferdinand I”. The detailed <a href="#schedule">schedule</a> is published with the line‑up.</p>
+												</div></div>
+											</li>
+											<li class="faq-item">
+												<button class="faq-q" type="button" aria-expanded="false" aria-controls="faq-a-5">
+													<span class="faq-ic icon solid fa-network-wired" aria-hidden="true"></span>
+													<span class="faq-t">What is the format?</span>
+													<span class="faq-chev" aria-hidden="true"></span>
+												</button>
+												<div class="faq-a" id="faq-a-5"><div>
+													<p>Two components: a presentation session that mixes professionalism, creativity and enthusiasm, and a hackathon where teams build solutions to real challenges with quantum technologies.</p>
+												</div></div>
+											</li>
+											<li class="faq-item">
+												<button class="faq-q" type="button" aria-expanded="false" aria-controls="faq-a-6">
+													<span class="faq-ic icon brands fa-discord" aria-hidden="true"></span>
+													<span class="faq-t">How do I contact the organizers?</span>
+													<span class="faq-chev" aria-hidden="true"></span>
+												</button>
+												<div class="faq-a" id="faq-a-6"><div>
+													<p>Accepted participants receive an invitation to the official Discord server. You can also email <a href="mailto:partnerships@roqteam.ro">partnerships@roqteam.ro</a>.</p>
+												</div></div>
+											</li>
+											<li class="faq-item">
+												<button class="faq-q" type="button" aria-expanded="false" aria-controls="faq-a-7">
+													<span class="faq-ic icon solid fa-laptop" aria-hidden="true"></span>
+													<span class="faq-t">What should I bring to the hackathon?</span>
+													<span class="faq-chev" aria-hidden="true"></span>
+												</button>
+												<div class="faq-a" id="faq-a-7"><div>
+													<p>A valid ID for registration, your laptop, and the will to learn while having fun.</p>
+												</div></div>
+											</li>
+											<li class="faq-item">
+												<button class="faq-q" type="button" aria-expanded="false" aria-controls="faq-a-8">
+													<span class="faq-ic icon solid fa-pizza-slice" aria-hidden="true"></span>
+													<span class="faq-t">Are meals provided?</span>
+													<span class="faq-chev" aria-hidden="true"></span>
+												</button>
+												<div class="faq-a" id="faq-a-8"><div>
+													<p>Yes, meals and refreshments are provided. Please indicate any dietary restrictions when you register.</p>
+												</div></div>
+											</li>
+										</ul>
+									</section>
+
+									<!-- Closing call -->
+									<section id="join" class="section_space cta">
+										<h3 class="major">Ready to break the boundaries?</h3>
+										<p>Registration is free and takes a couple of minutes. Accepted participants get the Discord invite and every practical detail from there.</p>
+										<a href="https://forms.gle/o1wqxXgzeF2QGtxC7" target="_blank" rel="noopener" class="button primary">Register</a>
 									</section>
 
 									<!-- <section class="features">
@@ -803,7 +541,7 @@
 							</form> -->
 							<ul class="contact">
 								<li class="icon brands alt fa-linkedin-in"><a href="https://www.linkedin.com/company/roqteam/"><em><b>RoQTeam</b></em></a></li>
-								<li class="icon solid fa-envelope"><a href="mailto:romaniaquantumteam@gmail.com"><em><b>romaniaquantumteam@gmail.com</b></em></a></li>
+								<li class="icon solid fa-envelope"><a href="mailto:partnerships@roqteam.ro"><em><b>partnerships@roqteam.ro</b></em></a></li>
 							</ul>
 							<ul class="copyright">
 								<li>&copy; RoQTeam. All rights reserved.</li><li>Design: HTML5 UP</li>
@@ -821,15 +559,6 @@
 			<script src="assets/js/util.js"></script>
 			<script src="assets/js/main.js"></script>
 			<script src="assets/js/script.js"></script>
-			<script>
-				document.querySelectorAll("tr.clickable").forEach(function(row) {
-				row.addEventListener("click", function() {
-					let nextRow = row.nextElementSibling;
-					if (nextRow && nextRow.classList.contains("abstract-row")) {
-					nextRow.style.display = nextRow.style.display === "table-row" ? "none" : "table-row";
-					}
-				});
-				});
-			</script>
+			<script src="assets/js/breaq.js"></script>
 	</body>
 </html>
