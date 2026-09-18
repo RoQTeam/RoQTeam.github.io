@@ -1552,19 +1552,65 @@
 			color: rgba(255, 255, 255, 0.75);
 		}
 
+		/* the map is a dark picture with our own caption on top; the embed's white
+		   card is cropped away above the frame, Google's attribution stays visible below */
 		.venue-map {
-			aspect-ratio: 4 / 3;
+			position: relative;
+			aspect-ratio: 4 / 3.4;
 			border-radius: 5px;
 			overflow: hidden;
 			background: #262838;
 		}
 
 			.venue-map iframe {
-				display: block;
+				position: absolute;
+				left: 0;
+				top: -18%;
 				width: 100%;
-				height: 100%;
+				height: 118%;
 				border: 0;
+				pointer-events: none;
+				-webkit-filter: invert(0.92) hue-rotate(185deg) saturate(0.55) brightness(0.82) contrast(1.05);
+				filter: invert(0.92) hue-rotate(185deg) saturate(0.55) brightness(0.82) contrast(1.05);
+				transition: filter 0.5s var(--bq-ease-out), -webkit-filter 0.5s var(--bq-ease-out);
 			}
+
+			.venue-map:hover iframe {
+				-webkit-filter: invert(0.92) hue-rotate(185deg) saturate(0.7) brightness(0.95) contrast(1.05);
+				filter: invert(0.92) hue-rotate(185deg) saturate(0.7) brightness(0.95) contrast(1.05);
+			}
+
+			.venue-info {
+				position: absolute;
+				left: 0;
+				right: 0;
+				top: 0;
+				padding: 1.1em 1.2em 2.4em 1.2em;
+				background: linear-gradient(to bottom, rgba(38, 40, 56, 0.97) 0%, rgba(38, 40, 56, 0.9) 55%, rgba(38, 40, 56, 0) 100%);
+			}
+
+				.venue-info h4 {
+					margin: 0 0 0.35em 0;
+				}
+
+				.venue-info .venue-when {
+					margin: 0 0 0.4em 0;
+				}
+
+				.venue-info .venue-addr {
+					margin: 0 0 0.6em 0;
+				}
+
+				.venue-links {
+					display: flex;
+					flex-wrap: wrap;
+					gap: 0.4em 1.5em;
+					margin: 0;
+				}
+
+					.venue-links .ch-more {
+						margin-top: 0;
+					}
 
 	@media screen and (max-width: 736px) {
 		.venues { grid-template-columns: 1fr; }
