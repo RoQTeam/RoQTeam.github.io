@@ -519,6 +519,73 @@
 		font-size: 0.85em;
 	}
 
+	/* "What's next": one quiet list of what is still to be announced */
+	@keyframes next-pulse {
+		0%, 100% { box-shadow: 0 0 0 0 rgba(255, 140, 0, 0.45); }
+		60%      { box-shadow: 0 0 0 6px rgba(255, 140, 0, 0); }
+	}
+
+	.next {
+		list-style: none;
+		margin: 0 0 2em 0;
+		padding: 0;
+		border-top: 1px solid var(--bq-line);
+	}
+
+		.next li {
+			display: grid;
+			grid-template-columns: 8.5em minmax(0, 1fr);
+			column-gap: 1.5em;
+			align-items: baseline;
+			padding: 1em 0;
+			border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+		}
+
+		.next-k {
+			position: relative;
+			padding-left: 1.2em;
+			font-family: Raleway, Helvetica, sans-serif;
+			font-size: 0.6em;
+			font-weight: 700;
+			letter-spacing: 0.22em;
+			text-transform: uppercase;
+			color: var(--bq-hot);
+		}
+
+			.next-k::before {
+				content: "";
+				position: absolute;
+				left: 0;
+				top: 0.35em;
+				width: 6px;
+				height: 6px;
+				border-radius: 50%;
+				background: var(--bq-hot);
+				animation: next-pulse 2.8s ease-out infinite;
+			}
+
+			.next li:nth-child(2) .next-k::before { animation-delay: 0.9s; }
+			.next li:nth-child(3) .next-k::before { animation-delay: 1.8s; }
+
+		.next-v {
+			font-size: 0.88em;
+			line-height: 1.55;
+			color: rgba(255, 255, 255, 0.88);
+		}
+
+	.next, .next * {
+		text-align: left;
+	}
+
+	@media screen and (max-width: 736px) {
+
+		.next li {
+			grid-template-columns: 1fr;
+			row-gap: 0.35em;
+		}
+
+	}
+
 	/* ghost cards carrying a faint drawing instead of the silhouette (hackathon tracks) */
 	.soon-grid.soon-grid--3 {
 		grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2501,7 +2568,8 @@
 		}
 
 		.soon-card::after,
-		.soon-bar::after {
+		.soon-bar::after,
+		.next-k::before {
 			animation: none;
 		}
 
