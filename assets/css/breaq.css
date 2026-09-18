@@ -519,69 +519,147 @@
 		font-size: 0.85em;
 	}
 
-	/* "What's next": one quiet list of what is still to be announced */
-	@keyframes next-pulse {
-		0%, 100% { box-shadow: 0 0 0 0 rgba(255, 140, 0, 0.45); }
-		60%      { box-shadow: 0 0 0 6px rgba(255, 140, 0, 0); }
-	}
-
-	.next {
-		list-style: none;
+	/* "What's next": three announcements orbiting the year, and a live countdown */
+	.next-wrap {
+		display: grid;
+		grid-template-columns: 20em minmax(0, 1fr);
+		gap: 2.5em;
+		align-items: center;
 		margin: 0 0 2em 0;
-		padding: 0;
-		border-top: 1px solid var(--bq-line);
 	}
 
-		.next li {
-			display: grid;
-			grid-template-columns: 8.5em minmax(0, 1fr);
-			column-gap: 1.5em;
-			align-items: baseline;
-			padding: 1em 0;
-			border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+	.orbits {
+		display: block;
+		width: 100%;
+		height: auto;
+		overflow: visible;
+	}
+
+		.orbits .orbit {
+			fill: none;
+			stroke: rgba(255, 255, 255, 0.16);
+			stroke-width: 1;
 		}
 
-		.next-k {
-			position: relative;
-			padding-left: 1.2em;
+		.orbits .core {
+			fill: rgba(76, 92, 150, 0.55);
+			stroke: rgba(255, 255, 255, 0.28);
+			stroke-width: 1;
+		}
+
+		.orbits .core-glow {
+			fill: var(--bq-hot);
+			opacity: 0.3;
+		}
+
+		.orbits .core-year {
 			font-family: Raleway, Helvetica, sans-serif;
-			font-size: 0.6em;
+			font-size: 22px;
 			font-weight: 700;
-			letter-spacing: 0.22em;
+			letter-spacing: 3px;
+			fill: #ffffff;
+		}
+
+		.orbits .sat-dot {
+			fill: var(--bq-hot);
+		}
+
+		.orbits .sat-halo {
+			fill: var(--bq-hot);
+			opacity: 0.35;
+		}
+
+		.orbits .sat-label {
+			font-family: Raleway, Helvetica, sans-serif;
+			font-size: 12px;
+			font-weight: 700;
+			letter-spacing: 2.5px;
+			text-transform: uppercase;
+			fill: #ffffff;
+			paint-order: stroke;
+			stroke: rgba(46, 49, 65, 0.85);
+			stroke-width: 4px;
+			stroke-linejoin: round;
+		}
+
+	.next-body p {
+		font-size: 0.92em;
+		line-height: 1.6;
+	}
+
+	.next-count {
+		margin: 0 0 1.5em 0;
+	}
+
+		.next-count-label {
+			margin: 0 0 0.5em 0;
+			font-family: Raleway, Helvetica, sans-serif;
+			font-size: 0.55em;
+			font-weight: 700;
+			letter-spacing: 0.25em;
 			text-transform: uppercase;
 			color: var(--bq-hot);
 		}
 
-			.next-k::before {
-				content: "";
-				position: absolute;
-				left: 0;
-				top: 0.35em;
-				width: 6px;
-				height: 6px;
-				border-radius: 50%;
-				background: var(--bq-hot);
-				animation: next-pulse 2.8s ease-out infinite;
-			}
-
-			.next li:nth-child(2) .next-k::before { animation-delay: 0.9s; }
-			.next li:nth-child(3) .next-k::before { animation-delay: 1.8s; }
-
-		.next-v {
-			font-size: 0.88em;
-			line-height: 1.55;
-			color: rgba(255, 255, 255, 0.88);
+		.next-digits {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 0.5em 1.75em;
 		}
 
-	.next, .next * {
+			.next-digits b {
+				display: block;
+				min-width: 2ch;
+				font-family: Raleway, Helvetica, sans-serif;
+				font-size: 2.3em;
+				font-weight: 200;
+				letter-spacing: 0.04em;
+				line-height: 1;
+				font-variant-numeric: tabular-nums;
+				color: #ffffff;
+			}
+
+			.next-digits span {
+				display: block;
+				margin-top: 0.35em;
+				font-family: Raleway, Helvetica, sans-serif;
+				font-size: 0.5em;
+				font-weight: 700;
+				letter-spacing: 0.22em;
+				text-transform: uppercase;
+				color: var(--bq-fg-light);
+			}
+
+			@keyframes digit-tick {
+				0%   { opacity: 0.25; transform: translateY(-0.2em); }
+				100% { opacity: 1; transform: none; }
+			}
+
+			.next-digits b.is-tick {
+				animation: digit-tick 0.35s var(--bq-ease-out);
+			}
+
+	.next-wrap, .next-wrap * {
 		text-align: left;
+	}
+
+	@media screen and (max-width: 980px) {
+
+		.next-wrap {
+			grid-template-columns: 1fr;
+			gap: 1.5em;
+		}
+
+		.orbits {
+			max-width: 18em;
+		}
+
 	}
 
 	@media screen and (max-width: 736px) {
 
-		.next li {
-			grid-template-columns: 1fr;
-			row-gap: 0.35em;
+		.next-digits b {
+			font-size: 1.9em;
 		}
 
 	}
@@ -2569,7 +2647,7 @@
 
 		.soon-card::after,
 		.soon-bar::after,
-		.next-k::before {
+		.next-digits b.is-tick {
 			animation: none;
 		}
 

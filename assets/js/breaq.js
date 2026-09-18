@@ -205,6 +205,54 @@
 	}
 
 	/* ------------------------------------------------------------ */
+	/* What's next: countdown to the hackathon, orbit animation       */
+	/* ------------------------------------------------------------ */
+
+	forEach(document.querySelectorAll('[data-countdown]'), function (box) {
+		var target = new Date(box.getAttribute('data-countdown')).getTime();
+		var label = box.querySelector('.next-count-label');
+		var units = {};
+		forEach(box.querySelectorAll('[data-unit]'), function (el) { units[el.getAttribute('data-unit')] = el; });
+		if (isNaN(target)) return;
+
+		function show(el, value) {
+			var text = String(value);
+			if (el.textContent === text) return;
+			el.textContent = text;
+			el.classList.remove('is-tick');
+			void el.offsetWidth;
+			el.classList.add('is-tick');
+		}
+
+		function update() {
+			var left = target - Date.now();
+			if (left <= 0) {
+				if (label) label.textContent = 'The hackathon is on';
+				forEach(Object.keys(units), function (k) { show(units[k], k === 'd' ? '0' : '00'); });
+				return false;
+			}
+			var sec = Math.floor(left / 1000);
+			var d = Math.floor(sec / 86400), h = Math.floor(sec % 86400 / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60;
+			if (units.d) show(units.d, d);
+			if (units.h) show(units.h, pad2(h));
+			if (units.m) show(units.m, pad2(m));
+			if (units.s) show(units.s, pad2(s));
+			return true;
+		}
+
+		if (update()) {
+			var timer = window.setInterval(function () { if (!update()) window.clearInterval(timer); }, 1000);
+		}
+	});
+
+	// The orbit animation is SMIL inside the SVG: pause it for people who prefer reduced motion.
+	if (reduceMotion) {
+		forEach(document.querySelectorAll('svg.orbits'), function (svg) {
+			if (svg.pauseAnimations) svg.pauseAnimations();
+		});
+	}
+
+	/* ------------------------------------------------------------ */
 	/* FAQ                                                            */
 	/* ------------------------------------------------------------ */
 
