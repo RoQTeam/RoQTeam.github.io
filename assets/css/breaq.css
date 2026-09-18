@@ -2605,6 +2605,140 @@
 	}
 
 /* ------------------------------------------------------------------ */
+/* Motion system (body.page-motion): one orchestrated hero entrance,   */
+/* sections that rise in as they scroll into view, small state changes */
+/* ------------------------------------------------------------------ */
+
+	/* reading progress under the top bar */
+	.progress {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 2px;
+		z-index: 10001;
+		pointer-events: none;
+	}
+
+		.progress i {
+			display: block;
+			height: 100%;
+			background: var(--bq-hot);
+			transform: scaleX(0);
+			transform-origin: left;
+			transition: transform 0.15s linear;
+		}
+
+	/* the top bar solidifies once the page has scrolled */
+	.page-motion #header {
+		transition: background-color 0.35s var(--bq-ease-out), box-shadow 0.35s var(--bq-ease-out);
+	}
+
+		.page-motion #header.is-scrolled {
+			background-color: rgba(38, 40, 56, 0.94);
+			box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28);
+		}
+
+	/* the menu slides open instead of popping */
+	.page-motion #header nav .dropdown-content,
+	.page-motion #header nav .dropdown:hover .dropdown-content {
+		display: block;
+		visibility: hidden;
+		opacity: 0;
+		transform: translateY(-0.5em);
+		pointer-events: none;
+		transition: opacity 0.25s var(--bq-ease-out), transform 0.35s var(--bq-ease-out), visibility 0s linear 0.35s;
+	}
+
+		.page-motion #header nav .dropdown.is-open .dropdown-content {
+			visibility: visible;
+			opacity: 1;
+			transform: none;
+			pointer-events: auto;
+			transition-delay: 0s;
+		}
+
+	/* hero: text rises line by line, the drawing settles into place */
+	@keyframes bq-rise {
+		from { opacity: 0; transform: translateY(1em); }
+		to   { opacity: 1; transform: none; }
+	}
+
+	@keyframes bq-art-in {
+		from { opacity: 0; transform: scale(0.86) rotate(-5deg); }
+		to   { opacity: 1; transform: none; }
+	}
+
+	.page-motion .ch-hero-text > * {
+		animation: bq-rise 0.8s var(--bq-ease-out) both;
+	}
+
+		.page-motion .ch-hero-text > :nth-child(1) { animation-delay: 0.05s; }
+		.page-motion .ch-hero-text > :nth-child(2) { animation-delay: 0.15s; }
+		.page-motion .ch-hero-text > :nth-child(3) { animation-delay: 0.3s; }
+		.page-motion .ch-hero-text > :nth-child(4) { animation-delay: 0.45s; }
+
+	.page-motion .ch-hero-art {
+		animation: bq-art-in 1.1s var(--bq-ease-out) 0.35s both;
+	}
+
+		/* the drawing leans towards the mouse (set by breaq.js) */
+		.page-motion .ch-hero-art img {
+			transform: perspective(900px) rotateY(var(--rx, 0deg)) rotateX(var(--ry, 0deg));
+			transition: transform 0.4s var(--bq-ease-out);
+			will-change: transform;
+		}
+
+	/* scroll reveals: breaq.js marks elements and staggers children with --d */
+	.page-motion [data-reveal] {
+		opacity: 0;
+		transform: translateY(1.1em);
+		transition: opacity 0.75s var(--bq-ease-out), transform 0.75s var(--bq-ease-out);
+		transition-delay: calc(var(--d, 0) * 1ms);
+	}
+
+		.page-motion [data-reveal].is-in {
+			opacity: 1;
+			transform: none;
+		}
+
+	/* the orange rule draws itself under a heading as it appears */
+	.page-motion h3.major {
+		position: relative;
+	}
+
+		.page-motion h3.major::after {
+			content: "";
+			position: absolute;
+			left: 0;
+			bottom: -2px;
+			width: 4.5em;
+			height: 2px;
+			background: var(--bq-hot);
+			transform: scaleX(0);
+			transform-origin: left;
+			transition: transform 0.7s var(--bq-ease-out) 0.3s;
+		}
+
+		.page-motion h3.major.is-in::after {
+			transform: scaleX(1);
+		}
+
+	/* tiles and cards get a little lift on hover, everywhere the same */
+	.page-motion .logos--tiles li,
+	.page-motion .logos--rank .tile,
+	.page-motion .res-item,
+	.page-motion .gal-slide {
+		transition: transform 0.4s var(--bq-ease-out), box-shadow 0.4s var(--bq-ease-out), opacity 0.5s var(--bq-ease-out), border-color 0.25s var(--bq-ease-out), background-color 0.25s var(--bq-ease-out);
+	}
+
+		.page-motion .logos--tiles li:hover,
+		.page-motion .logos--rank .tile:hover {
+			transform: translateY(-3px);
+			box-shadow: 0 14px 30px rgba(0, 0, 0, 0.3);
+		}
+
+/* ------------------------------------------------------------------ */
 /* Reduced motion                                                       */
 /* ------------------------------------------------------------------ */
 
@@ -2647,8 +2781,26 @@
 
 		.soon-card::after,
 		.soon-bar::after,
-		.next-digits b.is-tick {
+		.next-digits b.is-tick,
+		.page-motion .ch-hero-text > *,
+		.page-motion .ch-hero-art {
 			animation: none;
+		}
+
+		.page-motion [data-reveal] {
+			opacity: 1;
+			transform: none;
+			transition: none;
+		}
+
+		.page-motion h3.major::after {
+			transform: scaleX(1);
+			transition: none;
+		}
+
+		.page-motion .ch-hero-art img {
+			transform: none;
+			transition: none;
 		}
 
 		/* flip cards crossfade instead of turning */

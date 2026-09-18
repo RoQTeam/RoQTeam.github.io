@@ -253,6 +253,91 @@
 	}
 
 	/* ------------------------------------------------------------ */
+	/* Motion system (body.page-motion)                               */
+	/* ------------------------------------------------------------ */
+
+	if (document.body.classList.contains('page-motion')) {
+
+		var header = document.getElementById('header');
+		var progress = document.querySelector('.progress i');
+		var motionTick = null;
+
+		var pending = [];   // reveal elements not yet shown; a fallback in case the observer is late
+
+		function onScroll() {
+			motionTick = null;
+			var y = window.scrollY;
+			if (header) header.classList.toggle('is-scrolled', y > 40);
+			if (progress) {
+				var max = document.documentElement.scrollHeight - window.innerHeight;
+				progress.style.transform = 'scaleX(' + (max > 0 ? Math.min(1, y / max) : 0) + ')';
+			}
+			if (pending.length) {
+				var limit = window.innerHeight * 0.92;
+				pending = pending.filter(function (el) {
+					if (el.classList.contains('is-in')) return false;
+					if (el.getBoundingClientRect().top < limit) { el.classList.add('is-in'); return false; }
+					return true;
+				});
+			}
+		}
+
+		window.addEventListener('scroll', function () {
+			if (motionTick === null) motionTick = window.requestAnimationFrame(onScroll);
+		}, { passive: true });
+		window.addEventListener('resize', onScroll);
+		onScroll();
+
+		// Hero drawing leans towards the pointer (hover devices only).
+		var hero = document.querySelector('#wrapper > header');
+		var art = document.querySelector('.ch-hero-art img');
+		if (hero && art && canHover && !reduceMotion) {
+			hero.addEventListener('mousemove', function (ev) {
+				var r = hero.getBoundingClientRect();
+				var dx = (ev.clientX - (r.left + r.width / 2)) / r.width;
+				var dy = (ev.clientY - (r.top + r.height / 2)) / r.height;
+				art.style.setProperty('--rx', (dx * 14).toFixed(1) + 'deg');
+				art.style.setProperty('--ry', (-dy * 10).toFixed(1) + 'deg');
+			});
+			hero.addEventListener('mouseleave', function () {
+				art.style.setProperty('--rx', '0deg');
+				art.style.setProperty('--ry', '0deg');
+			});
+		}
+
+		// Scroll reveals: headings and blocks rise in as they enter; grouped items stagger.
+		if (!reduceMotion && 'IntersectionObserver' in window) {
+			var revealIO = new IntersectionObserver(function (entries) {
+				forEach(entries, function (entry) {
+					if (entry.isIntersecting) {
+						entry.target.classList.add('is-in');
+						revealIO.unobserve(entry.target);
+					}
+				});
+			}, { rootMargin: '0px 0px -8% 0px' });
+
+			function reveal(el, delay) {
+				el.setAttribute('data-reveal', '');
+				if (delay) el.style.setProperty('--d', delay);
+				revealIO.observe(el);
+				pending.push(el);
+			}
+
+			var singles = ':scope > h3.major, :scope > p, :scope > .button, :scope > a.special, :scope > .sp-hint, :scope > .tier, :scope > .logos-note, :scope > .gal, :scope > h4';
+			var groups = ':scope > .glance, :scope > .kit, :scope > .logos, :scope > .venues, :scope > .faq, :scope > .ch-grid, :scope > .next-wrap, :scope > .soon-grid, :scope > .res, :scope > .ch-cols, :scope > .ch-list';
+
+			forEach(document.querySelectorAll('.wrapper .inner > section'), function (section) {
+				// only what is below the first screen: the hero has its own entrance
+				if (section.getBoundingClientRect().bottom < window.innerHeight * 0.6 && window.scrollY === 0) return;
+				forEach(section.querySelectorAll(singles), function (el) { reveal(el, 0); });
+				forEach(section.querySelectorAll(groups), function (box) {
+					forEach(box.children, function (child, i) { reveal(child, Math.min(i, 10) * 70); });
+				});
+			});
+		}
+	}
+
+	/* ------------------------------------------------------------ */
 	/* FAQ                                                            */
 	/* ------------------------------------------------------------ */
 
