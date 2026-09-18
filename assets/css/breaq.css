@@ -66,30 +66,79 @@
 		color: var(--bq-fg-light);
 	}
 
-	/* sponsor tiers: a small label above each group, tile size by tier */
+	/* sponsors: one ranked row (gold spans two columns, silver one), then equal supporters */
+	.logos.logos--rank {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		align-items: stretch;
+		margin-bottom: 2.25em;
+	}
+
+		.logos.logos--rank li {
+			display: grid;
+			grid-template-rows: minmax(0, 1fr) auto;
+			row-gap: 0.55em;
+			align-items: stretch;
+			justify-content: stretch;
+		}
+
+		.logos.logos--rank .is-gold {
+			grid-column: span 2;
+		}
+
+		.logos.logos--rank .tile {
+			display: block;
+			min-height: 0;
+			border-radius: 5px;
+			overflow: hidden;
+			background: #262838;
+		}
+
+		.logos.logos--rank .is-silver .tile {
+			aspect-ratio: 1200 / 630;
+		}
+
+		.logos.logos--rank .tile img {
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+		}
+
+	.tier-tag,
 	.tier {
-		margin: 0 0 0.8em 0;
+		font-family: Raleway, Helvetica, sans-serif;
 		font-size: 0.55em;
+		font-weight: 700;
 		letter-spacing: 0.25em;
+		text-transform: uppercase;
 		color: var(--bq-hot);
 	}
 
-		.logos + .tier {
-			margin-top: 0.25em;
+	.tier {
+		margin: 0 0 0.8em 0;
+	}
+
+		.tier span {
+			margin-left: 0.6em;
+			font-weight: 200;
+			letter-spacing: 0.08em;
+			text-transform: none;
+			color: var(--bq-fg-light);
 		}
 
-	.logos--tiles.logos--2 {
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-		gap: 1.25em;
-	}
-
-	.logos--tiles.logos--3 {
-		grid-template-columns: repeat(3, minmax(0, 1fr));
-	}
-
 	@media screen and (max-width: 736px) {
-		.logos--tiles.logos--2 { grid-template-columns: 1fr; }
-		.logos--tiles.logos--3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+		.logos.logos--rank {
+			grid-template-columns: 1fr;
+		}
+
+			.logos.logos--rank .is-gold {
+				grid-column: auto;
+			}
+
+			.logos.logos--rank .is-gold .tile {
+				aspect-ratio: 1640 / 420;
+			}
+
 	}
 
 		.ch-hero-art {
