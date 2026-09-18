@@ -52,18 +52,26 @@
 
 	/* hero: text on the left, the challenge drawing on the right (a transparent
 	   line-art copy in images/opt/*-line.webp, so it floats on the page) */
-	.page-challenge #wrapper > header .inner {
+	.page-challenge #wrapper > header .inner,
+	.page-art #wrapper > header .inner {
 		display: grid;
 		grid-template-columns: minmax(0, 1fr) minmax(11em, 16em);
 		gap: 2.5em;
 		align-items: center;
 	}
 
+	.logos-note {
+		margin: -0.75em 0 2em 0;
+		font-size: 0.75em;
+		color: var(--bq-fg-light);
+	}
+
 		.ch-hero-art {
 			margin: 0;
 		}
 
-		.page-challenge .hero-row .button {
+		.page-challenge .hero-row .button,
+		.page-art .hero-row .button {
 			margin-left: 0;
 		}
 
@@ -283,7 +291,8 @@
 
 	@media screen and (max-width: 980px) {
 
-		.page-challenge #wrapper > header .inner {
+		.page-challenge #wrapper > header .inner,
+		.page-art #wrapper > header .inner {
 			grid-template-columns: 1fr;
 			gap: 1.5em;
 		}
