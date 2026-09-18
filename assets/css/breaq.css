@@ -519,6 +519,31 @@
 		font-size: 0.85em;
 	}
 
+	/* ghost cards carrying a faint drawing instead of the silhouette (hackathon tracks) */
+	.soon-grid.soon-grid--3 {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 2em;
+	}
+
+	.soon-card.soon-card--art {
+		background: #262838;
+	}
+
+		.soon-card--art img {
+			position: absolute;
+			left: 18%;
+			top: 14%;
+			width: 64%;
+			height: 64%;
+			object-fit: contain;
+			opacity: 0.16;
+		}
+
+	@media screen and (max-width: 736px) {
+		.soon-grid.soon-grid--3 { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75em; }
+		.soon-grid.soon-grid--3 > :nth-child(3) { display: none; }
+	}
+
 	/* ghost timeline */
 	.soon-tl {
 		position: relative;
@@ -1108,7 +1133,10 @@
 			}
 
 		.glance dt {
-			margin: 0 0 0.45em 0;
+			display: flex;
+			align-items: center;
+			gap: 0.7em;
+			margin: 0 0 0.6em 0;
 			font-family: Raleway, Helvetica, sans-serif;
 			font-size: 0.55em;
 			font-weight: 700;
@@ -1116,6 +1144,21 @@
 			text-transform: uppercase;
 			color: var(--bq-hot);
 		}
+
+			.glance-ic {
+				display: grid;
+				place-items: center;
+				width: 2.4em;
+				height: 2.4em;
+				border-radius: 50%;
+				border: 1.5px solid rgba(255, 140, 0, 0.55);
+				font-size: 1.25em;
+				letter-spacing: 0;
+			}
+
+				.glance-ic::before {
+					font-size: 0.95em;
+				}
 
 		.glance dd {
 			margin: 0;
@@ -1719,12 +1762,24 @@
 		transform: scaleX(1);
 	}
 
+	/* the core team is larger than a row of four: five across, smaller cards */
+	.sp-grid.sp-grid--dense {
+		grid-template-columns: repeat(5, minmax(0, 1fr));
+		gap: 0.85em;
+	}
+
+		.sp-grid--dense .sp-name { font-size: 0.64em; }
+		.sp-grid--dense .sp-role { font-size: 0.56em; }
+		.sp-grid--dense .sp-info { padding: 2.25em 0.8em 0.7em 0.8em; }
+
 	@media screen and (max-width: 980px) {
 		.sp-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+		.sp-grid.sp-grid--dense { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 	}
 
 	@media screen and (max-width: 736px) {
-		.sp-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75em; }
+		.sp-grid,
+		.sp-grid.sp-grid--dense { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75em; }
 		.sp-info { padding: 2.25em 0.8em 0.7em 0.8em; }
 		.sp-name { font-size: 0.66em; }
 		.sp-role { font-size: 0.58em; }
