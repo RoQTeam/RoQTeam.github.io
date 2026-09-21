@@ -20,6 +20,10 @@
 	.sp-card, .sp-card *,
 	.sched, .sched *,
 	.gal, .gal *,
+	.catalog, .catalog *,
+	.mosaic, .mosaic *,
+	.lightbox, .lightbox *,
+	.chap-nav, .chap-nav *,
 	.hero-row, .hero-row *,
 	.glance, .glance *,
 	.xp, .xp *,
@@ -32,6 +36,11 @@
 	.soon-tl, .soon-tl *,
 	.soon-cta {
 		text-align: left;
+	}
+
+	/* the hidden attribute always wins, even over a display set below (lightbox, countdown digits, form states) */
+	[hidden] {
+		display: none !important;
 	}
 
 /* ------------------------------------------------------------------ */
@@ -66,43 +75,6 @@
 		color: var(--bq-fg-light);
 	}
 
-	/* sponsors: one ranked row (gold spans two columns, silver one), then equal supporters */
-	.logos.logos--rank {
-		grid-template-columns: repeat(3, minmax(0, 1fr));
-		align-items: stretch;
-		margin-bottom: 2.25em;
-	}
-
-		.logos.logos--rank li {
-			display: grid;
-			grid-template-rows: minmax(0, 1fr) auto;
-			row-gap: 0.55em;
-			align-items: stretch;
-			justify-content: stretch;
-		}
-
-		.logos.logos--rank .is-gold {
-			grid-column: span 2;
-		}
-
-		.logos.logos--rank .tile {
-			display: block;
-			min-height: 0;
-			border-radius: 5px;
-			overflow: hidden;
-			background: #262838;
-		}
-
-		.logos.logos--rank .is-silver .tile {
-			aspect-ratio: 1200 / 630;
-		}
-
-		.logos.logos--rank .tile img {
-			width: 100%;
-			height: 100%;
-			object-fit: cover;
-		}
-
 	.tier-tag,
 	.tier {
 		font-family: Raleway, Helvetica, sans-serif;
@@ -125,21 +97,6 @@
 			color: var(--bq-fg-light);
 		}
 
-	@media screen and (max-width: 736px) {
-
-		.logos.logos--rank {
-			grid-template-columns: 1fr;
-		}
-
-			.logos.logos--rank .is-gold {
-				grid-column: auto;
-			}
-
-			.logos.logos--rank .is-gold .tile {
-				aspect-ratio: 1640 / 420;
-			}
-
-	}
 
 		.ch-hero-art {
 			margin: 0;
@@ -1453,22 +1410,124 @@
 			object-fit: contain;
 		}
 
+	/* tiles: one dark surface for every logo (transparent exports in images/opt/logos),
+	   the logo contained inside with air around it; a tile is a link where we have one */
 	.logos--tiles {
 		grid-template-columns: repeat(4, minmax(0, 1fr));
 	}
 
 		.logos--tiles li {
+			display: block;
 			aspect-ratio: 1200 / 630;
-			border-radius: 5px;
-			overflow: hidden;
-			background: #262838;
 		}
 
-		.logos--tiles img {
-			width: 100%;
-			height: 100%;
-			object-fit: cover;
+	.logos .tile {
+		position: relative;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		box-sizing: border-box;
+		width: 100%;
+		height: 100%;
+		padding: 1.5em 1.75em;
+		border: solid 1px var(--bq-line);
+		border-radius: 5px;
+		background: var(--tile-bg, rgba(255, 255, 255, 0.035));
+		transition: border-color 0.25s ease, background-color 0.25s ease;
+	}
+
+		/* a brand that must keep its own background: the li sets --tile-bg */
+		.logos .tile--brand .tile {
+			border-color: transparent;
 		}
+
+		.logos .tile img {
+			width: auto;
+			height: auto;
+			max-width: 100%;
+			max-height: 100%;
+			object-fit: contain;
+		}
+
+		/* the K in the small Kfea file is tiny; do not blow it up */
+		.logos .tile img[width="86"] {
+			max-height: 70%;
+		}
+
+		.logos a.tile:hover,
+		.logos a.tile:focus-visible {
+			border-color: var(--bq-hot);
+			background: rgba(255, 140, 0, 0.06);
+			outline: none;
+		}
+
+	/* sponsors: one ranked row on the supporters' four-column grid, then equal supporters.
+	   Gold spans three columns; silver takes one at full row height; bronze takes one at the
+	   size of a supporter tile and sits at the top, so the tile size follows the tier.
+	   The tier's colour is the line along the tile's top edge and the tag in its corner. */
+	.logos.logos--rank {
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+		align-items: stretch;
+		margin-bottom: 2.25em;
+	}
+
+		.logos.logos--rank li {
+			display: block;
+			--tier: var(--bq-fg-light);
+		}
+
+		.logos.logos--rank .is-gold {
+			grid-column: span 3;
+			--tier: #e0b74f;
+		}
+
+		.logos.logos--rank .is-silver {
+			--tier: #c9cfdb;
+		}
+
+		.logos.logos--rank .is-bronze {
+			--tier: #c98c58;
+		}
+
+		.logos.logos--rank .is-silver {
+			aspect-ratio: 3 / 2;
+		}
+
+		.logos.logos--rank .is-bronze {
+			align-self: start;
+			aspect-ratio: 3 / 2;
+		}
+
+		.logos.logos--rank .tile {
+			padding: 3em 2.5em 2.25em;
+			overflow: hidden;
+		}
+
+			.logos.logos--rank .is-bronze .tile {
+				padding: 2.6em 1.5em 1.4em;
+			}
+
+			.logos.logos--rank .tile::before {
+				content: "";
+				position: absolute;
+				top: 0;
+				left: 0;
+				right: 0;
+				height: 2px;
+				background: var(--tier);
+			}
+
+			.logos.logos--rank .tier-tag {
+				position: absolute;
+				top: 1.1em;
+				left: 1.5em;
+				color: var(--tier);
+			}
+
+			/* an absolute cap: a percentage here would let the logo's natural size set the row height */
+			.logos.logos--rank .is-gold .tile img {
+				max-height: 6.5em;
+			}
 
 	@media screen and (max-width: 736px) {
 
@@ -1479,6 +1538,24 @@
 		.logos--tiles {
 			grid-template-columns: repeat(2, minmax(0, 1fr));
 		}
+
+		.logos.logos--rank {
+			grid-template-columns: 1fr;
+		}
+
+			.logos.logos--rank .is-gold {
+				grid-column: auto;
+			}
+
+			.logos.logos--rank .is-gold,
+			.logos.logos--rank .is-silver {
+				aspect-ratio: 2 / 1;
+			}
+
+			/* half width, like a supporter tile on a phone */
+			.logos.logos--rank .is-bronze {
+				width: calc(50% - 0.5em);
+			}
 
 	}
 
@@ -1975,6 +2052,52 @@
 		.sp-grid--dense .sp-name { font-size: 0.64em; }
 		.sp-grid--dense .sp-role { font-size: 0.56em; }
 		.sp-grid--dense .sp-info { padding: 2.25em 0.8em 0.7em 0.8em; }
+
+	/* the core team shows its roles outright: four people, nothing to discover, so the
+	   cards are not interactive. Taller than square so the face stays clear of the caption.
+	   The photo keeps the grey resting state and colours on hover, purely decorative. */
+	.sp-grid--open .sp-card {
+		aspect-ratio: 4 / 5;
+		cursor: default;
+	}
+
+		.sp-grid--open .sp-more {
+			grid-template-rows: 1fr;
+		}
+
+		.sp-grid--open .sp-role {
+			opacity: 1;
+			transform: none;
+		}
+
+		.sp-grid--open .sp-card:hover .sp-photo img {
+			transform: scale(1.08);
+		}
+
+	/* two narrow columns: the caption sits under the photo instead of over it */
+	@media screen and (max-width: 736px) {
+
+		.sp-grid--open .sp-card {
+			aspect-ratio: auto;
+		}
+
+			.sp-grid--open .sp-photo {
+				position: relative;
+				aspect-ratio: 1 / 1;
+			}
+
+				.sp-grid--open .sp-photo img {
+					position: absolute;
+					inset: 0;
+				}
+
+			.sp-grid--open .sp-info {
+				position: static;
+				padding: 0.7em 0.8em 0.8em 0.8em;
+				background: none;
+			}
+
+	}
 
 	@media screen and (max-width: 980px) {
 		.sp-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -2646,6 +2769,17 @@
 				box-shadow: inset 0 0 0 2px var(--bq-hot);
 			}
 
+			/* play/pause shows one icon at a time; .gal.is-playing is set by breaq.js */
+			.gal-play .ic-play,
+			.gal.is-playing .gal-play .ic-pause {
+				display: block;
+			}
+
+			.gal-play .ic-pause,
+			.gal.is-playing .gal-play .ic-play {
+				display: none;
+			}
+
 	@media screen and (max-width: 736px) {
 
 		.gal-track {
@@ -2894,4 +3028,636 @@
 			opacity: 0;
 		}
 
+	}
+
+/* ------------------------------------------------------------------ */
+/* Lightbox (carousel slides and album tiles)                           */
+/* ------------------------------------------------------------------ */
+
+	.lb-item {
+		cursor: zoom-in;
+	}
+
+		.lb-item:focus-visible {
+			outline: 2px solid var(--bq-hot);
+			outline-offset: 3px;
+		}
+
+	body.has-lightbox {
+		overflow: hidden;
+	}
+
+	.lightbox {
+		position: fixed;
+		inset: 0;
+		z-index: 10001;
+		display: grid;
+		grid-template-columns: 4em 1fr 4em;
+		grid-template-rows: 1fr;
+		align-items: center;
+		background: rgba(22, 23, 33, 0.96);
+		opacity: 0;
+		transition: opacity 0.25s ease;
+	}
+
+		.lightbox.is-open {
+			opacity: 1;
+		}
+
+		.lightbox button {
+			-webkit-appearance: none;
+			appearance: none;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			width: 2.75em;
+			height: 2.75em;
+			padding: 0;
+			margin: 0;
+			border: solid 1px rgba(255, 255, 255, 0.18);
+			border-radius: 50%;
+			background: rgba(255, 255, 255, 0.04);
+			color: #fff;
+			box-shadow: none;
+			line-height: 1;
+			cursor: pointer;
+			transition: border-color 0.2s ease, background-color 0.2s ease, transform 0.2s ease;
+		}
+
+			.lightbox button svg {
+				width: 1.1em;
+				height: 1.1em;
+			}
+
+			.lightbox button:hover,
+			.lightbox button:focus-visible {
+				border-color: var(--bq-hot);
+				background: rgba(255, 140, 0, 0.12);
+				transform: scale(1.06);
+			}
+
+		.lb-prev { grid-column: 1; justify-self: center; }
+		.lb-next { grid-column: 3; justify-self: center; }
+
+		.lb-close {
+			position: absolute;
+			top: 1em;
+			right: 1em;
+		}
+
+		.lb-figure {
+			grid-column: 2;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			max-height: 100vh;
+			margin: 0;
+			padding: 3.5em 0 3em;
+		}
+
+		.lb-stage {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			width: 100%;
+			max-height: calc(100vh - 8.5em);
+		}
+
+			.lb-stage img,
+			.lb-stage video {
+				display: block;
+				max-width: 100%;
+				max-height: calc(100vh - 8.5em);
+				width: auto;
+				height: auto;
+				border-radius: 3px;
+				box-shadow: 0 40px 80px -30px rgba(0, 0, 0, 0.9);
+				background: #1a1b24;
+			}
+
+			.lb-stage img {
+				opacity: 0;
+				transform: scale(0.985);
+				transition: opacity 0.35s ease, transform 0.5s var(--bq-ease-out);
+			}
+
+				.lb-stage img.is-ready {
+					opacity: 1;
+					transform: none;
+				}
+
+		.lb-figure figcaption {
+			width: 100%;
+			max-width: 60em;
+			margin: 0.8em 0 0;
+			font-size: 0.85em;
+			color: var(--bq-fg-light);
+		}
+
+			.lb-figure figcaption .gal-tag {
+				margin-right: 0.75em;
+			}
+
+		.lb-count {
+			position: absolute;
+			left: 1.25em;
+			bottom: 1em;
+			font-family: Raleway, Helvetica, sans-serif;
+			font-size: 0.7em;
+			font-weight: 700;
+			letter-spacing: 0.25em;
+			text-transform: uppercase;
+			color: rgba(255, 255, 255, 0.45);
+		}
+
+	@media screen and (max-width: 736px) {
+
+		.lightbox {
+			grid-template-columns: 1fr;
+		}
+
+			.lb-prev,
+			.lb-next {
+				position: absolute;
+				bottom: 0.9em;
+				grid-column: auto;
+			}
+
+			.lb-prev { right: 4.25em; }
+			.lb-next { right: 1em; }
+
+			.lb-figure {
+				padding: 3.5em 1em 4.25em;
+			}
+
+			.lb-stage,
+			.lb-stage img,
+			.lb-stage video {
+				max-height: calc(100vh - 9.5em);
+			}
+
+			.lb-figure figcaption {
+				font-size: 0.8em;
+			}
+
+	}
+
+/* ------------------------------------------------------------------ */
+/* Sponsorship catalog: a dark, document-shaped cover tile and the     */
+/* tiers as a row of cards, the top tier in the accent colour           */
+/* ------------------------------------------------------------------ */
+
+	.catalog {
+		display: grid;
+		grid-template-columns: minmax(11em, 13.5em) 1fr;
+		gap: 2.5em;
+		align-items: start;
+		margin: 2.25em 0 0;
+		padding-top: 2.25em;
+		border-top: solid 1px var(--bq-line);
+	}
+
+		/* the cover: A4 proportions, the page's own dark, a folded corner cut with clip-path.
+		   The lift on hover uses translate, which the reveal's transform: none leaves alone. */
+		.catalog-cover {
+			position: relative;
+			display: flex;
+			flex-direction: column;
+			box-sizing: border-box;
+			aspect-ratio: 210 / 297;
+			padding: 1.5em 1.4em 1.4em;
+			border: solid 1px rgba(255, 255, 255, 0.18);
+			border-radius: 5px;
+			background:
+				repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0 1px, transparent 1px 5px),
+				linear-gradient(160deg, #3d4262 0%, #262838 100%);
+			color: #fff;
+			clip-path: polygon(0 0, calc(100% - 2.6em) 0, 100% 2.6em, 100% 100%, 0 100%);
+			transition: translate 0.5s var(--bq-ease-out), border-color 0.3s ease;
+		}
+
+			/* the fold: the lower-left half of the cut corner */
+			.catalog-cover::before {
+				content: "";
+				position: absolute;
+				top: 0;
+				right: 0;
+				width: 2.6em;
+				height: 2.6em;
+				background: linear-gradient(225deg, transparent 0 50%, rgba(255, 255, 255, 0.14) 50% 100%);
+				border-bottom-left-radius: 4px;
+			}
+
+			/* the mark carries the wordmark, so the tile does not repeat the name */
+			.catalog-cover img {
+				display: block;
+				width: 60%;
+				height: auto;
+				margin: 0 0 auto;
+			}
+
+			.catalog-kicker,
+			.catalog-meta,
+			.catalog-go {
+				display: block;
+				font-family: Raleway, Helvetica, sans-serif;
+				font-size: 0.55em;
+				font-weight: 700;
+				letter-spacing: 0.25em;
+				line-height: 1.5;
+				text-transform: uppercase;
+			}
+
+			.catalog-kicker {
+				margin: 1.5em 0 0.35em;
+				color: var(--bq-hot);
+			}
+
+			.catalog-meta {
+				color: var(--bq-fg-light);
+			}
+
+			.catalog-go {
+				display: flex;
+				align-items: center;
+				gap: 0.6em;
+				margin-top: 2.2em;
+				color: #fff;
+				transition: color 0.2s ease-in-out;
+			}
+
+				.catalog-go svg {
+					width: 1.6em;
+					height: 1.6em;
+					transition: transform 0.4s var(--bq-ease-out);
+				}
+
+			.catalog-cover:hover,
+			.catalog-cover:focus-visible {
+				translate: 0 -4px;
+				border-color: var(--bq-hot);
+				color: #fff;
+			}
+
+				.catalog-cover:hover .catalog-go,
+				.catalog-cover:focus-visible .catalog-go {
+					color: var(--bq-hot);
+				}
+
+				.catalog-cover:hover .catalog-go svg,
+				.catalog-cover:focus-visible .catalog-go svg {
+					transform: translate(2px, -2px);
+				}
+
+		.catalog-body h4 {
+			margin: 0 0 0.6em;
+		}
+
+		.catalog-body > p {
+			margin: 0 0 1.25em;
+		}
+
+		/* tiers as cards: the name in the tier's colour, the amount large, the perk under it */
+		.tiers {
+			display: grid;
+			grid-template-columns: repeat(4, minmax(0, 1fr));
+			gap: 0.75em;
+			list-style: none;
+			margin: 0 0 1em;
+			padding: 0;
+		}
+
+			.tiers li {
+				--tier: var(--bq-fg-light);
+				position: relative;
+				display: flex;
+				flex-direction: column;
+				padding: 1.1em 1em 1em;
+				border: solid 1px var(--bq-line);
+				border-radius: 5px;
+				background: rgba(255, 255, 255, 0.035);
+				overflow: hidden;
+			}
+
+				/* the tier's line along the top edge */
+				.tiers li::before {
+					content: "";
+					position: absolute;
+					top: 0;
+					left: 0;
+					right: 0;
+					height: 2px;
+					background: var(--tier);
+				}
+
+				.tiers .is-partner {
+					--tier: var(--bq-hot);
+					border-color: rgba(255, 140, 0, 0.4);
+					background: rgba(255, 140, 0, 0.08);
+				}
+
+				.tiers .is-gold { --tier: #e0b74f; }
+				.tiers .is-silver { --tier: #c9cfdb; }
+				.tiers .is-bronze { --tier: #c98c58; }
+
+				.tiers b {
+					font-family: Raleway, Helvetica, sans-serif;
+					font-size: 0.55em;
+					font-weight: 700;
+					letter-spacing: 0.25em;
+					text-transform: uppercase;
+					color: var(--tier);
+				}
+
+				.tiers span {
+					margin-top: 0.3em;
+					font-size: 1.05em;
+					font-weight: 600;
+					color: #fff;
+					white-space: nowrap;
+				}
+
+				.tiers em {
+					margin-top: 0.4em;
+					font-size: 0.78em;
+					font-style: normal;
+					line-height: 1.5;
+					color: var(--bq-fg-light);
+				}
+
+		.tiers-note {
+			margin: 0 0 1.5em;
+			font-size: 0.85em;
+			color: var(--bq-fg-light);
+		}
+
+			.tiers-note b {
+				margin-right: 0.75em;
+				font-family: Raleway, Helvetica, sans-serif;
+				font-size: 0.65em;
+				font-weight: 700;
+				letter-spacing: 0.25em;
+				text-transform: uppercase;
+				color: #fff;
+			}
+
+		.catalog-actions {
+			margin: 0;
+		}
+
+			.catalog-actions .button small {
+				margin-left: 0.6em;
+				font-size: 0.7em;
+				letter-spacing: 0.15em;
+				opacity: 0.65;
+			}
+
+	@media screen and (max-width: 980px) {
+
+		.tiers {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+
+	}
+
+	@media screen and (max-width: 736px) {
+
+		.catalog {
+			grid-template-columns: 1fr;
+			gap: 1.75em;
+		}
+
+			.catalog-cover {
+				max-width: 12em;
+			}
+
+	}
+
+	@media screen and (max-width: 480px) {
+
+		.tiers {
+			grid-template-columns: 1fr;
+		}
+
+	}
+
+/* ------------------------------------------------------------------ */
+/* Video tile / slide: poster with a play button, opens the lightbox   */
+/* ------------------------------------------------------------------ */
+
+	.ph--video .play,
+	.gal-slide--video .play {
+		position: absolute;
+		z-index: 2;
+		left: 50%;
+		top: 50%;
+		width: 3.6em;
+		height: 3.6em;
+		margin: -1.8em 0 0 -1.8em;
+		border: solid 1px rgba(255, 255, 255, 0.55);
+		border-radius: 50%;
+		background: rgba(22, 23, 33, 0.55);
+		backdrop-filter: blur(4px);
+		pointer-events: none;
+		transition: transform 0.4s var(--bq-ease-out), background-color 0.3s ease, border-color 0.3s ease;
+	}
+
+		.ph--video .play::after,
+		.gal-slide--video .play::after {
+			content: "";
+			position: absolute;
+			left: 50%;
+			top: 50%;
+			width: 0;
+			height: 0;
+			margin: -0.55em 0 0 -0.35em;
+			border-style: solid;
+			border-width: 0.55em 0 0.55em 0.95em;
+			border-color: transparent transparent transparent #fff;
+		}
+
+		.ph--video:hover .play,
+		.ph--video:focus-visible .play,
+		.gal-slide--video:hover .play,
+		.gal-slide--video.is-current:hover .play {
+			transform: scale(1.1);
+			background: rgba(255, 140, 0, 0.85);
+			border-color: transparent;
+		}
+
+	.ph--video .ph-tag {
+		position: absolute;
+		z-index: 2;
+		left: 0.9em;
+		bottom: 0.8em;
+		font-family: Raleway, Helvetica, sans-serif;
+		font-size: 0.65em;
+		font-weight: 700;
+		letter-spacing: 0.22em;
+		text-transform: uppercase;
+		color: #fff;
+		text-shadow: 0 1px 8px rgba(0, 0, 0, 0.8);
+		pointer-events: none;
+	}
+
+/* ------------------------------------------------------------------ */
+/* Album page                                                           */
+/* ------------------------------------------------------------------ */
+
+	.page-photos #wrapper > header {
+		background:
+			linear-gradient(105deg, rgba(38, 40, 56, 0.88) 0%, rgba(46, 49, 65, 0.72) 55%, rgba(26, 27, 32, 0.9) 100%),
+			url("../../images/opt/breaq-reel-poster.webp") center / cover no-repeat;
+	}
+
+	/* chapter strip: pinned under the top bar */
+	.chap-nav {
+		position: sticky;
+		top: 3.5em;
+		z-index: 3;
+		display: flex;
+		flex-wrap: nowrap;
+		gap: 0.25em;
+		margin: 0 0 2.5em;
+		border-bottom: solid 2px var(--bq-line);
+		background: #2e3141;
+		overflow-x: auto;
+		overflow-y: hidden;
+		scrollbar-width: none;
+		-webkit-overflow-scrolling: touch;
+	}
+
+		.chap-nav::-webkit-scrollbar {
+			display: none;
+		}
+
+		.chap-nav a {
+			flex: 0 0 auto;
+			padding: 0.75em 0.9em 0.7em;
+			margin-bottom: -2px;
+			border: 0;
+			border-bottom: solid 2px transparent;
+			font-family: Raleway, Helvetica, sans-serif;
+			font-size: 0.7em;
+			font-weight: 700;
+			letter-spacing: 0.22em;
+			text-transform: uppercase;
+			color: var(--bq-fg-light);
+			white-space: nowrap;
+			transition: color 0.2s ease, border-color 0.2s ease;
+		}
+
+			.chap-nav a small {
+				margin-left: 0.5em;
+				font-size: 0.9em;
+				font-weight: 400;
+				letter-spacing: 0.1em;
+				opacity: 0.55;
+			}
+
+			.chap-nav a:hover,
+			.chap-nav a:focus-visible {
+				color: #fff;
+			}
+
+			.chap-nav a.is-current {
+				color: #fff;
+				border-bottom-color: var(--bq-hot);
+			}
+
+	.mosaic {
+		columns: 3;
+		column-gap: 0.75em;
+		margin: 0 0 1.5em;
+	}
+
+		.ph {
+			position: relative;
+			display: block;
+			break-inside: avoid;
+			margin: 0 0 0.75em;
+			border-radius: 3px;
+			overflow: hidden;
+			background: rgba(255, 255, 255, 0.04);
+			transform: translateZ(0);
+		}
+
+			.ph img {
+				display: block;
+				width: 100%;
+				height: 100%;
+				object-fit: cover;
+				transition: transform 0.7s var(--bq-ease-out);
+			}
+
+			.ph::after {
+				content: "";
+				position: absolute;
+				inset: 0;
+				border-radius: inherit;
+				box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+				pointer-events: none;
+				transition: box-shadow 0.3s ease;
+			}
+
+			.ph:hover img,
+			.ph:focus-visible img {
+				transform: scale(1.045);
+			}
+
+			.ph:hover::after,
+			.ph:focus-visible::after {
+				box-shadow: inset 0 0 0 1px rgba(255, 140, 0, 0.6);
+			}
+
+	.page-photos h3.major span {
+		display: block;
+		margin-top: 0.4em;
+		font-size: 0.55em;
+		font-weight: 400;
+		letter-spacing: 0.2em;
+		color: var(--bq-fg-light);
+	}
+
+	@media screen and (max-width: 980px) {
+
+		.mosaic {
+			columns: 2;
+		}
+
+	}
+
+	@media screen and (max-width: 480px) {
+
+		.mosaic {
+			column-gap: 0.5em;
+		}
+
+			.ph {
+				margin-bottom: 0.5em;
+			}
+
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+
+		.lightbox,
+		.lb-stage img,
+		.catalog-cover,
+		.ph img,
+		.ph--video .play,
+		.gal-slide--video .play {
+			transition: none;
+		}
+
+		.catalog-cover {
+			transform: none;
+		}
+
+	}
+
+	/* anchors land below the top bar and the pinned chapter strip */
+	.page-photos .wrapper .inner > section {
+		scroll-margin-top: 7.5em;
 	}

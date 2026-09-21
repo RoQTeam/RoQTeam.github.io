@@ -145,10 +145,11 @@
 
 		// Touch devices have no hover: a tap opens the card, a second tap closes it.
 		// Anywhere else, a click outside the cards closes them.
+		// Cards in an .sp-grid--open grid are always open and never toggle.
 		document.addEventListener('click', function (ev) {
 			var card = ev.target.closest('.sp-card');
 			if (!card) { closeCards(null); return; }
-			if (ev.target.closest('a') || canHover) return;
+			if (ev.target.closest('a') || canHover || card.closest('.sp-grid--open')) return;
 			toggleCard(card);
 		});
 
@@ -208,12 +209,16 @@
 	/* What's next: countdown to the hackathon, orbit animation       */
 	/* ------------------------------------------------------------ */
 
-	forEach(document.querySelectorAll('[data-countdown]'), function (box) {
-		var target = new Date(box.getAttribute('data-countdown')).getTime();
+	// Staged countdown: data-countdown-stages is a JSON list, in order. A stage with "target"
+	// counts down to that time; one with "until" shows its label (no digits) until that time;
+	// the last stage, with neither, is the message that stays after the event.
+	forEach(document.querySelectorAll('[data-countdown-stages]'), function (box) {
+		var stages;
+		try { stages = JSON.parse(box.getAttribute('data-countdown-stages')); } catch (e) { return; }
 		var label = box.querySelector('.next-count-label');
+		var digits = box.querySelector('.next-digits');
 		var units = {};
 		forEach(box.querySelectorAll('[data-unit]'), function (el) { units[el.getAttribute('data-unit')] = el; });
-		if (isNaN(target)) return;
 
 		function show(el, value) {
 			var text = String(value);
@@ -224,14 +229,25 @@
 			el.classList.add('is-tick');
 		}
 
-		function update() {
-			var left = target - Date.now();
-			if (left <= 0) {
-				if (label) label.textContent = 'The hackathon is on';
-				forEach(Object.keys(units), function (k) { show(units[k], k === 'd' ? '0' : '00'); });
-				return false;
+		function current() {
+			var now = Date.now();
+			for (var i = 0; i < stages.length; i++) {
+				var st = stages[i];
+				var at = new Date(st.target || st.until || 0).getTime();
+				if ((st.target || st.until) && at > now) return st;
 			}
-			var sec = Math.floor(left / 1000);
+			return stages[stages.length - 1];
+		}
+
+		function update() {
+			var st = current();
+			if (label && label.textContent !== st.label) label.textContent = st.label;
+			if (!st.target) {
+				if (digits) digits.hidden = true;
+				return !!st.until;              // keep ticking while a hold stage is running
+			}
+			if (digits) digits.hidden = false;
+			var sec = Math.max(0, Math.floor((new Date(st.target).getTime() - Date.now()) / 1000));
 			var d = Math.floor(sec / 86400), h = Math.floor(sec % 86400 / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60;
 			if (units.d) show(units.d, d);
 			if (units.h) show(units.h, pad2(h));
@@ -245,44 +261,116 @@
 		}
 	});
 
-	// "Add to calendar" links carrying their events as JSON: build an .ics on the fly.
-	forEach(document.querySelectorAll('[data-ics-events]'), function (link) {
-		link.addEventListener('click', function (ev) {
-			ev.preventDefault();
-			var events;
-			try { events = JSON.parse(link.getAttribute('data-ics-events')); } catch (e) { return; }
-			function stamp(iso) {
-				var d = new Date(iso);
-				return d.getUTCFullYear() + pad2(d.getUTCMonth() + 1) + pad2(d.getUTCDate()) + 'T' + pad2(d.getUTCHours()) + pad2(d.getUTCMinutes()) + '00Z';
-			}
-			function esc(t) { return String(t).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n'); }
-			var now = stamp(new Date().toISOString());
-			var lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//RoQTeam//BreaQ//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH'];
-			events.forEach(function (e, i) {
-				lines.push('BEGIN:VEVENT', 'UID:breaq-2026-' + i + '-' + stamp(e.start) + '@roqteam.ro', 'DTSTAMP:' + now,
-					'DTSTART:' + stamp(e.start), 'DTEND:' + stamp(e.end), 'SUMMARY:' + esc(e.summary));
-				if (e.location) lines.push('LOCATION:' + esc(e.location));
-				if (e.description) lines.push('DESCRIPTION:' + esc(e.description));
-				lines.push('URL:https://roqteam.ro/breaq.html', 'END:VEVENT');
-			});
-			lines.push('END:VCALENDAR');
-			var blob = new Blob([lines.join('\r\n') + '\r\n'], { type: 'text/calendar;charset=utf-8' });
-			var url = URL.createObjectURL(blob);
-			var a = document.createElement('a');
-			a.href = url;
-			a.download = link.getAttribute('data-ics-name') || 'breaq.ics';
-			document.body.appendChild(a);
-			a.click();
-			a.remove();
-			window.setTimeout(function () { URL.revokeObjectURL(url); }, 3000);
-		});
-	});
+	/* ------------------------------------------------------------ */
+	/* Lightbox: carousel slides and gallery tiles open large.        */
+	/* A tile with data-video plays that file instead of an image.    */
+	/* ------------------------------------------------------------ */
 
-	// The orbit animation is SMIL inside the SVG: pause it for people who prefer reduced motion.
-	if (reduceMotion) {
-		forEach(document.querySelectorAll('svg.orbits'), function (svg) {
-			if (svg.pauseAnimations) svg.pauseAnimations();
+	var lbItems = Array.prototype.slice.call(document.querySelectorAll('.gal-slide, [data-lightbox] figure'));
+
+	if (lbItems.length) {
+		var lb = document.createElement('div');
+		lb.className = 'lightbox';
+		lb.setAttribute('role', 'dialog');
+		lb.setAttribute('aria-modal', 'true');
+		lb.setAttribute('aria-label', 'Photo viewer');
+		lb.hidden = true;
+		lb.innerHTML =
+			'<button class="lb-close" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>' +
+			'<button class="lb-prev" type="button" aria-label="Previous"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>' +
+			'<figure class="lb-figure"><div class="lb-stage"><img alt="" /></div><figcaption></figcaption></figure>' +
+			'<button class="lb-next" type="button" aria-label="Next"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>' +
+			'<span class="lb-count" aria-live="polite"></span>';
+		document.body.appendChild(lb);
+		var lbStage = lb.querySelector('.lb-stage'), lbImg = lb.querySelector('img'), lbCap = lb.querySelector('figcaption'), lbCount = lb.querySelector('.lb-count');
+		var lbVideo = null, lbIndex = 0, lbOpen = false, lbLast = null;
+
+		function lbSource(item) {
+			var img = item.querySelector('img');
+			return img ? (img.getAttribute('data-full') || img.currentSrc || img.src) : '';
+		}
+
+		function lbStopVideo() {
+			if (lbVideo) { lbVideo.pause(); lbVideo.removeAttribute('src'); lbVideo.load(); lbVideo.parentNode.removeChild(lbVideo); lbVideo = null; }
+		}
+
+		function lbShow(i) {
+			lbIndex = (i + lbItems.length) % lbItems.length;
+			var item = lbItems[lbIndex];
+			var img = item.querySelector('img');
+			var cap = item.querySelector('figcaption');
+			var video = item.getAttribute('data-video');
+			lbStopVideo();
+			lbImg.classList.remove('is-ready');
+			if (video) {
+				lbImg.hidden = true;
+				lbVideo = document.createElement('video');
+				lbVideo.setAttribute('controls', ''); lbVideo.setAttribute('playsinline', ''); lbVideo.setAttribute('loop', '');
+				lbVideo.muted = true; lbVideo.autoplay = true;
+				if (img) lbVideo.poster = img.currentSrc || img.src;
+				lbVideo.src = video;
+				lbStage.appendChild(lbVideo);
+				var p = lbVideo.play(); if (p && p.catch) p.catch(function () {});
+			} else {
+				lbImg.hidden = false;
+				lbImg.onload = function () { lbImg.classList.add('is-ready'); };
+				lbImg.src = lbSource(item);
+				lbImg.alt = img ? (img.alt || '') : '';
+			}
+			lbCap.innerHTML = cap ? cap.innerHTML : (item.getAttribute('data-cap') || (img && img.alt) || '');
+			lbCount.textContent = (lbIndex + 1) + ' / ' + lbItems.length;
+			[lbIndex + 1, lbIndex - 1].forEach(function (j) {
+				var n = lbItems[(j + lbItems.length) % lbItems.length];
+				if (!n.getAttribute('data-video')) { var pre = new Image(); pre.src = lbSource(n); }
+			});
+		}
+
+		function lbOpenAt(i, origin) {
+			lbLast = origin || document.activeElement;
+			lb.hidden = false;
+			document.body.classList.add('has-lightbox');
+			lbOpen = true;
+			lbShow(i);
+			window.requestAnimationFrame(function () { lb.classList.add('is-open'); lb.querySelector('.lb-close').focus(); });
+		}
+
+		function lbClose() {
+			if (!lbOpen) return;
+			lbOpen = false;
+			lb.classList.remove('is-open');
+			document.body.classList.remove('has-lightbox');
+			window.setTimeout(function () { if (!lbOpen) { lb.hidden = true; lbImg.removeAttribute('src'); lbStopVideo(); } }, 250);
+			if (lbLast && lbLast.focus) lbLast.focus();
+		}
+
+		lbItems.forEach(function (item, i) {
+			item.classList.add('lb-item');
+			if (!item.hasAttribute('tabindex')) item.setAttribute('tabindex', '0');
+			if (!item.hasAttribute('role')) item.setAttribute('role', 'button');
+			item.addEventListener('click', function (ev) { ev.preventDefault(); lbOpenAt(i, item); });
+			item.addEventListener('keydown', function (ev) {
+				if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); lbOpenAt(i, item); }
+			});
 		});
+
+		lb.querySelector('.lb-close').addEventListener('click', lbClose);
+		lb.querySelector('.lb-prev').addEventListener('click', function () { lbShow(lbIndex - 1); });
+		lb.querySelector('.lb-next').addEventListener('click', function () { lbShow(lbIndex + 1); });
+		lb.addEventListener('click', function (ev) { if (ev.target === lb || ev.target === lbStage) lbClose(); });
+		document.addEventListener('keydown', function (ev) {
+			if (!lbOpen) return;
+			if (ev.key === 'Escape') lbClose();
+			else if (ev.key === 'ArrowRight') lbShow(lbIndex + 1);
+			else if (ev.key === 'ArrowLeft') lbShow(lbIndex - 1);
+		});
+		var touchX = null;
+		lb.addEventListener('touchstart', function (ev) { touchX = ev.touches[0].clientX; }, { passive: true });
+		lb.addEventListener('touchend', function (ev) {
+			if (touchX === null) return;
+			var dx = ev.changedTouches[0].clientX - touchX;
+			touchX = null;
+			if (Math.abs(dx) > 50) lbShow(lbIndex + (dx < 0 ? 1 : -1));
+		}, { passive: true });
 	}
 
 	/* ------------------------------------------------------------ */
@@ -357,7 +445,7 @@
 			}
 
 			var singles = ':scope > h3.major, :scope > p, :scope > .button, :scope > a.special, :scope > .sp-hint, :scope > .tier, :scope > .logos-note, :scope > .gal, :scope > h4';
-			var groups = ':scope > .glance, :scope > .kit, :scope > .logos, :scope > .venues, :scope > .faq, :scope > .ch-grid, :scope > .next-wrap, :scope > .soon-grid, :scope > .res, :scope > .ch-cols, :scope > .ch-list';
+			var groups = ':scope > .glance, :scope > .kit, :scope > .logos, :scope > .venues, :scope > .faq, :scope > .ch-grid, :scope > .next-wrap, :scope > .soon-grid, :scope > .res, :scope > .ch-cols, :scope > .ch-list, :scope > .catalog, :scope > .mosaic';
 
 			forEach(document.querySelectorAll('.wrapper .inner > section'), function (section) {
 				// only what is below the first screen: the hero has its own entrance
@@ -368,6 +456,30 @@
 				});
 			});
 		}
+	}
+
+	/* ------------------------------------------------------------ */
+	/* Chapter strip (album page): highlights the chapter in view     */
+	/* ------------------------------------------------------------ */
+
+	var chapNav = document.querySelector('.chap-nav');
+
+	if (chapNav && 'IntersectionObserver' in window) {
+		var chapLinks = Array.prototype.slice.call(chapNav.querySelectorAll('a[href^="#"]'));
+		var chapIO = new IntersectionObserver(function (entries) {
+			entries.forEach(function (entry) {
+				if (!entry.isIntersecting) return;
+				chapLinks.forEach(function (a) {
+					var on = a.getAttribute('href') === '#' + entry.target.id;
+					a.classList.toggle('is-current', on);
+					if (on && a.scrollIntoView) a.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+				});
+			});
+		}, { rootMargin: '-30% 0px -60% 0px', threshold: 0 });
+		chapLinks.forEach(function (a) {
+			var target = document.getElementById(a.getAttribute('href').slice(1));
+			if (target) chapIO.observe(target);
+		});
 	}
 
 	/* ------------------------------------------------------------ */
@@ -655,9 +767,11 @@
 		var bar = gal.querySelector('.gal-progress i');
 		var prev = gal.querySelector('.gal-prev');
 		var next = gal.querySelector('.gal-next');
+		var playBtn = gal.querySelector('.gal-play');
 		var count = slides.length;
 		var index = 0;
-		var paused = false;
+		var paused = false;             // a hold: pointer or focus on the photos, tab hidden
+		var auto = !reduceMotion && count > 1;   // the slideshow runs when idle; the play/pause button flips this
 		var inView = true;
 		var timer = null;
 		var settle = null;
@@ -675,8 +789,16 @@
 			if (bar) bar.style.transform = 'scaleX(' + ((i + 1) / count) + ')';
 		}
 
+		// While a requested slide is still scrolling into place, the scroll sync below must not
+		// pull the index back to whichever slide happens to be nearest mid-way.
+		var target = null;
+		var targetTimer = null;
+
 		function goTo(i) {
 			i = ((i % count) + count) % count;
+			target = i;
+			if (targetTimer) window.clearTimeout(targetTimer);
+			targetTimer = window.setTimeout(function () { target = null; }, 1500);
 			track.scrollTo({ left: slides[i].offsetLeft, behavior: reduceMotion ? 'auto' : 'smooth' });
 			setCurrent(i);
 		}
@@ -697,6 +819,10 @@
 				var d = Math.abs(slide.offsetLeft - left);
 				if (d < bestDist) { bestDist = d; best = j; }
 			});
+			if (target !== null) {
+				if (best === target) { target = null; window.clearTimeout(targetTimer); }
+				return;
+			}
 			if (best !== index) setCurrent(best);
 		}
 
@@ -714,13 +840,14 @@
 		});
 
 		// Autoplay: gentle, and only while the gallery is on screen and untouched.
+		// Off from the start under reduced motion; the play button can still start it on request.
 		function tick() {
 			if (paused || !inView || document.hidden) return;
 			goTo(index + 1);
 		}
 
 		function startAuto() {
-			if (reduceMotion || count < 2 || timer) return;
+			if (!auto || timer) return;
 			timer = window.setInterval(tick, 5000);
 		}
 
@@ -728,14 +855,30 @@
 			if (timer) { window.clearInterval(timer); timer = null; }
 		}
 
-		gal.addEventListener('mouseenter', function () { paused = true; });
-		gal.addEventListener('mouseleave', function () { paused = false; });
-		gal.addEventListener('focusin', function () { paused = true; });
-		gal.addEventListener('focusout', function () { paused = false; });
+		// Pointer or focus on the photos holds the slideshow; the controls under them do not,
+		// so pressing play starts it even though the pointer is still on the button.
+		track.addEventListener('mouseenter', function () { paused = true; });
+		track.addEventListener('mouseleave', function () { paused = false; });
+		track.addEventListener('focusin', function () { paused = true; });
+		track.addEventListener('focusout', function () { paused = false; });
 		track.addEventListener('touchstart', function () { paused = true; }, { passive: true });
 		track.addEventListener('touchend', function () {
 			window.setTimeout(function () { paused = false; }, 4000);
 		}, { passive: true });
+
+		if (playBtn && count > 1) {
+			var syncPlay = function () {
+				gal.classList.toggle('is-playing', auto);
+				playBtn.setAttribute('aria-label', auto ? 'Pause slideshow' : 'Play slideshow');
+			};
+			playBtn.addEventListener('click', function () {
+				auto = !auto;
+				if (auto) { startAuto(); goTo(index + 1); } else { stopAuto(); }
+				syncPlay();
+			});
+			syncPlay();
+			playBtn.hidden = false;
+		}
 
 		if ('IntersectionObserver' in window) {
 			new IntersectionObserver(function (entries) {

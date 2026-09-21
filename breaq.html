@@ -6,12 +6,131 @@
 		<meta property="og:type" content="website" />
 		<meta property="og:title" content="BreaQ 2026 · Breaking the Boundaries of Quantum Uncertainty" />
 		<meta property="og:description" content="BreaQ 2026: a 24-hour quantum hackathon on 24–25 October at the CAMPUS Research Institute and a day of talks on 14 November at the Military Technical Academy “Ferdinand I”, Bucharest. Free to attend." />
+		<meta property="og:site_name" content="RoQTeam" />
+		<meta property="og:locale" content="en_US" />
 		<meta property="og:image" content="https://roqteam.ro/images/share/breaq-2026.jpg" />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta property="og:image:alt" content="BreaQ 2026: quantum hackathon on 24–25 October and presentations on 14 November, Bucharest" />
 		<meta property="og:url" content="https://roqteam.ro/breaq.html" />
 		<meta name="twitter:card" content="summary_large_image" />
-		<!-- Times below are approximate for the hackathon end and the talks; adjust with the programme -->
+		<meta name="twitter:image:alt" content="BreaQ 2026: quantum hackathon on 24–25 October and presentations on 14 November, Bucharest" />
+		<!--
+			Event structured data. Google's Event guide wants a single Place per event, so the
+			top-level event is at CAMPUS (where it opens) and each day is a subEvent with its own venue.
+			The hackathon end and the talks' hours are approximate; adjust with the programme.
+			Add a "performer" list (Person entries) to the presentations once speakers are announced.
+		-->
 		<script type="application/ld+json">
-		{"@context": "https://schema.org", "@type": "Event", "name": "BreaQ 2026", "description": "BreaQ 2026, RoQTeam's annual quantum event in Bucharest: a 24-hour quantum hackathon on 24–25 October at the CAMPUS Research Institute and a day of talks on 14 November at the Military Technical Academy “Ferdinand I”. Free to attend.", "image": "https://roqteam.ro/images/share/breaq-2026.jpg", "url": "https://roqteam.ro/breaq.html", "startDate": "2026-10-24T09:00:00+03:00", "endDate": "2026-11-14", "eventStatus": "https://schema.org/EventScheduled", "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode", "location": [{"@type": "Place", "name": "CAMPUS Research Institute", "address": {"@type": "PostalAddress", "streetAddress": "Splaiul Independenței 313", "addressLocality": "București", "postalCode": "060042", "addressCountry": "RO"}}, {"@type": "Place", "name": "Military Technical Academy “Ferdinand I”", "address": {"@type": "PostalAddress", "streetAddress": "Bulevardul George Coșbuc 39-49", "addressLocality": "București", "postalCode": "050141", "addressCountry": "RO"}}], "subEvent": [{"@type": "Event", "name": "BreaQ 2026 Hackathon", "startDate": "2026-10-24T09:00:00+03:00", "endDate": "2026-10-25T14:00:00+02:00", "location": {"@type": "Place", "name": "CAMPUS Research Institute", "address": "Splaiul Independenței 313, București"}}, {"@type": "Event", "name": "BreaQ 2026 Presentations", "startDate": "2026-11-14T09:00:00+02:00", "endDate": "2026-11-14T18:00:00+02:00", "location": {"@type": "Place", "name": "Military Technical Academy “Ferdinand I”", "address": "Bulevardul George Coșbuc 39-49, București"}}], "organizer": {"@type": "Organization", "name": "RoQTeam", "url": "https://roqteam.ro/", "email": "partnerships@roqteam.ro"}, "offers": {"@type": "Offer", "url": "https://forms.gle/o1wqxXgzeF2QGtxC7", "price": "0", "priceCurrency": "RON", "availability": "https://schema.org/InStock"}, "isAccessibleForFree": true}
+		{
+			"@context": "https://schema.org",
+			"@type": "Event",
+			"name": "BreaQ 2026",
+			"description": "BreaQ 2026, RoQTeam's annual quantum event in Bucharest: a 24-hour quantum hackathon on 24–25 October at the CAMPUS Research Institute and a day of talks on 14 November at the Military Technical Academy “Ferdinand I”. Free to attend.",
+			"image": "https://roqteam.ro/images/share/breaq-2026.jpg",
+			"url": "https://roqteam.ro/breaq.html",
+			"startDate": "2026-10-24T09:00:00+03:00",
+			"endDate": "2026-11-14T18:00:00+02:00",
+			"eventStatus": "https://schema.org/EventScheduled",
+			"eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+			"isAccessibleForFree": true,
+			"location": {
+				"@type": "Place",
+				"name": "CAMPUS Research Institute",
+				"address": {
+					"@type": "PostalAddress",
+					"streetAddress": "Splaiul Independenței 313",
+					"addressLocality": "București",
+					"postalCode": "060042",
+					"addressCountry": "RO"
+				}
+			},
+			"organizer": {
+				"@type": "Organization",
+				"name": "RoQTeam",
+				"url": "https://roqteam.ro/",
+				"email": "partnerships@roqteam.ro"
+			},
+			"offers": {
+				"@type": "Offer",
+				"url": "https://roqteam.ro/register.html",
+				"price": "0",
+				"priceCurrency": "RON",
+				"availability": "https://schema.org/InStock"
+			},
+			"subEvent": [
+				{
+					"@type": "Event",
+					"name": "BreaQ 2026 Hackathon",
+					"description": "A 24-hour quantum hackathon: teams work on real challenges with mentors on the floor and prizes at the end.",
+					"image": "https://roqteam.ro/images/share/breaq-2026.jpg",
+					"url": "https://roqteam.ro/breaq.html",
+					"startDate": "2026-10-24T09:00:00+03:00",
+					"endDate": "2026-10-25T14:00:00+02:00",
+					"eventStatus": "https://schema.org/EventScheduled",
+					"eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+					"isAccessibleForFree": true,
+					"location": {
+						"@type": "Place",
+						"name": "CAMPUS Research Institute",
+						"address": {
+							"@type": "PostalAddress",
+							"streetAddress": "Splaiul Independenței 313",
+							"addressLocality": "București",
+							"postalCode": "060042",
+							"addressCountry": "RO"
+						}
+					},
+					"organizer": {
+						"@type": "Organization",
+						"name": "RoQTeam",
+						"url": "https://roqteam.ro/"
+					},
+					"offers": {
+						"@type": "Offer",
+						"url": "https://roqteam.ro/register.html",
+						"price": "0",
+						"priceCurrency": "RON",
+						"availability": "https://schema.org/InStock"
+					}
+				},
+				{
+					"@type": "Event",
+					"name": "BreaQ 2026 Presentations",
+					"description": "A day of talks and workshops by researchers and industry experts on quantum computing, communication and sensing.",
+					"image": "https://roqteam.ro/images/share/breaq-2026.jpg",
+					"url": "https://roqteam.ro/breaq.html",
+					"startDate": "2026-11-14T09:00:00+02:00",
+					"endDate": "2026-11-14T18:00:00+02:00",
+					"eventStatus": "https://schema.org/EventScheduled",
+					"eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+					"isAccessibleForFree": true,
+					"location": {
+						"@type": "Place",
+						"name": "Military Technical Academy “Ferdinand I”",
+						"address": {
+							"@type": "PostalAddress",
+							"streetAddress": "Bulevardul George Coșbuc 39-49",
+							"addressLocality": "București",
+							"postalCode": "050141",
+							"addressCountry": "RO"
+						}
+					},
+					"organizer": {
+						"@type": "Organization",
+						"name": "RoQTeam",
+						"url": "https://roqteam.ro/"
+					},
+					"offers": {
+						"@type": "Offer",
+						"url": "https://roqteam.ro/register.html",
+						"price": "0",
+						"priceCurrency": "RON",
+						"availability": "https://schema.org/InStock"
+					}
+				}
+			]
+		}
 		</script>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
@@ -36,7 +155,7 @@
 				<!-- Header -->
 					<header id="header">
 						<nav>
-							<a href="https://forms.gle/o1wqxXgzeF2QGtxC7" target="_blank" rel="noopener" class="hdr-cta">Register</a>
+							<a href="register.html" class="hdr-cta">Register</a>
 							<div class="dropdown">
 								<button class="dropbtn" type="button" aria-controls="site-menu" aria-expanded="false">Menu</button>
 								<div class="dropdown-content" id="site-menu">
@@ -68,7 +187,7 @@
 									<div class="hero-row">
 										<span class="hero-fact"><b>24–25 October</b>Hackathon · CAMPUS Research Institute</span>
 										<span class="hero-fact"><b>14 November</b>Presentations · Military Technical Academy</span>
-										<a href="https://forms.gle/o1wqxXgzeF2QGtxC7" target="_blank" rel="noopener" class="button primary">Register</a>
+										<a href="register.html" class="button primary">Register</a>
 									</div>
 								</div>
 								<figure class="ch-hero-art"><img src="images/BreaQ_logo_2026-light.svg" alt="" /></figure>
@@ -101,7 +220,6 @@
 												<dd>24‑hour hackathon and a day of presentations; further sessions announced with the programme</dd>
 											</div>
 										</dl>
-										<a href="https://forms.gle/o1wqxXgzeF2QGtxC7" target="_blank" rel="noopener" class="button primary">Register</a>
 									</section>
 
 									<!-- What to expect -->
@@ -112,14 +230,14 @@
 												<span class="kit-ic icon solid fa-microphone-alt" aria-hidden="true"></span>
 												<div>
 													<h4>Presentations &amp; workshops</h4>
-													<p>Researchers and industry experts on quantum computing, communication and sensing, on 14 November at the Military Technical Academy.</p>
+													<p>Talks by researchers and industry experts on quantum computing, communication and sensing, with workshops that put the ideas to work.</p>
 												</div>
 											</li>
 											<li>
 												<span class="kit-ic icon solid fa-laptop-code" aria-hidden="true"></span>
 												<div>
 													<h4>Quantum hackathon</h4>
-													<p>Twenty‑four hours of hands‑on challenges with mentors and prizes, 24–25 October at the CAMPUS Research Institute.</p>
+													<p>Twenty‑four hours in teams on real challenges, with mentors on the floor and prizes at the end.</p>
 												</div>
 											</li>
 											<li>
@@ -145,44 +263,67 @@
 									<!-- Sponsors -->
 									<section id="sponsors" class="section_space">
 										<h3 class="major">Sponsors</h3>
-										<!-- Ranked row: the tile size says the tier, the caption names it. Supporters below are equal. -->
+										<!-- Ranked row: the tile size says the tier, the tag in the corner names it. Supporters below are equal.
+										     Logos are transparent exports for the dark tiles (images/opt/logos); tiles link to the sponsor. -->
 										<ul class="logos logos--rank">
 											<li class="is-gold">
-												<span class="tile"><img src="images/opt/Fsas-wide.webp" alt="Fsas Technologies" loading="lazy" /></span>
-												<span class="tier-tag">Gold sponsor</span>
+												<a class="tile" href="https://www.fsastech.com/en-eu/" target="_blank" rel="noopener"><span class="tier-tag">Gold sponsor</span><img src="images/opt/logos/fsas.webp" alt="Fsas Technologies, a Fujitsu company" loading="lazy" width="900" height="367" /></a>
 											</li>
-											<li class="is-silver">
-												<span class="tile"><img src="images/opt/nxp.webp" alt="NXP" loading="lazy" /></span>
-												<span class="tier-tag">Silver sponsor</span>
+											<li class="is-bronze">
+												<a class="tile" href="https://www.nxp.com/" target="_blank" rel="noopener"><span class="tier-tag">Bronze sponsor</span><img src="images/opt/logos/nxp.webp" alt="NXP" loading="lazy" width="900" height="310" /></a>
 											</li>
 										</ul>
 										<h4 class="tier">Supporters <span>food, drinks and merch</span></h4>
 										<ul class="logos logos--tiles">
-											<li><img src="images/opt/artesana.webp" alt="Artesana" loading="lazy" /></li>
-											<li><img src="images/opt/kfea.webp" alt="KFEA" loading="lazy" /></li>
-											<li><img src="images/opt/monster.webp" alt="Monster Energy" loading="lazy" /></li>
-											<li><img src="images/opt/sap.webp" alt="SAP" loading="lazy" /></li>
+											<li class="tile--brand" style="--tile-bg: #e8e7e1"><a class="tile" href="https://artesana.ro/" target="_blank" rel="noopener"><img src="images/opt/logos/artesana.webp" alt="Artesana" loading="lazy" width="900" height="316" /></a></li>
+											<li><a class="tile" href="https://www.kfea.ro/" target="_blank" rel="noopener"><img src="images/opt/logos/kfea.webp" alt="Kfea" loading="lazy" width="86" height="90" /></a></li>
+											<li><a class="tile" href="https://www.monsterenergy.com/" target="_blank" rel="noopener"><img src="images/opt/logos/monster.webp" alt="Monster Energy" loading="lazy" width="802" height="363" /></a></li>
+											<li><a class="tile" href="https://www.sap.com/" target="_blank" rel="noopener"><img src="images/opt/logos/sap.webp" alt="SAP" loading="lazy" width="900" height="472" /></a></li>
 										</ul>
-										<p class="logos-note">More sponsors are announced as they confirm. Want to support BreaQ 2026? <a href="mailto:partnerships@roqteam.ro">Write to us</a>.</p>
+										<p class="logos-note">More sponsors are announced as they confirm. <a href="#catalog">Become a sponsor</a>.</p>
+										<!-- Sponsorship catalog: the PDF lives in docs/. The cover is a dark, document-shaped tile in the
+										     page's own language; the tiers are cards, the top tier in the accent colour. -->
+										<div class="catalog" id="catalog">
+											<a class="catalog-cover" href="docs/BreaQ_Sponsorship_Catalog.pdf" target="_blank" rel="noopener">
+												<img src="images/BreaQ_logo_2026-light.svg" alt="" width="1024" height="1024" />
+												<span class="catalog-kicker">Sponsorship catalog</span>
+												<span class="catalog-meta">PDF · 2 pages · 0.8 MB</span>
+												<span class="catalog-go">Open <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7M8 7h9v9"/></svg></span>
+											</a>
+											<div class="catalog-body">
+												<h4>Want to support BreaQ 2026?</h4>
+												<p>The catalog has the story of the 2025 edition and what each tier includes. Tiers are cumulative: a higher tier gets everything below it.</p>
+												<ol class="tiers">
+													<li class="is-partner"><b>Partner</b><span>over €3,000</span><em>“BreaQ powered by …” and a keynote slot</em></li>
+													<li class="is-gold"><b>Gold</b><span>over €1,000</span><em>recruiting stand, logo in communications</em></li>
+													<li class="is-silver"><b>Silver</b><span>over €700</span><em>lightning talk</em></li>
+													<li class="is-bronze"><b>Bronze</b><span>over €400</span><em>banner in the networking area</em></li>
+												</ol>
+												<p class="tiers-note"><b>Supporter</b>Beyond cash: technology, expertise, prizes, food and drinks.</p>
+												<p class="catalog-actions"><a href="docs/BreaQ_Sponsorship_Catalog.pdf" target="_blank" rel="noopener" class="button primary">Open the catalog <small>PDF · 0.8 MB</small></a> <a href="mailto:partnerships@roqteam.ro" class="button">Write to us</a></p>
+											</div>
+										</div>
 									</section>
 
 									<!-- Partners -->
 									<section id="partners" class="section_space">
 										<h3 class="major">Partners</h3>
 										<ul class="logos logos--tiles">
-											<li><img src="images/opt/aqora_logo.webp" alt="Aqora" loading="lazy" /></li>
-											<li><img src="images/opt/ITA.webp" alt="Advanced Technologies Institute" loading="lazy" /></li>
-											<li><img src="images/opt/STS.webp" alt="Special Telecommunications Service" loading="lazy" /></li>
-											<li><img src="images/opt/2space.webp" alt="2Space" loading="lazy" /></li>
+											<li><span class="tile"><img src="images/opt/logos/aqora.webp" alt="Aqora" loading="lazy" width="900" height="237" /></span></li>
+											<li><span class="tile"><img src="images/opt/logos/ita.webp" alt="Advanced Technologies Institute" loading="lazy" width="618" height="614" /></span></li>
+											<li><span class="tile"><img src="images/opt/logos/sts.webp" alt="Special Telecommunications Service" loading="lazy" width="636" height="630" /></span></li>
+											<li><span class="tile"><img src="images/opt/logos/2space.webp" alt="2Space" loading="lazy" width="900" height="321" /></span></li>
 										</ul>
+
 									</section>
 
 									<!-- Organizing Committee -->
 									<section id="committee" class="section_space">
 										<h3 class="major">Core Team</h3>
-										<div class="sp-grid sp-grid--dense">
+										<!-- sp-grid--open: roles are always visible; the cards are not interactive -->
+										<div class="sp-grid sp-grid--open">
 
-											<figure class="sp-card" tabindex="0" style="--i: 0">
+											<figure class="sp-card" style="--i:0">
 												<div class="sp-photo"><img src="images/opt/Berti.webp" alt="Albert-Ioan Florea" loading="lazy" /></div>
 												<figcaption class="sp-info">
 													<h4 class="sp-name">Albert-Ioan Florea</h4>
@@ -192,7 +333,7 @@
 												</figcaption>
 											</figure>
 
-											<figure class="sp-card" tabindex="0" style="--i: 1">
+											<figure class="sp-card" style="--i:1">
 												<div class="sp-photo"><img src="images/opt/Alexandru-Ionita.webp" alt="Alexandru Ionita" loading="lazy" /></div>
 												<figcaption class="sp-info">
 													<h4 class="sp-name">Alexandru Ionita</h4>
@@ -202,7 +343,7 @@
 												</figcaption>
 											</figure>
 
-											<figure class="sp-card" tabindex="0" style="--i: 2">
+											<figure class="sp-card" style="--i:2">
 												<div class="sp-photo"><img src="images/opt/Cristian-Ilie.webp" alt="Cristian Ilie" loading="lazy" /></div>
 												<figcaption class="sp-info">
 													<h4 class="sp-name">Cristian Ilie</h4>
@@ -212,7 +353,7 @@
 												</figcaption>
 											</figure>
 
-											<figure class="sp-card" tabindex="0" style="--i: 3">
+											<figure class="sp-card" style="--i:3">
 												<div class="sp-photo"><img src="images/opt/Filip.webp" alt="Filip-Ioan Ceara" loading="lazy" /></div>
 												<figcaption class="sp-info">
 													<h4 class="sp-name">Filip-Ioan Ceara</h4>
@@ -228,7 +369,7 @@
 									<!-- Last edition -->
 									<section id="last-edition" class="section_space">
 										<h3 class="major">Last edition <span>BreaQ 2025</span></h3>
-										<p>Talks at the Military Technical Academy, a quantum optics lab visit, online workshops and a 24-hour hackathon at CAMPUS: this is what the first BreaQ looked like in November 2025.</p>
+										<p>Talks at the Military Technical Academy, a quantum optics lab visit, online workshops and a 24-hour hackathon at CAMPUS: this is what the first BreaQ looked like in November 2025. Tap a photo to see it large, or browse <a href="photos-2025.html">the full album and the video</a>.</p>
 										<!--
 											To add a photo: drop it in images/breaq2025/ and copy one <figure> below.
 											Set its aspect-ratio (width / height) so the strip lays out before the image loads.
@@ -236,6 +377,12 @@
 										-->
 										<div class="gal" data-gal>
 											<div class="gal-track" tabindex="0" role="region" aria-roledescription="carousel" aria-label="Photos from BreaQ 2025">
+												<!-- video slide: the poster sits in the strip, the clip plays in the lightbox -->
+												<figure class="gal-slide gal-slide--video" data-video="images/opt/breaq-reel.mp4" style="aspect-ratio: 16 / 9">
+													<img src="images/opt/breaq-reel-poster.webp" alt="Video: around the hackathon floor at CAMPUS" loading="lazy" width="1280" height="720" />
+													<span class="play" aria-hidden="true"></span>
+													<figcaption><span class="gal-tag">Video</span>Around the hackathon floor at CAMPUS. Fourteen seconds, no sound.</figcaption>
+												</figure>
 												<figure class="gal-slide" style="aspect-ratio: 1600 / 1200">
 													<img src="images/opt/breaq25-01.webp" alt="Kickoff in the CAMPUS auditorium" loading="lazy" />
 													<figcaption><span class="gal-tag">Welcome</span>Kickoff in the CAMPUS auditorium.</figcaption>
@@ -298,9 +445,14 @@
 												</figure>
 											</div>
 											<div class="gal-bar">
-												<div class="gal-count" aria-live="polite"><span class="gal-cur">01</span><span class="gal-sep">/</span><span class="gal-total">15</span></div>
+												<div class="gal-count" aria-live="polite"><span class="gal-cur">01</span><span class="gal-sep">/</span><span class="gal-total">16</span></div>
 												<div class="gal-progress" aria-hidden="true"><i></i></div>
 												<div class="gal-nav">
+													<!-- play/pause for the slideshow; breaq.js reveals it and keeps the label in step -->
+													<button class="gal-btn gal-play" type="button" aria-label="Pause slideshow" hidden>
+														<svg class="ic-pause" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M9 5v14M15 5v14"/></svg>
+														<svg class="ic-play" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M8 5.5v13l10-6.5z"/></svg>
+													</button>
 													<button class="gal-btn gal-prev" type="button" aria-label="Previous photo">
 														<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
 													</button>
@@ -345,7 +497,7 @@
 												</g>
 											</svg>
 											<div class="next-body">
-												<div class="next-count" data-countdown="2026-10-24T09:00:00+03:00">
+												<div class="next-count" data-countdown-stages='[{"label":"Hackathon starts in","target":"2026-10-24T09:00:00+03:00"},{"label":"The hackathon is on. Good luck, teams!","until":"2026-10-25T14:00:00+02:00"},{"label":"Presentations in","target":"2026-11-14T09:00:00+02:00"},{"label":"Presentation day is on at the Military Technical Academy","until":"2026-11-14T18:00:00+02:00"},{"label":"That was BreaQ 2026. Thank you, and see you in 2027!"}]'>
 													<p class="next-count-label">Hackathon starts in</p>
 													<div class="next-digits">
 														<div><b data-unit="d">–</b><span>days</span></div>
@@ -355,7 +507,7 @@
 													</div>
 												</div>
 												<p>Speakers, the full schedule and the hackathon challenges are announced in the coming weeks, here and on <a href="https://www.linkedin.com/company/roqteam/" target="_blank" rel="noopener">RoQTeam’s LinkedIn</a>. Want to give a talk? <a href="mailto:partnerships@roqteam.ro">Write to us</a>. Curious what a track looks like? <a href="breaq-2025.html#hackathon">See last year’s challenges</a>.</p>
-												<p class="next-actions"><a href="https://forms.gle/o1wqxXgzeF2QGtxC7" target="_blank" rel="noopener" class="button primary">Register to hear first</a> <a href="breaq-2026.ics" class="button" type="text/calendar">Add both dates to calendar</a></p>
+												<p class="next-actions"><a href="breaq-2026.ics" class="button" type="text/calendar">Add both dates to calendar</a></p>
 												<p class="next-gcal">Google Calendar, one tap: <a href="https://calendar.google.com/calendar/render?action=TEMPLATE&amp;text=BreaQ+2026+Hackathon&amp;dates=20261024T060000Z%2F20261025T120000Z&amp;location=CAMPUS+Research+Institute%2C+Splaiul+Independen%C8%9Bei+313%2C+Bucure%C8%99ti&amp;details=24-hour+quantum+hackathon.+Details%3A+https%3A%2F%2Froqteam.ro%2Fbreaq.html" target="_blank" rel="noopener">hackathon</a> · <a href="https://calendar.google.com/calendar/render?action=TEMPLATE&amp;text=BreaQ+2026+Presentations&amp;dates=20261114T070000Z%2F20261114T160000Z&amp;location=Military+Technical+Academy+Ferdinand+I%2C+Bulevardul+George+Co%C8%99buc+39-49%2C+Bucure%C8%99ti&amp;details=Talks+by+researchers+and+industry+experts.+Details%3A+https%3A%2F%2Froqteam.ro%2Fbreaq.html" target="_blank" rel="noopener">presentations</a> · iPhone and Mac: <a href="webcal://roqteam.ro/breaq-2026.ics">subscribe</a>, it updates itself if the times change</p>
 											</div>
 										</div>
@@ -481,7 +633,7 @@
 									<section id="join" class="section_space cta">
 										<h3 class="major">Ready to break the boundaries?</h3>
 										<p>Registration is free and takes a couple of minutes. Accepted participants get the Discord invite and every practical detail from there.</p>
-										<a href="https://forms.gle/o1wqxXgzeF2QGtxC7" target="_blank" rel="noopener" class="button primary">Register</a>
+										<a href="register.html" class="button primary">Register</a>
 									</section>
 
 									<!-- <section class="features">
