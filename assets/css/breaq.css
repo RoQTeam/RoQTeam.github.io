@@ -43,6 +43,29 @@
 		display: none !important;
 	}
 
+	/* buttons keep a centred label inside the ragged-right components above. On phones the
+	   theme drops their side padding to 0 (it expects full-width action rows), which leaves
+	   the label touching the border of any button that is not full width: put some back. */
+	/* the id outranks the later ragged-right lists (.ch-hero-text *, .next-wrap *) */
+	#wrapper .button {
+		text-align: center;
+	}
+
+	@media screen and (max-width: 480px) {
+
+		#wrapper .button {
+			padding: 0 1.5em;
+		}
+
+		/* justified text opens wide gaps at forty characters a line: running text reads
+		   ragged-right on phones (wider screens keep the theme's justified paragraphs) */
+		.wrapper p,
+		.wrapper a.special {
+			text-align: left;
+		}
+
+	}
+
 /* ------------------------------------------------------------------ */
 /* Challenge pages (challenges/*.html)                                 */
 /* ------------------------------------------------------------------ */
@@ -555,6 +578,14 @@
 			margin: 0;
 			font-size: 0.72em;
 			color: var(--bq-fg-light);
+		}
+
+		@media screen and (max-width: 480px) {
+
+			.next-body .next-actions .button {
+				width: 100%;
+			}
+
 		}
 
 	.next-count {
@@ -1118,6 +1149,14 @@
 
 	.cta p {
 		max-width: 36em;
+	}
+
+	@media screen and (max-width: 736px) {
+
+		.cta .button {
+			width: 100%;
+		}
+
 	}
 
 /* ------------------------------------------------------------------ */
@@ -3441,22 +3480,43 @@
 
 	@media screen and (max-width: 736px) {
 
+		/* one column: the cover would fill a screen before the heading, and the
+		   "Open the catalog" button below links the same PDF, so it steps aside */
 		.catalog {
 			grid-template-columns: 1fr;
-			gap: 1.75em;
+			gap: 0;
 		}
 
 			.catalog-cover {
-				max-width: 12em;
+				display: none;
 			}
 
 	}
 
 	@media screen and (max-width: 480px) {
 
+		/* the tier cards stay two by two, a little tighter; the buttons stack full width */
 		.tiers {
-			grid-template-columns: 1fr;
+			gap: 0.6em;
 		}
+
+			.tiers li {
+				padding: 0.9em 0.85em 0.85em;
+			}
+
+			.tiers span {
+				font-size: 1em;
+			}
+
+		.catalog-actions {
+			display: flex;
+			flex-direction: column;
+			gap: 0.75em;
+		}
+
+			.catalog-actions .button {
+				width: 100%;
+			}
 
 	}
 
