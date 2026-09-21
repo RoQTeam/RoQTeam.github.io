@@ -1,0 +1,263 @@
+<!DOCTYPE HTML>
+<html lang="en">
+	<head>
+		<title>Register · BreaQ 2026</title>
+		<meta name="description" content="Register for BreaQ 2026: the 24-hour quantum hackathon on 24–25 October at CAMPUS and the presentations day on 14 November at the Military Technical Academy. Free." />
+		<meta property="og:type" content="website" />
+		<meta property="og:title" content="Register for BreaQ 2026" />
+		<meta property="og:description" content="Free. Two minutes. One form for the hackathon, the presentations day, or both." />
+		<meta property="og:image" content="https://roqteam.ro/images/share/breaq-2026.jpg" />
+		<meta property="og:url" content="https://roqteam.ro/register.html" />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+		<link rel="stylesheet" href="assets/css/main.css" />
+		<link rel="stylesheet" href="assets/css/breaq.css" />
+		<link rel="stylesheet" href="assets/css/register.css" />
+		<link rel="icon" type="image/png" href="images/favicon-2026.png">
+		<noscript><link rel="stylesheet" href="assets/css/noscript.css" /></noscript>
+	</head>
+	<body class="is-preload page-art page-motion page-register">
+		<div class="progress" aria-hidden="true"><i></i></div>
+
+		<!-- Page Wrapper -->
+			<div id="page-wrapper">
+
+				<!-- Header -->
+					<header id="header">
+						<nav>
+							<div class="dropdown">
+								<button class="dropbtn" type="button" aria-controls="site-menu" aria-expanded="false">Menu</button>
+								<div class="dropdown-content" id="site-menu">
+									<a href="index.html">Home</a>
+									<a href="breaq.html">BreaQ 2026</a>
+									<a href="breaq.html#faq">FAQ</a>
+									<a href="breaq.html#venue">Venue</a>
+									<a href="photos-2025.html">2025 in photos</a>
+									<a href="breaq-2025.html">BreaQ 2025</a>
+								</div>
+							</div>
+						</nav>
+					</header>
+
+				<!-- Wrapper -->
+					<section id="wrapper">
+						<header>
+							<div class="inner">
+								<div class="ch-hero-text">
+									<h2>Register for BreaQ 2026</h2>
+									<p>Free. Two minutes. One form for the hackathon, the presentations day, or both.</p>
+									<div class="hero-row">
+										<span class="hero-fact"><b>24–25 October</b>Hackathon · CAMPUS Research Institute</span>
+										<span class="hero-fact"><b>14 November</b>Presentations · Military Technical Academy</span>
+									</div>
+								</div>
+								<figure class="ch-hero-art"><img src="images/BreaQ_logo_2026-light.svg" alt="" /></figure>
+							</div>
+						</header>
+
+						<!-- Content -->
+							<div class="wrapper">
+								<div class="inner">
+
+									<!--
+										The form posts JSON to a Google Apps Script web app that writes a Google Sheet and sends
+										the confirmation email. Deploy tools/register-backend.gs (steps in README.md) and paste the
+										web app URL into data-endpoint. While data-endpoint is empty, the page sends people to
+										the form at data-fallback instead, so nothing is ever lost.
+									-->
+									<form id="reg" class="reg" method="post" action="#" novalidate
+										data-endpoint=""
+										data-fallback="https://forms.gle/o1wqxXgzeF2QGtxC7">
+
+										<p class="reg-fallback" hidden>Online registration on this page is not switched on yet. <a href="https://forms.gle/o1wqxXgzeF2QGtxC7" target="_blank" rel="noopener">Register with the current form</a> instead.</p>
+
+										<fieldset class="reg-step">
+											<legend><span class="reg-n">1</span>About you</legend>
+											<div class="fields">
+												<div class="field half">
+													<label for="first_name">First name</label>
+													<input type="text" name="first_name" id="first_name" required autocomplete="given-name" maxlength="80" />
+												</div>
+												<div class="field half">
+													<label for="last_name">Last name</label>
+													<input type="text" name="last_name" id="last_name" required autocomplete="family-name" maxlength="80" />
+												</div>
+												<div class="field half">
+													<label for="email">Email</label>
+													<input type="email" name="email" id="email" required autocomplete="email" inputmode="email" maxlength="120" />
+													<small>The confirmation, the Discord invite and every practical detail go here.</small>
+												</div>
+												<div class="field half">
+													<label for="phone">Phone <span class="opt">optional</span></label>
+													<input type="tel" name="phone" id="phone" autocomplete="tel" inputmode="tel" maxlength="30" />
+													<small>Only used on the day if we cannot reach you otherwise.</small>
+												</div>
+											</div>
+										</fieldset>
+
+										<fieldset class="reg-step">
+											<legend><span class="reg-n">2</span>Studies or work</legend>
+											<div class="fields">
+												<div class="field half">
+													<label for="affiliation">University or company</label>
+													<input type="text" name="affiliation" id="affiliation" required autocomplete="organization" maxlength="120" />
+												</div>
+												<div class="field half">
+													<label for="status">You are</label>
+													<select name="status" id="status" required>
+														<option value="">Choose…</option>
+														<option>High-school student</option>
+														<option>Bachelor student</option>
+														<option>Master student</option>
+														<option>PhD student</option>
+														<option>Researcher</option>
+														<option>Working in industry</option>
+														<option>Other</option>
+													</select>
+												</div>
+												<div class="field half">
+													<label for="experience">Experience with quantum computing</label>
+													<select name="experience" id="experience" required>
+														<option value="">Choose…</option>
+														<option>None yet, curious</option>
+														<option>Beginner: a course or some tutorials</option>
+														<option>Intermediate: built circuits or small projects</option>
+														<option>Advanced: research or work in the field</option>
+													</select>
+													<small>Every level is welcome. This helps us balance the teams.</small>
+												</div>
+												<div class="field half">
+													<label for="tshirt">T-shirt size</label>
+													<select name="tshirt" id="tshirt" required>
+														<option value="">Choose…</option>
+														<option>XS</option>
+														<option>S</option>
+														<option>M</option>
+														<option>L</option>
+														<option>XL</option>
+														<option>XXL</option>
+													</select>
+												</div>
+											</div>
+										</fieldset>
+
+										<fieldset class="reg-step">
+											<legend><span class="reg-n">3</span>Participation</legend>
+											<div class="fields">
+												<div class="field">
+													<span class="lbl">I want to join</span>
+													<div class="choices">
+														<span><input type="radio" id="attend-both" name="attend" value="both" checked /><label for="attend-both">Both: the hackathon and the presentations day</label></span>
+														<span><input type="radio" id="attend-hack" name="attend" value="hackathon" /><label for="attend-hack">Only the hackathon, 24–25 October</label></span>
+														<span><input type="radio" id="attend-talks" name="attend" value="presentations" /><label for="attend-talks">Only the presentations, 14 November</label></span>
+													</div>
+												</div>
+												<div class="field" data-hack>
+													<span class="lbl">Tracks I am interested in <span class="opt">pick any</span></span>
+													<div class="choices choices--row">
+														<span><input type="checkbox" id="track-qai" name="tracks" value="Quantum AI" /><label for="track-qai">Quantum AI</label></span>
+														<span><input type="checkbox" id="track-hack" name="tracks" value="Hacking" /><label for="track-hack">Hacking</label></span>
+														<span><input type="checkbox" id="track-crypto" name="tracks" value="Crypto" /><label for="track-crypto">Crypto</label></span>
+														<span><input type="checkbox" id="track-tbd" name="tracks" value="Not sure yet" /><label for="track-tbd">Not sure yet</label></span>
+													</div>
+													<small>The 2026 challenges are announced with the programme. Tell us what draws you in for now.</small>
+												</div>
+												<div class="field half" data-hack>
+													<span class="lbl">Team</span>
+													<div class="choices">
+														<span><input type="radio" id="team-solo" name="team" value="solo" checked /><label for="team-solo">Match me with a team at the event</label></span>
+														<span><input type="radio" id="team-have" name="team" value="team" /><label for="team-have">I already have a team</label></span>
+													</div>
+												</div>
+												<div class="field half" data-hack data-team hidden>
+													<label for="team_name">Team name and members</label>
+													<input type="text" name="team_name" id="team_name" maxlength="200" placeholder="Qubits United: Ana, Mihai, Ioana" />
+													<small>Everyone on the team registers separately.</small>
+												</div>
+												<div class="field">
+													<label for="motivation">Your expectations <span class="opt">optional</span></label>
+													<textarea name="motivation" id="motivation" rows="3" maxlength="300" placeholder="What would you like to get out of BreaQ?"></textarea>
+													<small>Up to 300 characters.</small>
+												</div>
+											</div>
+										</fieldset>
+
+										<fieldset class="reg-step">
+											<legend><span class="reg-n">4</span>Practical</legend>
+											<div class="fields">
+												<div class="field half">
+													<label for="dietary">Dietary needs <span class="opt">optional</span></label>
+													<input type="text" name="dietary" id="dietary" maxlength="120" placeholder="vegetarian, no nuts…" />
+												</div>
+												<div class="field half">
+													<label for="source">How did you hear about BreaQ?</label>
+													<select name="source" id="source">
+														<option value="">Choose…</option>
+														<option>A friend or colleague</option>
+														<option>My university</option>
+														<option>LinkedIn</option>
+														<option>Instagram</option>
+														<option>I was at BreaQ 2025</option>
+														<option>Other</option>
+													</select>
+												</div>
+												<div class="field">
+													<input type="checkbox" id="consent" name="consent" required /><label for="consent">I agree that RoQTeam stores this information to organise BreaQ 2026 and contacts me about the event. To have it removed, <a href="mailto:partnerships@roqteam.ro">write to us</a>.</label>
+												</div>
+												<div class="field">
+													<input type="checkbox" id="conduct" name="conduct" required /><label for="conduct">I will treat everyone at BreaQ with respect and follow the organisers’ instructions.</label>
+												</div>
+												<div class="hp" aria-hidden="true">
+													<label for="website">Website</label>
+													<input type="text" name="website" id="website" tabindex="-1" autocomplete="off" />
+												</div>
+											</div>
+										</fieldset>
+
+										<div class="reg-foot">
+											<p class="reg-err" role="alert" hidden></p>
+											<button type="submit" class="button primary">Send my registration</button>
+											<span class="reg-note">You get a confirmation email right away.</span>
+										</div>
+									</form>
+
+									<div class="reg-done" id="reg-done" hidden>
+										<h3 class="major">You are registered</h3>
+										<p>Thanks, <b data-name>friend</b>. A confirmation is on its way to <b data-email>your inbox</b>. The Discord invite and the practical details follow closer to the dates.</p>
+										<p class="next-actions"><a href="breaq-2026.ics" class="button primary" type="text/calendar">Add both dates to calendar</a> <a href="breaq.html" class="button">Back to BreaQ 2026</a></p>
+									</div>
+
+								</div>
+							</div>
+
+					</section>
+
+				<!-- Footer -->
+					<section id="footer" class="section_space">
+						<div class="inner">
+							<h2 class="major">Get in touch</h2>
+							<ul class="contact">
+								<li class="icon brands alt fa-linkedin-in"><a href="https://www.linkedin.com/company/roqteam/"><em><b>RoQTeam</b></em></a></li>
+								<li class="icon solid fa-envelope"><a href="mailto:partnerships@roqteam.ro"><em><b>partnerships@roqteam.ro</b></em></a></li>
+							</ul>
+							<ul class="copyright">
+								<li>&copy; RoQTeam. All rights reserved.</li><li>Design: HTML5 UP</li>
+							</ul>
+						</div>
+					</section>
+
+			</div>
+
+		<!-- Scripts -->
+			<script src="assets/js/jquery.min.js"></script>
+			<script src="assets/js/jquery.scrollex.min.js"></script>
+			<script src="assets/js/browser.min.js"></script>
+			<script src="assets/js/breakpoints.min.js"></script>
+			<script src="assets/js/util.js"></script>
+			<script src="assets/js/main.js"></script>
+			<script src="assets/js/script.js"></script>
+			<script src="assets/js/breaq.js"></script>
+			<script src="assets/js/register.js"></script>
+	</body>
+</html>
