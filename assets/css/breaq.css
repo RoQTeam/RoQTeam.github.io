@@ -1413,12 +1413,19 @@
 	/* tiles: one dark surface for every logo (transparent exports in images/opt/logos),
 	   the logo contained inside with air around it; a tile is a link where we have one */
 	.logos--tiles {
-		grid-template-columns: repeat(4, minmax(0, 1fr));
+		/* as many columns as fit: five supporters make one row, four partners make one row */
+		grid-template-columns: repeat(auto-fit, minmax(8em, 1fr));
 	}
 
 		.logos--tiles li {
 			display: block;
 			aspect-ratio: 1200 / 630;
+		}
+
+		/* five to a row leaves less room than the ranked tiles: tighter air around the logo
+		   (the extra class outranks the .logos .tile padding below) */
+		.logos.logos--tiles .tile {
+			padding: 1em 1.25em;
 		}
 
 	.logos .tile {
@@ -1538,6 +1545,17 @@
 		.logos--tiles {
 			grid-template-columns: repeat(2, minmax(0, 1fr));
 		}
+
+			/* two narrow columns: a little taller, so the logos keep some size */
+			.logos--tiles li {
+				aspect-ratio: 3 / 2;
+			}
+
+			/* an odd last tile fills the row at the same height, so its logo stays the same size */
+			.logos--tiles li:last-child:nth-child(odd) {
+				grid-column: span 2;
+				aspect-ratio: 3.1 / 1;
+			}
 
 		.logos.logos--rank {
 			grid-template-columns: 1fr;

@@ -25,9 +25,9 @@ JOBS = [
     ('fsas',       'images/Fsas.png',       'key',  900),
     ('nxp',        'images/nxp.png',        'keep', 900),
     ('sap',        'images/sap.png',        'keep', 900),
-    ('monster',    'images/monster.png',    'keep', 900),
     ('artesana',   'images/artesana.png',   'key',  900),
     ('kfea',       'images/kfea.png',       'mono', 900),
+    ('sipit',      'images/sipit.png',      'keep', 900),   # rendered from the vector PDF they sent
     ('aqora',      'images/aqora_logo.png', 'key',  900),
     ('ita',        'images/ITA.png',        'key',  900),
     ('sts',        'images/STS.png',        'key',  900),
