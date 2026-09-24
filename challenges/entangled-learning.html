@@ -1,0 +1,301 @@
+<!DOCTYPE HTML>
+<html lang="en">
+	<head>
+		<title>Entangled Learning · BreaQ</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="description" content="Entangled Learning is the quantum machine learning challenge of the BreaQ hackathon: build and test quantum and hybrid models in PennyLane on a classically hard dataset." />
+		<meta property="og:type" content="website" />
+		<meta property="og:title" content="Entangled Learning · BreaQ hackathon challenge" />
+		<meta property="og:description" content="Build, train and evaluate quantum and hybrid models in PennyLane on a dataset chosen to be hard for classical learners. 24–25 October 2026 at the CAMPUS Research Institute, Bucharest." />
+		<meta property="og:image" content="https://roqteam.ro/images/quantum_machine_learning.png" />
+		<meta property="og:url" content="https://roqteam.ro/challenges/entangled-learning.html" />
+		<meta name="twitter:card" content="summary_large_image" />
+		<link rel="stylesheet" href="../assets/css/main.css" />
+		<link rel="stylesheet" href="../assets/css/breaq.css" />
+		<link rel="icon" type="image/png" href="../images/favicon-2026.png">
+		<noscript><link rel="stylesheet" href="../assets/css/noscript.css" /></noscript>
+	</head>
+	<body class="is-preload page-challenge page-motion">
+		<div class="progress" aria-hidden="true"><i></i></div>
+
+		<!--
+			CHALLENGE PAGE
+			Copy this file for the other challenges and keep the sections in this order:
+			hero, the challenge (with the facts box), what you get, mentors, reading, other challenges, register.
+			Everything on the page is either from the BreaQ programme or a description of this challenge;
+			things still to be decided are noted in comments next to where they belong, not on the page.
+		-->
+
+		<!-- Background: the gradient only, no video on challenge pages -->
+			<div class="video-bg video-overlay"></div>
+			<div class="video-overlay"></div>
+
+		<!-- Page Wrapper -->
+			<div id="page-wrapper">
+
+				<!-- Header -->
+					<header id="header">
+						<nav>
+							<a href="../register.html" class="hdr-cta">Register</a>
+							<div class="dropdown">
+								<button class="dropbtn" type="button" aria-controls="site-menu" aria-expanded="false">Menu</button>
+								<div class="dropdown-content" id="site-menu">
+									<a href="../breaq.html">BreaQ</a>
+									<a href="#challenge">The challenge</a>
+									<a href="#kit">What you get</a>
+									<a href="#mentors">Mentors</a>
+									<a href="#reading">Reading</a>
+									<a href="#more">Other challenges</a>
+								</div>
+							</div>
+						</nav>
+					</header>
+
+				<!-- Wrapper -->
+					<section id="wrapper">
+						<header>
+							<div class="inner">
+								<div class="ch-hero-text">
+									<a class="crumb" href="../breaq.html#next">BreaQ hackathon · Challenge 02</a>
+									<h2>Entangled Learning</h2>
+									<p>Quantum machine learning with PennyLane</p>
+									<div class="hero-row">
+										<span class="hero-fact"><b>24–25 October 2026</b>24‑hour hackathon at CAMPUS, Bucharest</span>
+										<span class="hero-fact"><b>PennyLane · Python</b>Quantum and hybrid models</span>
+										<a href="../register.html" class="button primary">Register</a>
+									</div>
+								</div>
+								<figure class="ch-hero-art">
+									<img src="../images/opt/quantum_machine_learning-line.webp" alt="" />
+								</figure>
+							</div>
+						</header>
+
+						<!-- Content -->
+							<div class="wrapper">
+								<div class="inner">
+
+									<!-- The challenge -->
+									<section id="challenge" class="section_space">
+										<h3 class="major">The challenge</h3>
+										<div class="ch-cols">
+											<div class="ch-body">
+												<p class="ch-lede">Quantum machine learning encodes data into the state of a quantum system, where a few qubits span a feature space that grows exponentially with their number. The promise: correlations a classical model cannot reach cheaply become visible there.</p>
+												<p class="ch-q">Does that promise survive contact with a real dataset? That is the question this challenge asks.</p>
+												<p>You will build, train and evaluate quantum and hybrid quantum‑classical models in PennyLane on a dataset chosen to be hard for classical learners, and make a clear, evidence‑backed case for where the quantum model helps, where it does not, and why.</p>
+												<h4>What a strong entry looks like</h4>
+												<ul class="ch-list">
+													<li>A solid classical baseline, so that the comparison means something.</li>
+													<li>At least one purely quantum model and one hybrid model, with the data encoding explained and justified.</li>
+													<li>An honest analysis: accuracy, training cost, sensitivity to noise, and the role entanglement actually played.</li>
+													<li>Code somebody else can run, and a short write‑up of what you found.</li>
+												</ul>
+											</div>
+											<dl class="ch-facts">
+												<dt>When</dt>
+												<dd>24–25 October 2026. Twenty‑four hours of coding, then presentations to the jury.</dd>
+												<dt>Where</dt>
+												<dd>CAMPUS Research Institute, Splaiul Independenței 313, Bucharest.</dd>
+												<dt>Tools</dt>
+												<dd>PennyLane and Python. Any classical library for baselines and for the classical half of hybrid models.</dd>
+												<dt>Format</dt>
+												<dd>24 hours in teams, then a public repository and a short presentation to the jury.</dd>
+												<!-- To add when decided: team size, prize, submission format -->
+											</dl>
+										</div>
+									</section>
+
+									<!-- What you get -->
+									<section id="kit" class="section_space">
+										<h3 class="major">What you get</h3>
+										<ul class="kit">
+											<li>
+												<span class="kit-ic icon solid fa-database" aria-hidden="true"></span>
+												<div>
+													<h4>Dataset and baseline</h4>
+													<p>The data, its loader and a classical baseline, on Discord before coding starts.</p>
+													<!-- Repository link goes here once published -->
+												</div>
+											</li>
+											<li>
+												<span class="kit-ic icon solid fa-chalkboard-teacher" aria-hidden="true"></span>
+												<div>
+													<h4>Mentors in the room</h4>
+													<p>Quantum machine learning researchers on site for the whole 24 hours.</p>
+												</div>
+											</li>
+											<li>
+												<span class="kit-ic icon solid fa-laptop" aria-hidden="true"></span>
+												<div>
+													<h4>Your laptop is enough</h4>
+													<p>Simulators handle this dataset. Bring a valid ID; meals are provided.</p>
+													<!-- Mention hardware or cloud access here if it is offered -->
+												</div>
+											</li>
+										</ul>
+									</section>
+
+									<!-- Mentors -->
+									<section id="mentors" class="section_space">
+										<h3 class="major">Mentors</h3>
+										<p class="sp-hint">Hover or tap a portrait to reveal who is behind it.</p>
+										<!--
+											Same cards as the Speakers section on the BreaQ page; four fill one row.
+											STAND-INS: the organizing committee is used here to show the layout. Replace with the actual mentors.
+										-->
+										<div class="sp-grid">
+
+											<figure class="sp-card" tabindex="0" style="--i: 0">
+												<div class="sp-photo"><img src="../images/opt/Alexandru-Ionita.webp" alt="Alexandru Ionita" loading="lazy" /></div>
+												<span class="sp-index">Mentor</span>
+												<figcaption class="sp-info">
+													<h4 class="sp-name">Alexandru Ionita</h4>
+													<div class="sp-more"><div>
+														<p class="sp-role">Quantum Machine Learning Researcher, AIMultimediaLab; PhD Candidate, Bucharest National Polytechnic University of Science and Technology (UNSTPB)</p>
+														<a class="sp-talk" href="../breaq-2025.html#schedule"><span>Talk · BreaQ 2025</span>Quantum Machine Learning for Image Classification: Challenges and Perspectives</a>
+													</div></div>
+												</figcaption>
+											</figure>
+
+											<figure class="sp-card" tabindex="0" style="--i: 1">
+												<div class="sp-photo"><img src="../images/opt/Berti.webp" alt="Albert-Ioan Florea" loading="lazy" /></div>
+												<span class="sp-index">Mentor</span>
+												<figcaption class="sp-info">
+													<h4 class="sp-name">Albert-Ioan Florea</h4>
+													<div class="sp-more"><div>
+														<p class="sp-role">Research Assistant, Technical University of Munich</p>
+													</div></div>
+												</figcaption>
+											</figure>
+
+											<figure class="sp-card" tabindex="0" style="--i: 2">
+												<div class="sp-photo"><img src="../images/opt/Cristian-Ilie.webp" alt="Cristian Ilie" loading="lazy" /></div>
+												<span class="sp-index">Mentor</span>
+												<figcaption class="sp-info">
+													<h4 class="sp-name">Cristian Ilie</h4>
+													<div class="sp-more"><div>
+														<p class="sp-role">Telecommunications Engineer, Special Telecommunications Service; PhD Candidate, Bucharest National Polytechnic University of Science and Technology (UNSTPB)</p>
+													</div></div>
+												</figcaption>
+											</figure>
+
+											<figure class="sp-card" tabindex="0" style="--i: 3">
+												<div class="sp-photo"><img src="../images/opt/Filip.webp" alt="Filip-Ioan Ceara" loading="lazy" /></div>
+												<span class="sp-index">Mentor</span>
+												<figcaption class="sp-info">
+													<h4 class="sp-name">Filip-Ioan Ceara</h4>
+													<div class="sp-more"><div>
+														<p class="sp-role">Research and Development Expert, Advanced Technologies Institute</p>
+													</div></div>
+												</figcaption>
+											</figure>
+
+										</div>
+									</section>
+
+									<!-- Reading -->
+									<section id="reading" class="section_space">
+										<h3 class="major">Read before you come</h3>
+										<div class="res">
+											<a class="res-item" href="https://docs.pennylane.ai/" target="_blank" rel="noopener">
+												<span class="res-tag">Docs</span>
+												<strong>PennyLane documentation</strong>
+												<small>Devices, templates and the QNode interface you will live in for 24 hours</small>
+											</a>
+											<a class="res-item" href="https://pennylane.ai/qml/demonstrations" target="_blank" rel="noopener">
+												<span class="res-tag">Demos</span>
+												<strong>PennyLane QML demonstrations</strong>
+												<small>Runnable notebooks: data encoding, variational classifiers, quantum kernels</small>
+											</a>
+											<a class="res-item" href="https://arxiv.org/abs/1804.11326" target="_blank" rel="noopener">
+												<span class="res-tag">Paper</span>
+												<strong>Supervised learning with quantum‑enhanced feature spaces</strong>
+												<small>Havlíček et al. · Nature, 2019</small>
+											</a>
+											<a class="res-item" href="https://arxiv.org/abs/1803.07128" target="_blank" rel="noopener">
+												<span class="res-tag">Paper</span>
+												<strong>Quantum machine learning in feature Hilbert spaces</strong>
+												<small>Schuld and Killoran · Physical Review Letters, 2019</small>
+											</a>
+											<a class="res-item" href="https://arxiv.org/abs/2012.09265" target="_blank" rel="noopener">
+												<span class="res-tag">Survey</span>
+												<strong>Variational quantum algorithms</strong>
+												<small>Cerezo et al. · Nature Reviews Physics, 2021</small>
+											</a>
+											<a class="res-item" href="https://arxiv.org/abs/1803.11173" target="_blank" rel="noopener">
+												<span class="res-tag">Paper</span>
+												<strong>Barren plateaus in quantum neural network training landscapes</strong>
+												<small>McClean et al. · Nature Communications, 2018</small>
+											</a>
+										</div>
+									</section>
+
+									<!-- Other challenges -->
+									<section id="more" class="section_space">
+										<h3 class="major">The other challenges</h3>
+										<!-- Point these at their own pages once they exist -->
+										<div class="ch-grid">
+											<article class="ch">
+												<span class="image fit"><img src="../images/opt/quantum_cryptanalysis.webp" alt="" loading="lazy" /></span>
+												<span class="ch-tag">Built with Classiq</span>
+												<h4>Quantum Codebreaking</h4>
+												<p>Implement state‑of‑the‑art quantum cryptanalysis algorithms, the ones that threaten today’s public‑key cryptosystems.</p>
+												<a class="ch-more" href="../breaq.html#next">Read the challenge</a>
+											</article>
+											<article class="ch">
+												<span class="image fit"><img src="../images/opt/quantum_hacking.webp" alt="" loading="lazy" /></span>
+												<span class="ch-tag">Quantum hacking</span>
+												<h4>Breaking Quantum Realities</h4>
+												<p>Exploit real‑world imperfections in quantum devices, algorithms and protocols to show that even quantum is not unbreakable.</p>
+												<a class="ch-more" href="../breaq.html#next">Read the challenge</a>
+											</article>
+										</div>
+									</section>
+
+									<!-- Closing call -->
+									<section id="join" class="section_space cta">
+										<h3 class="major">Ready to entangle?</h3>
+										<p>Registration is free and takes a couple of minutes. Pick Entangled Learning as your challenge, or decide on the day.</p>
+										<a href="../register.html" class="button primary">Register</a>
+									</section>
+
+									<!--
+										Proposed but not yet confirmed by the organizers, kept here so it is ready to enable.
+										Judging: Scientific soundness 30%, Results and analysis 30%, Engineering 20%, Presentation 20%.
+										Rules: any classical tooling allowed, the quantum part built in PennyLane; submission = public repository
+										plus a short write-up before coding ends; presentations five minutes plus questions.
+									-->
+
+								</div>
+							</div>
+
+					</section>
+
+				<!-- Footer -->
+					<section id="footer" class="section_space">
+						<div class="inner">
+							<h2 class="major">Get in touch</h2>
+							<ul class="contact">
+								<li class="icon brands alt fa-linkedin-in"><a href="https://www.linkedin.com/company/roqteam/"><em><b>RoQTeam</b></em></a></li>
+								<li class="icon solid fa-envelope"><a href="mailto:partnerships@roqteam.ro"><em><b>partnerships@roqteam.ro</b></em></a></li>
+							</ul>
+							<ul class="copyright">
+								<li>&copy; RoQTeam. All rights reserved.</li><li>Design: HTML5 UP</li>
+							</ul>
+						</div>
+					</section>
+
+			</div>
+
+		<!-- Scripts -->
+			<script src="../assets/js/jquery.min.js"></script>
+			<script src="../assets/js/jquery.scrollex.min.js"></script>
+			<script src="../assets/js/browser.min.js"></script>
+			<script src="../assets/js/breakpoints.min.js"></script>
+			<script src="../assets/js/util.js"></script>
+			<script src="../assets/js/main.js"></script>
+			<script src="../assets/js/script.js"></script>
+			<script src="../assets/js/breaq.js"></script>
+	</body>
+</html>

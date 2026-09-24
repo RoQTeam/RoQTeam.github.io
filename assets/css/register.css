@@ -1,0 +1,241 @@
+/*
+	BreaQ registration page (register.html)
+	Builds on the theme's form controls in main.css and the tokens in breaq.css.
+*/
+
+	.reg, .reg *,
+	.reg-done, .reg-done * {
+		text-align: left;
+	}
+
+	.reg {
+		max-width: 60em;
+		margin: 0 0 2em;
+	}
+
+	.reg-fallback {
+		margin: 0 0 2em;
+		padding: 0.9em 1.1em;
+		border-left: solid 3px var(--bq-hot);
+		background: rgba(255, 140, 0, 0.08);
+		font-size: 0.9em;
+	}
+
+	.reg-step {
+		position: relative;
+		margin: 0 0 3em;
+		padding: 0;
+		border: 0;
+	}
+
+		.reg-step legend {
+			display: flex;
+			align-items: center;
+			gap: 0.9em;
+			margin: 0 0 1.5em;
+			padding: 0;
+			font-family: Raleway, Helvetica, sans-serif;
+			font-size: 0.9em;
+			font-weight: 700;
+			letter-spacing: 0.25em;
+			text-transform: uppercase;
+			color: #fff;
+		}
+
+		.reg-n {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			width: 2em;
+			height: 2em;
+			border: solid 1px var(--bq-hot);
+			border-radius: 50%;
+			font-size: 0.85em;
+			letter-spacing: 0;
+			color: var(--bq-hot);
+		}
+
+	/* two columns on wide screens; a .field spans both unless it is .half */
+	.reg .fields {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 1.6em 1.5em;
+		margin: 0;
+	}
+
+		.reg .field {
+			grid-column: 1 / -1;
+			min-width: 0;
+		}
+
+		.reg .field.half {
+			grid-column: auto;
+		}
+
+		.reg .field[hidden] {
+			display: none;
+		}
+
+		.reg .field input[type="text"],
+		.reg .field input[type="email"],
+		.reg .field input[type="tel"],
+		.reg .field select,
+		.reg .field textarea {
+			width: 100%;
+		}
+
+		.reg .field small {
+			display: block;
+			margin: 0.5em 0 0;
+			font-size: 0.8em;
+			line-height: 1.5;
+			color: var(--bq-fg-light);
+		}
+
+		.reg .opt {
+			margin-left: 0.35em;
+			font-weight: 300;
+			color: var(--bq-fg-light);
+		}
+
+		/* a label-like caption for a group of radios or checkboxes (same look as the theme's label) */
+		.reg .lbl {
+			display: block;
+			margin: 0 0 0.7em;
+			font-family: Raleway, Helvetica, sans-serif;
+			font-size: 0.8em;
+			font-weight: 700;
+			letter-spacing: 0.1em;
+			text-transform: uppercase;
+			color: #fff;
+		}
+
+		.reg input[type="checkbox"] + label,
+		.reg input[type="radio"] + label {
+			margin: 0;
+			font-size: 0.95em;
+			line-height: 1.55;
+		}
+
+		.reg input[type="checkbox"] + label a {
+			border-bottom: dotted 1px;
+		}
+
+		.choices {
+			display: flex;
+			flex-direction: column;
+			gap: 0.45em;
+		}
+
+			.choices--row {
+				flex-direction: row;
+				flex-wrap: wrap;
+				gap: 0.5em 1.75em;
+			}
+
+		.reg input[type="text"],
+		.reg input[type="email"],
+		.reg input[type="tel"],
+		.reg select,
+		.reg textarea {
+			transition: border-color 0.2s ease, box-shadow 0.2s ease;
+		}
+
+			.reg input:focus,
+			.reg select:focus,
+			.reg textarea:focus {
+				border-color: var(--bq-hot);
+				box-shadow: 0 0 0 1px var(--bq-hot);
+			}
+
+		.reg .field.is-invalid input,
+		.reg .field.is-invalid select,
+		.reg .field.is-invalid textarea {
+			border-color: #ff6b66;
+			box-shadow: 0 0 0 1px #ff6b66;
+		}
+
+		.reg .field.is-invalid input[type="checkbox"] + label:before {
+			border-color: #ff6b66;
+		}
+
+		.reg ::placeholder {
+			color: rgba(255, 255, 255, 0.28);
+		}
+
+		/* honeypot: off-screen, never displayed */
+		.hp {
+			position: absolute;
+			left: -10000px;
+			top: auto;
+			width: 1px;
+			height: 1px;
+			overflow: hidden;
+		}
+
+	.reg-foot {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 1em 1.5em;
+		padding-top: 1.5em;
+		border-top: solid 1px var(--bq-line);
+	}
+
+		.reg-foot .reg-err {
+			flex: 1 0 100%;
+			margin: 0;
+			padding: 0.8em 1em;
+			border-left: solid 3px #ff6b66;
+			background: rgba(255, 107, 102, 0.08);
+			font-size: 0.9em;
+			color: #ffb3b0;
+		}
+
+			.reg-err a {
+				color: #fff;
+			}
+
+		.reg-foot button.is-busy {
+			opacity: 0.6;
+			cursor: progress;
+		}
+
+		.reg-note {
+			font-size: 0.85em;
+			color: var(--bq-fg-light);
+		}
+
+	.reg-done {
+		max-width: 40em;
+		padding: 2.5em 0 1em;
+	}
+
+		.reg-done h3.major:after {
+			background: var(--bq-hot);
+		}
+
+		.reg-done .next-actions {
+			margin-top: 1.5em;
+		}
+
+	@media screen and (max-width: 736px) {
+
+		.reg .fields {
+			grid-template-columns: 1fr;
+			gap: 1.4em;
+		}
+
+			.reg .field.half {
+				grid-column: 1 / -1;
+			}
+
+		.reg-step {
+			margin-bottom: 2.25em;
+		}
+
+		.reg-foot button {
+			width: 100%;
+		}
+
+	}
