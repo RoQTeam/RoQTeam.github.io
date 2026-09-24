@@ -1,6 +1,8 @@
 <!DOCTYPE HTML>
-<html>
+<html lang="en">
 	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<title>BreaQ 2026 · RoQTeam</title>
 		<meta name="description" content="BreaQ 2026: a 24-hour quantum hackathon on 24–25 October at the CAMPUS Research Institute and a day of talks on 14 November at the Military Technical Academy “Ferdinand I”, Bucharest. Free to attend." />
 		<meta property="og:type" content="website" />
@@ -18,7 +20,8 @@
 		<!--
 			Event structured data. Google's Event guide wants a single Place per event, so the
 			top-level event is at CAMPUS (where it opens) and each day is a subEvent with its own venue.
-			The hackathon end and the talks' hours are approximate; adjust with the programme.
+			The talks' hours are approximate; adjust them with the programme. The hackathon times also
+			appear in the About block, the countdown and breaq-2026.ics: change them together.
 			Add a "performer" list (Person entries) to the presentations once speakers are announced.
 		-->
 		<script type="application/ld+json">
@@ -56,7 +59,8 @@
 				"url": "https://roqteam.ro/register.html",
 				"price": "0",
 				"priceCurrency": "RON",
-				"availability": "https://schema.org/InStock"
+				"availability": "https://schema.org/InStock",
+				"validThrough": "2026-10-18"
 			},
 			"subEvent": [
 				{
@@ -91,7 +95,8 @@
 						"url": "https://roqteam.ro/register.html",
 						"price": "0",
 						"priceCurrency": "RON",
-						"availability": "https://schema.org/InStock"
+						"availability": "https://schema.org/InStock",
+						"validThrough": "2026-10-18"
 					}
 				},
 				{
@@ -126,14 +131,13 @@
 						"url": "https://roqteam.ro/register.html",
 						"price": "0",
 						"priceCurrency": "RON",
-						"availability": "https://schema.org/InStock"
+						"availability": "https://schema.org/InStock",
+						"validThrough": "2026-10-18"
 					}
 				}
 			]
 		}
 		</script>
-		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
 		<link rel="stylesheet" href="assets/css/main.css" />
 		<link rel="stylesheet" href="assets/css/breaq.css" />
 		<link rel="icon" type="image/png" href="images/favicon-2026.png">
@@ -161,12 +165,13 @@
 								<div class="dropdown-content" id="site-menu">
 									<a href="index.html">Home</a>
 									<a href="#about">About</a>
+									<a href="#last-edition">Last Edition</a>
 									<a href="#sponsors">Sponsors</a>
 									<a href="#committee">Core Team</a>
-									<a href="#last-edition">Last Edition</a>
 									<a href="#next">What’s next</a>
 									<a href="#venue">Venue</a>
 									<a href="#faq">FAQ</a>
+									<a href="#catalog">Become a Sponsor</a>
 									<a href="breaq-2025.html">BreaQ 2025</a>
 									<a href="QFF24_main/index.html">QFF24</a>
 								</div>	
@@ -182,12 +187,12 @@
 						<header>
 							<div class="inner">
 								<div class="ch-hero-text">
-									<h2>BreaQ 2026</h2>
+									<h1>BreaQ 2026</h1>
 									<p>Breaking the Boundaries of Quantum Uncertainty</p>
 									<div class="hero-row">
 										<span class="hero-fact"><b>24–25 October</b>Hackathon · CAMPUS Research Institute</span>
 										<span class="hero-fact"><b>14 November</b>Presentations · Military Technical Academy</span>
-										<a href="register.html" class="button primary">Register</a>
+										<span class="hero-cta"><a href="register.html" class="button primary">Register</a><small>Free · closes 18 October</small></span>
 									</div>
 								</div>
 								<figure class="ch-hero-art"><img src="images/BreaQ_logo_2026-light.svg" alt="" /></figure>
@@ -201,11 +206,11 @@
 									<!-- About -->
 									<section id="about" class="section_space">
 										<h3 class="major">About BreaQ</h3>
-										<p>BreaQ is RoQTeam’s annual gathering for Romania’s quantum community: a day of talks by leading researchers and a 24‑hour hackathon. Students, researchers and the simply curious are all welcome.</p>
+										<p>BreaQ is RoQTeam’s annual gathering for Romania’s quantum community: a 24‑hour hackathon and a day of talks by leading researchers. Students, researchers and the simply curious are all welcome.</p>
 										<dl class="glance">
 											<div>
 												<dt><span class="glance-ic icon solid fa-calendar-alt" aria-hidden="true"></span>When</dt>
-												<dd>24–25 October (hackathon) and 14 November (presentations), 2026</dd>
+												<dd><span class="glance-k">Hackathon</span>Sat 24 Oct, 09:00 → Sun 25 Oct, 14:00<span class="glance-k">Presentations</span>Sat 14 November</dd>
 											</div>
 											<div>
 												<dt><span class="glance-ic icon solid fa-map-marker-alt" aria-hidden="true"></span>Where</dt>
@@ -216,8 +221,8 @@
 												<dd>Free, meals included</dd>
 											</div>
 											<div>
-												<dt><span class="glance-ic icon solid fa-layer-group" aria-hidden="true"></span>Format</dt>
-												<dd>24‑hour hackathon and a day of presentations; further sessions announced with the programme</dd>
+												<dt><span class="glance-ic icon solid fa-hourglass-half" aria-hidden="true"></span>Register by</dt>
+												<dd>18 October. <a href="register.html">Registration</a> takes a couple of minutes.</dd>
 											</div>
 										</dl>
 									</section>
@@ -250,13 +255,121 @@
 										</ul>
 									</section>
 
+									<!-- Last edition -->
+									<section id="last-edition" class="section_space">
+										<h3 class="major">Last edition <span>BreaQ 2025</span></h3>
+										<p>Talks at the Military Technical Academy, a quantum optics lab visit, online workshops and a 24-hour hackathon at CAMPUS: this is what the first BreaQ looked like in November 2025. Tap a photo to see it large, or browse <a href="photos-2025.html">the full album and the video</a>.</p>
+										<!--
+											To add a photo: drop it in images/breaq2025/ and copy one <figure> below. The strip loads the
+											half and three-quarter width copies (breaq25-NN-800.webp and so on); data-full is what the lightbox opens.
+											Set its aspect-ratio (width / height) so the strip lays out before the image loads.
+											The counter, progress bar and autoplay pick up new slides automatically.
+										-->
+										<div class="gal" data-gal>
+											<div class="gal-track" tabindex="0" role="region" aria-roledescription="carousel" aria-label="Photos from BreaQ 2025">
+												<!-- video slide: the poster sits in the strip, the clip plays in the lightbox -->
+												<figure class="gal-slide gal-slide--video" data-video="images/opt/breaq-reel.mp4" style="aspect-ratio: 16 / 9">
+													<img src="images/opt/breaq-reel-poster.webp" alt="Video: around the hackathon floor at CAMPUS" loading="lazy" width="1280" height="720" />
+													<span class="play" aria-hidden="true"></span>
+													<figcaption><span class="gal-tag">Video</span>Around the hackathon floor at CAMPUS. Fourteen seconds, no sound.</figcaption>
+												</figure>
+												<figure class="gal-slide" style="aspect-ratio: 1600 / 1200">
+													<img src="images/opt/breaq25-01-800.webp" srcset="images/opt/breaq25-01-800.webp 800w, images/opt/breaq25-01-1200.webp 1200w, images/opt/breaq25-01.webp 1600w" sizes="(max-width: 736px) 85vw, (max-width: 1100px) 51vw, (max-width: 1680px) 555px, 704px" data-full="images/opt/breaq25-01.webp" alt="Kickoff in the CAMPUS auditorium" loading="lazy" width="1600" height="1200" />
+													<figcaption><span class="gal-tag">Welcome</span>Kickoff in the CAMPUS auditorium.</figcaption>
+												</figure>
+												<figure class="gal-slide" style="aspect-ratio: 1600 / 1200">
+													<img src="images/opt/breaq25-02-800.webp" srcset="images/opt/breaq25-02-800.webp 800w, images/opt/breaq25-02-1200.webp 1200w, images/opt/breaq25-02.webp 1600w" sizes="(max-width: 736px) 85vw, (max-width: 1100px) 51vw, (max-width: 1680px) 555px, 704px" data-full="images/opt/breaq25-02.webp" alt="Teams settle in for 24 hours" loading="lazy" width="1600" height="1200" />
+													<figcaption><span class="gal-tag">Hackathon</span>Teams settle in for 24 hours.</figcaption>
+												</figure>
+												<figure class="gal-slide" style="aspect-ratio: 1600 / 1200">
+													<img src="images/opt/breaq25-03-800.webp" srcset="images/opt/breaq25-03-800.webp 800w, images/opt/breaq25-03-1200.webp 1200w, images/opt/breaq25-03.webp 1600w" sizes="(max-width: 736px) 85vw, (max-width: 1100px) 51vw, (max-width: 1680px) 555px, 704px" data-full="images/opt/breaq25-03.webp" alt="The fuel station: snacks and energy drinks" loading="lazy" width="1600" height="1200" />
+													<figcaption><span class="gal-tag">Hackathon</span>The fuel station: snacks and energy drinks.</figcaption>
+												</figure>
+												<figure class="gal-slide" style="aspect-ratio: 1200 / 1600">
+													<img src="images/opt/breaq25-04-600.webp" srcset="images/opt/breaq25-04-600.webp 600w, images/opt/breaq25-04-900.webp 900w, images/opt/breaq25-04.webp 1200w" sizes="(max-width: 736px) 48vw, (max-width: 1100px) 28vw, (max-width: 1680px) 312px, 396px" data-full="images/opt/breaq25-04.webp" alt="Pen and paper before code" loading="lazy" width="1200" height="1600" />
+													<figcaption><span class="gal-tag">Hackathon</span>Pen and paper before code.</figcaption>
+												</figure>
+												<figure class="gal-slide" style="aspect-ratio: 1600 / 1200">
+													<img src="images/opt/breaq25-05-800.webp" srcset="images/opt/breaq25-05-800.webp 800w, images/opt/breaq25-05-1200.webp 1200w, images/opt/breaq25-05.webp 1600w" sizes="(max-width: 736px) 85vw, (max-width: 1100px) 51vw, (max-width: 1680px) 555px, 704px" data-full="images/opt/breaq25-05.webp" alt="A break in the lounge" loading="lazy" width="1600" height="1200" />
+													<figcaption><span class="gal-tag">Evening</span>A break in the lounge.</figcaption>
+												</figure>
+												<figure class="gal-slide" style="aspect-ratio: 1600 / 901">
+													<img src="images/opt/breaq25-06-800.webp" srcset="images/opt/breaq25-06-800.webp 800w, images/opt/breaq25-06-1200.webp 1200w, images/opt/breaq25-06.webp 1600w" sizes="(max-width: 736px) 92vw, (max-width: 1100px) 67vw, (max-width: 1680px) 739px, 938px" data-full="images/opt/breaq25-06.webp" alt="Debugging together, late in the day" loading="lazy" width="1600" height="901" />
+													<figcaption><span class="gal-tag">Hackathon</span>Debugging together, late in the day.</figcaption>
+												</figure>
+												<figure class="gal-slide" style="aspect-ratio: 1200 / 1600">
+													<img src="images/opt/breaq25-07-600.webp" srcset="images/opt/breaq25-07-600.webp 600w, images/opt/breaq25-07-900.webp 900w, images/opt/breaq25-07.webp 1200w" sizes="(max-width: 736px) 48vw, (max-width: 1100px) 28vw, (max-width: 1680px) 312px, 396px" data-full="images/opt/breaq25-07.webp" alt="Deep focus" loading="lazy" width="1200" height="1600" />
+													<figcaption><span class="gal-tag">Night</span>Deep focus.</figcaption>
+												</figure>
+												<figure class="gal-slide" style="aspect-ratio: 1600 / 1200">
+													<img src="images/opt/breaq25-08-800.webp" srcset="images/opt/breaq25-08-800.webp 800w, images/opt/breaq25-08-1200.webp 1200w, images/opt/breaq25-08.webp 1600w" sizes="(max-width: 736px) 85vw, (max-width: 1100px) 51vw, (max-width: 1680px) 555px, 704px" data-full="images/opt/breaq25-08.webp" alt="A mentor at the whiteboard, close to midnight" loading="lazy" width="1600" height="1200" />
+													<figcaption><span class="gal-tag">Night</span>A mentor at the whiteboard, close to midnight.</figcaption>
+												</figure>
+												<figure class="gal-slide" style="aspect-ratio: 1600 / 901">
+													<img src="images/opt/breaq25-09-800.webp" srcset="images/opt/breaq25-09-800.webp 800w, images/opt/breaq25-09-1200.webp 1200w, images/opt/breaq25-09.webp 1600w" sizes="(max-width: 736px) 92vw, (max-width: 1100px) 67vw, (max-width: 1680px) 739px, 938px" data-full="images/opt/breaq25-09.webp" alt="T‑shirts and lanyards for everyone" loading="lazy" width="1600" height="901" />
+													<figcaption><span class="gal-tag">Morning</span>T‑shirts and lanyards for everyone.</figcaption>
+												</figure>
+												<figure class="gal-slide" style="aspect-ratio: 1600 / 901">
+													<img src="images/opt/breaq25-10-800.webp" srcset="images/opt/breaq25-10-800.webp 800w, images/opt/breaq25-10-1200.webp 1200w, images/opt/breaq25-10.webp 1600w" sizes="(max-width: 736px) 92vw, (max-width: 1100px) 67vw, (max-width: 1680px) 739px, 938px" data-full="images/opt/breaq25-10.webp" alt="Pitching to the jury" loading="lazy" width="1600" height="901" />
+													<figcaption><span class="gal-tag">Presentations</span>Pitching to the jury.</figcaption>
+												</figure>
+												<figure class="gal-slide" style="aspect-ratio: 1600 / 1200">
+													<img src="images/opt/breaq25-11-800.webp" srcset="images/opt/breaq25-11-800.webp 800w, images/opt/breaq25-11-1200.webp 1200w, images/opt/breaq25-11.webp 1600w" sizes="(max-width: 736px) 85vw, (max-width: 1100px) 51vw, (max-width: 1680px) 555px, 704px" data-full="images/opt/breaq25-11.webp" alt="The auditorium on judging morning" loading="lazy" width="1600" height="1200" />
+													<figcaption><span class="gal-tag">Presentations</span>The auditorium on judging morning.</figcaption>
+												</figure>
+												<figure class="gal-slide" style="aspect-ratio: 1600 / 901">
+													<img src="images/opt/breaq25-12-800.webp" srcset="images/opt/breaq25-12-800.webp 800w, images/opt/breaq25-12-1200.webp 1200w, images/opt/breaq25-12.webp 1600w" sizes="(max-width: 736px) 92vw, (max-width: 1100px) 67vw, (max-width: 1680px) 739px, 938px" data-full="images/opt/breaq25-12.webp" alt="Results, charts and hard questions" loading="lazy" width="1600" height="901" />
+													<figcaption><span class="gal-tag">Presentations</span>Results, charts and hard questions.</figcaption>
+												</figure>
+												<figure class="gal-slide" style="aspect-ratio: 1600 / 1200">
+													<img src="images/opt/breaq25-13-800.webp" srcset="images/opt/breaq25-13-800.webp 800w, images/opt/breaq25-13-1200.webp 1200w, images/opt/breaq25-13.webp 1600w" sizes="(max-width: 736px) 85vw, (max-width: 1100px) 51vw, (max-width: 1680px) 555px, 704px" data-full="images/opt/breaq25-13.webp" alt="Mentors, jury and winners" loading="lazy" width="1600" height="1200" />
+													<figcaption><span class="gal-tag">Awards</span>Mentors, jury and winners.</figcaption>
+												</figure>
+												<figure class="gal-slide" style="aspect-ratio: 1200 / 1600">
+													<img src="images/opt/breaq25-14-600.webp" srcset="images/opt/breaq25-14-600.webp 600w, images/opt/breaq25-14-900.webp 900w, images/opt/breaq25-14.webp 1200w" sizes="(max-width: 736px) 48vw, (max-width: 1100px) 28vw, (max-width: 1680px) 312px, 396px" data-full="images/opt/breaq25-14.webp" alt="A winning team with their diploma" loading="lazy" width="1200" height="1600" />
+													<figcaption><span class="gal-tag">Awards</span>A winning team with their diploma.</figcaption>
+												</figure>
+												<figure class="gal-slide" style="aspect-ratio: 1600 / 1200">
+													<img src="images/opt/breaq25-15-800.webp" srcset="images/opt/breaq25-15-800.webp 800w, images/opt/breaq25-15-1200.webp 1200w, images/opt/breaq25-15.webp 1600w" sizes="(max-width: 736px) 85vw, (max-width: 1100px) 51vw, (max-width: 1680px) 555px, 704px" data-full="images/opt/breaq25-15.webp" alt="The BreaQ 2025 hackathon crew" loading="lazy" width="1600" height="1200" />
+													<figcaption><span class="gal-tag">Group photo</span>The BreaQ 2025 hackathon crew.</figcaption>
+												</figure>
+											</div>
+											<div class="gal-bar">
+												<div class="gal-count" aria-live="polite"><span class="gal-cur">01</span><span class="gal-sep">/</span><span class="gal-total">16</span></div>
+												<div class="gal-progress" aria-hidden="true"><i></i></div>
+												<div class="gal-nav">
+													<!-- play/pause for the slideshow; breaq.js reveals it and keeps the label in step -->
+													<button class="gal-btn gal-play" type="button" aria-label="Pause slideshow" hidden>
+														<svg class="ic-pause" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M9 5v14M15 5v14"/></svg>
+														<svg class="ic-play" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M8 5.5v13l10-6.5z"/></svg>
+													</button>
+													<button class="gal-btn gal-prev" type="button" aria-label="Previous photo">
+														<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+													</button>
+													<button class="gal-btn gal-next" type="button" aria-label="Next photo">
+														<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+													</button>
+												</div>
+											</div>
+										</div>
+										<!-- Participants and tracks from the sponsorship catalog; speakers counted on breaq-2025.html -->
+										<dl class="stats">
+											<div><dt>Participants</dt><dd>80+</dd></div>
+											<div><dt>Speakers</dt><dd>13</dd></div>
+											<div><dt>Hackathon tracks</dt><dd>3</dd></div>
+											<div><dt>Hours of hacking</dt><dd>24</dd></div>
+										</dl>
+										<a href="breaq-2025.html" class="special">The full BreaQ 2025 page: programme, speakers, photos</a>
+									</section>
+
 									<!-- Organizers -->
 									<section id="organizers" class="section_space">
 										<h3 class="major">Organizers</h3>
-										<ul class="logos logos--marks">
-											<li><img src="images/opt/roqteam_logo.webp" alt="RoQTeam" loading="lazy" /></li>
-											<li><img src="images/opt/Logo_Campus.webp" alt="CAMPUS Research Institute" loading="lazy" /></li>
-											<li><img src="images/opt/Stema_ATM.webp" alt="Military Technical Academy Ferdinand I" loading="lazy" /></li>
+										<!-- the same tiles as the sponsors and partners; light exports for the dark tiles in images/opt/logos -->
+										<ul class="logos logos--tiles">
+											<li><a class="tile" href="index.html"><img src="images/opt/logos/roqteam.webp" alt="RoQTeam" loading="lazy" width="330" height="360" /></a></li>
+											<li><a class="tile" href="https://campus.pub.ro/" target="_blank" rel="noopener"><img src="images/opt/logos/campus.webp" alt="CAMPUS Research Institute" loading="lazy" width="330" height="360" /></a></li>
+											<li><a class="tile" href="https://mta.ro/" target="_blank" rel="noopener"><img src="images/opt/logos/atm.webp" alt="Military Technical Academy Ferdinand I" loading="lazy" width="306" height="360" /></a></li>
 										</ul>
 									</section>
 
@@ -281,38 +394,17 @@
 											<li><a class="tile" href="https://www.sap.com/" target="_blank" rel="noopener"><img src="images/opt/logos/sap.webp" alt="SAP" loading="lazy" width="900" height="472" /></a></li>
 										</ul>
 										<p class="logos-note">More sponsors are announced as they confirm. <a href="#catalog">Become a sponsor</a>.</p>
-										<!-- Sponsorship catalog: the PDF lives in docs/. The cover is a dark, document-shaped tile in the
-										     page's own language; the tiers are cards, the top tier in the accent colour. -->
-										<div class="catalog" id="catalog">
-											<a class="catalog-cover" href="docs/BreaQ_Sponsorship_Catalog.pdf" target="_blank" rel="noopener">
-												<img src="images/BreaQ_logo_2026-light.svg" alt="" width="1024" height="1024" />
-												<span class="catalog-kicker">Sponsorship catalog</span>
-												<span class="catalog-meta">PDF · 2 pages · 0.8 MB</span>
-												<span class="catalog-go">Open <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7M8 7h9v9"/></svg></span>
-											</a>
-											<div class="catalog-body">
-												<h4>Want to support BreaQ 2026?</h4>
-												<p>The catalog has the story of the 2025 edition and what each tier includes. Tiers are cumulative: a higher tier gets everything below it.</p>
-												<ol class="tiers">
-													<li class="is-partner"><b>Partner</b><span>over €3,000</span><em>“BreaQ powered by …” and a keynote slot</em></li>
-													<li class="is-gold"><b>Gold</b><span>over €1,000</span><em>recruiting stand, logo in communications</em></li>
-													<li class="is-silver"><b>Silver</b><span>over €700</span><em>lightning talk</em></li>
-													<li class="is-bronze"><b>Bronze</b><span>over €400</span><em>banner in the networking area</em></li>
-												</ol>
-												<p class="tiers-note"><b>Supporter</b>Beyond cash: technology, expertise, prizes, food and drinks.</p>
-												<p class="catalog-actions"><a href="docs/BreaQ_Sponsorship_Catalog.pdf" target="_blank" rel="noopener" class="button primary">Open the catalog <small>PDF · 0.8 MB</small></a> <a href="mailto:partnerships@roqteam.ro" class="button">Write to us</a></p>
-											</div>
-										</div>
 									</section>
 
 									<!-- Partners -->
 									<section id="partners" class="section_space">
 										<h3 class="major">Partners</h3>
+										<!-- a tile is a link where the partner has a site of its own; ITA does not, so it stays a span -->
 										<ul class="logos logos--tiles">
-											<li><span class="tile"><img src="images/opt/logos/aqora.webp" alt="Aqora" loading="lazy" width="900" height="237" /></span></li>
+											<li><a class="tile" href="https://aqora.io/" target="_blank" rel="noopener"><img src="images/opt/logos/aqora.webp" alt="Aqora" loading="lazy" width="900" height="237" /></a></li>
 											<li><span class="tile"><img src="images/opt/logos/ita.webp" alt="Advanced Technologies Institute" loading="lazy" width="618" height="614" /></span></li>
-											<li><span class="tile"><img src="images/opt/logos/sts.webp" alt="Special Telecommunications Service" loading="lazy" width="636" height="630" /></span></li>
-											<li><span class="tile"><img src="images/opt/logos/2space.webp" alt="2Space" loading="lazy" width="900" height="321" /></span></li>
+											<li class="tile--seal"><a class="tile" href="https://www.sts.ro/" target="_blank" rel="noopener"><img src="images/opt/logos/sts.webp" alt="Special Telecommunications Service" loading="lazy" width="636" height="630" /></a></li>
+											<li><a class="tile" href="https://students.2space.ro/" target="_blank" rel="noopener"><img src="images/opt/logos/2space.webp" alt="2Space" loading="lazy" width="900" height="321" /></a></li>
 										</ul>
 
 									</section>
@@ -338,7 +430,7 @@
 												<figcaption class="sp-info">
 													<h4 class="sp-name">Alexandru Ionita</h4>
 													<div class="sp-more"><div>
-														<p class="sp-role">Quantum Machine Learning Researcher, AIMultimediaLab; PhD Candidate, Bucharest National Polytechnic University of Science and Technology (UNSTPB)</p>
+														<p class="sp-role">Quantum Machine Learning Researcher, AIMultimediaLab; PhD Candidate, <abbr title="Bucharest National Polytechnic University of Science and Technology">UNSTPB</abbr></p>
 													</div></div>
 												</figcaption>
 											</figure>
@@ -348,7 +440,7 @@
 												<figcaption class="sp-info">
 													<h4 class="sp-name">Cristian Ilie</h4>
 													<div class="sp-more"><div>
-														<p class="sp-role">Telecommunications Engineer, Special Telecommunications Service; PhD Candidate, Bucharest National Polytechnic University of Science and Technology (UNSTPB)</p>
+														<p class="sp-role">Telecommunications Engineer, Special Telecommunications Service; PhD Candidate, <abbr title="Bucharest National Polytechnic University of Science and Technology">UNSTPB</abbr></p>
 													</div></div>
 												</figcaption>
 											</figure>
@@ -366,139 +458,43 @@
 										</div>
 									</section>
 
-									<!-- Last edition -->
-									<section id="last-edition" class="section_space">
-										<h3 class="major">Last edition <span>BreaQ 2025</span></h3>
-										<p>Talks at the Military Technical Academy, a quantum optics lab visit, online workshops and a 24-hour hackathon at CAMPUS: this is what the first BreaQ looked like in November 2025. Tap a photo to see it large, or browse <a href="photos-2025.html">the full album and the video</a>.</p>
-										<!--
-											To add a photo: drop it in images/breaq2025/ and copy one <figure> below.
-											Set its aspect-ratio (width / height) so the strip lays out before the image loads.
-											The counter, progress bar and autoplay pick up new slides automatically.
-										-->
-										<div class="gal" data-gal>
-											<div class="gal-track" tabindex="0" role="region" aria-roledescription="carousel" aria-label="Photos from BreaQ 2025">
-												<!-- video slide: the poster sits in the strip, the clip plays in the lightbox -->
-												<figure class="gal-slide gal-slide--video" data-video="images/opt/breaq-reel.mp4" style="aspect-ratio: 16 / 9">
-													<img src="images/opt/breaq-reel-poster.webp" alt="Video: around the hackathon floor at CAMPUS" loading="lazy" width="1280" height="720" />
-													<span class="play" aria-hidden="true"></span>
-													<figcaption><span class="gal-tag">Video</span>Around the hackathon floor at CAMPUS. Fourteen seconds, no sound.</figcaption>
-												</figure>
-												<figure class="gal-slide" style="aspect-ratio: 1600 / 1200">
-													<img src="images/opt/breaq25-01.webp" alt="Kickoff in the CAMPUS auditorium" loading="lazy" />
-													<figcaption><span class="gal-tag">Welcome</span>Kickoff in the CAMPUS auditorium.</figcaption>
-												</figure>
-												<figure class="gal-slide" style="aspect-ratio: 1600 / 1200">
-													<img src="images/opt/breaq25-02.webp" alt="Teams settle in for 24 hours" loading="lazy" />
-													<figcaption><span class="gal-tag">Hackathon</span>Teams settle in for 24 hours.</figcaption>
-												</figure>
-												<figure class="gal-slide" style="aspect-ratio: 1600 / 1200">
-													<img src="images/opt/breaq25-03.webp" alt="The fuel station: snacks and energy drinks" loading="lazy" />
-													<figcaption><span class="gal-tag">Hackathon</span>The fuel station: snacks and energy drinks.</figcaption>
-												</figure>
-												<figure class="gal-slide" style="aspect-ratio: 1200 / 1600">
-													<img src="images/opt/breaq25-04.webp" alt="Pen and paper before code" loading="lazy" />
-													<figcaption><span class="gal-tag">Hackathon</span>Pen and paper before code.</figcaption>
-												</figure>
-												<figure class="gal-slide" style="aspect-ratio: 1600 / 1200">
-													<img src="images/opt/breaq25-05.webp" alt="A break in the lounge" loading="lazy" />
-													<figcaption><span class="gal-tag">Evening</span>A break in the lounge.</figcaption>
-												</figure>
-												<figure class="gal-slide" style="aspect-ratio: 1600 / 901">
-													<img src="images/opt/breaq25-06.webp" alt="Debugging together, late in the day" loading="lazy" />
-													<figcaption><span class="gal-tag">Hackathon</span>Debugging together, late in the day.</figcaption>
-												</figure>
-												<figure class="gal-slide" style="aspect-ratio: 1200 / 1600">
-													<img src="images/opt/breaq25-07.webp" alt="Deep focus" loading="lazy" />
-													<figcaption><span class="gal-tag">Night</span>Deep focus.</figcaption>
-												</figure>
-												<figure class="gal-slide" style="aspect-ratio: 1600 / 1200">
-													<img src="images/opt/breaq25-08.webp" alt="A mentor at the whiteboard, close to midnight" loading="lazy" />
-													<figcaption><span class="gal-tag">Night</span>A mentor at the whiteboard, close to midnight.</figcaption>
-												</figure>
-												<figure class="gal-slide" style="aspect-ratio: 1600 / 901">
-													<img src="images/opt/breaq25-09.webp" alt="T‑shirts and lanyards for everyone" loading="lazy" />
-													<figcaption><span class="gal-tag">Morning</span>T‑shirts and lanyards for everyone.</figcaption>
-												</figure>
-												<figure class="gal-slide" style="aspect-ratio: 1600 / 901">
-													<img src="images/opt/breaq25-10.webp" alt="Pitching to the jury" loading="lazy" />
-													<figcaption><span class="gal-tag">Presentations</span>Pitching to the jury.</figcaption>
-												</figure>
-												<figure class="gal-slide" style="aspect-ratio: 1600 / 1200">
-													<img src="images/opt/breaq25-11.webp" alt="The auditorium on judging morning" loading="lazy" />
-													<figcaption><span class="gal-tag">Presentations</span>The auditorium on judging morning.</figcaption>
-												</figure>
-												<figure class="gal-slide" style="aspect-ratio: 1600 / 901">
-													<img src="images/opt/breaq25-12.webp" alt="Results, charts and hard questions" loading="lazy" />
-													<figcaption><span class="gal-tag">Presentations</span>Results, charts and hard questions.</figcaption>
-												</figure>
-												<figure class="gal-slide" style="aspect-ratio: 1600 / 1200">
-													<img src="images/opt/breaq25-13.webp" alt="Mentors, jury and winners" loading="lazy" />
-													<figcaption><span class="gal-tag">Awards</span>Mentors, jury and winners.</figcaption>
-												</figure>
-												<figure class="gal-slide" style="aspect-ratio: 1200 / 1600">
-													<img src="images/opt/breaq25-14.webp" alt="A winning team with their diploma" loading="lazy" />
-													<figcaption><span class="gal-tag">Awards</span>A winning team with their diploma.</figcaption>
-												</figure>
-												<figure class="gal-slide" style="aspect-ratio: 1600 / 1200">
-													<img src="images/opt/breaq25-15.webp" alt="The BreaQ 2025 hackathon crew" loading="lazy" />
-													<figcaption><span class="gal-tag">Group photo</span>The BreaQ 2025 hackathon crew.</figcaption>
-												</figure>
-											</div>
-											<div class="gal-bar">
-												<div class="gal-count" aria-live="polite"><span class="gal-cur">01</span><span class="gal-sep">/</span><span class="gal-total">16</span></div>
-												<div class="gal-progress" aria-hidden="true"><i></i></div>
-												<div class="gal-nav">
-													<!-- play/pause for the slideshow; breaq.js reveals it and keeps the label in step -->
-													<button class="gal-btn gal-play" type="button" aria-label="Pause slideshow" hidden>
-														<svg class="ic-pause" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M9 5v14M15 5v14"/></svg>
-														<svg class="ic-play" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M8 5.5v13l10-6.5z"/></svg>
-													</button>
-													<button class="gal-btn gal-prev" type="button" aria-label="Previous photo">
-														<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
-													</button>
-													<button class="gal-btn gal-next" type="button" aria-label="Next photo">
-														<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
-													</button>
-												</div>
-											</div>
-										</div>
-										<a href="breaq-2025.html" class="special">The full BreaQ 2025 page: programme, speakers, photos</a>
-									</section>
-
 									<!-- What's next -->
 									<section id="next" class="section_space">
 										<h3 class="major">What’s next</h3>
 										<div class="next-wrap">
+											<!-- The satellites share one 22 s period and start a sixth and about a third of a turn apart,
+											     so their labels never overlap each other. breaq.js freezes the orbit under reduced motion. -->
 											<svg class="orbits" viewBox="0 0 400 400" role="img" aria-label="Speakers, schedule and challenges orbiting BreaQ 2026, to be announced">
 												<defs><filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="4" /></filter></defs>
 												<path id="o1" class="orbit" d="M 348.3 140.1 A 160 62 -22 1 1 51.7 259.9 A 160 62 -22 1 1 348.3 140.1" />
 												<path id="o2" class="orbit" d="M 326.1 298.5 A 160 62 38 1 1 73.9 101.5 A 160 62 38 1 1 326.1 298.5" />
 												<path id="o3" class="orbit" d="M 177.7 358.4 A 160 62 98 1 1 222.3 41.6 A 160 62 98 1 1 177.7 358.4" />
 												<circle class="core-glow" cx="200" cy="200" r="40" filter="url(#glow)"><animate attributeName="r" values="38;50;38" dur="5s" repeatCount="indefinite" /><animate attributeName="opacity" values="0.35;0.12;0.35" dur="5s" repeatCount="indefinite" /></circle>
-												<circle class="core" cx="200" cy="200" r="36" />
-												<text class="core-year" x="200" y="207" text-anchor="middle">2026</text>
 												<g class="sat">
 													<circle class="sat-halo" r="11" filter="url(#glow)" />
 													<circle class="sat-dot" r="5" />
 													<text class="sat-label" x="14" y="4">Speakers</text>
-													<animateMotion dur="18s" begin="-2s" repeatCount="indefinite"><mpath href="#o1" /></animateMotion>
+													<animateMotion dur="22s" begin="0s" repeatCount="indefinite"><mpath href="#o1" /></animateMotion>
 												</g>
 												<g class="sat">
 													<circle class="sat-halo" r="11" filter="url(#glow)" />
 													<circle class="sat-dot" r="5" />
 													<text class="sat-label" x="14" y="4">Schedule</text>
-													<animateMotion dur="22s" begin="-9s" repeatCount="indefinite"><mpath href="#o2" /></animateMotion>
+													<animateMotion dur="22s" begin="-3.67s" repeatCount="indefinite"><mpath href="#o2" /></animateMotion>
 												</g>
 												<g class="sat">
 													<circle class="sat-halo" r="11" filter="url(#glow)" />
 													<circle class="sat-dot" r="5" />
 													<text class="sat-label" x="14" y="4">Challenges</text>
-													<animateMotion dur="26s" begin="-15s" repeatCount="indefinite"><mpath href="#o3" /></animateMotion>
+													<animateMotion dur="22s" begin="-6.97s" repeatCount="indefinite"><mpath href="#o3" /></animateMotion>
 												</g>
+												<!-- the core is drawn last: a satellite passing the middle goes behind it, and 2026 stays readable -->
+												<circle class="core" cx="200" cy="200" r="36" />
+												<text class="core-year" x="200" y="207" text-anchor="middle">2026</text>
 											</svg>
 											<div class="next-body">
-												<div class="next-count" data-countdown-stages='[{"label":"Hackathon starts in","target":"2026-10-24T09:00:00+03:00"},{"label":"The hackathon is on. Good luck, teams!","until":"2026-10-25T14:00:00+02:00"},{"label":"Presentations in","target":"2026-11-14T09:00:00+02:00"},{"label":"Presentation day is on at the Military Technical Academy","until":"2026-11-14T18:00:00+02:00"},{"label":"That was BreaQ 2026. Thank you, and see you in 2027!"}]'>
-													<p class="next-count-label">Hackathon starts in</p>
+												<div class="next-count" data-countdown-stages='[{"label":"Registration closes in","target":"2026-10-18T23:59:59+03:00"},{"label":"Hackathon starts in","target":"2026-10-24T09:00:00+03:00"},{"label":"The hackathon is on. Good luck, teams!","until":"2026-10-25T14:00:00+02:00"},{"label":"Presentations in","target":"2026-11-14T09:00:00+02:00"},{"label":"Presentation day is on at the Military Technical Academy","until":"2026-11-14T18:00:00+02:00"},{"label":"That was BreaQ 2026. Thank you, and see you in 2027!"}]'>
+													<p class="next-count-label">Registration closes in</p>
 													<div class="next-digits">
 														<div><b data-unit="d">–</b><span>days</span></div>
 														<div><b data-unit="h">–</b><span>hours</span></div>
@@ -533,8 +529,8 @@
 													<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3388.9287792557307!2d26.08474839551503!3d44.41802049790311!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x40b1ff0b54881f97%3A0xae84d2f47f65a3a7!2sMilitary%20Technical%20Academy%20Ferdinand%20I!5e0!3m2!1sen!2sro!4v1726344783855!5m2!1sen!2sro" title="Map: Military Technical Academy Ferdinand I" loading="lazy" referrerpolicy="no-referrer-when-downgrade" tabindex="-1"></iframe>
 													<div class="venue-info">
 														<p class="venue-when">14 November · Presentations</p>
-														<h4>Military Technical Academy "Ferdinand I"</h4>
-														<p class="venue-addr">Bulevardul George Coşbuc nr. 39-49, Sector 5, București, 050141</p>
+														<h4>Military Technical Academy “Ferdinand I”</h4>
+														<p class="venue-addr">Bulevardul George Coșbuc nr. 39-49, Sector 5, București, 050141</p>
 														<p class="venue-links"><a class="ch-more" href="https://www.google.com/maps/search/?api=1&amp;query=Academia%20Tehnic%C4%83%20Militar%C4%83%20Ferdinand%20I%2C%20Bulevardul%20George%20Co%C8%99buc%2039-49%2C%20Bucure%C8%99ti" target="_blank" rel="noopener">Open in Google Maps</a><a class="ch-more" href="https://www.google.com/maps/dir/?api=1&amp;destination=Academia%20Tehnic%C4%83%20Militar%C4%83%20Ferdinand%20I%2C%20Bulevardul%20George%20Co%C8%99buc%2039-49%2C%20Bucure%C8%99ti" target="_blank" rel="noopener">Directions</a></p>
 													</div>
 												</div>
@@ -548,52 +544,52 @@
 										<ul class="faq">
 											<li class="faq-item">
 												<button class="faq-q" type="button" aria-expanded="false" aria-controls="faq-a-1">
-													<span class="faq-ic icon solid fa-person-booth" aria-hidden="true"></span>
-													<span class="faq-t">Who is this event for?</span>
+													<span class="faq-ic icon solid fa-hourglass-half" aria-hidden="true"></span>
+													<span class="faq-t">When does registration close?</span>
 													<span class="faq-chev" aria-hidden="true"></span>
 												</button>
 												<div class="faq-a" id="faq-a-1"><div>
-													<p>Anyone interested in quantum computing, from complete beginners to advanced experts: students, researchers, professionals and enthusiasts.</p>
+													<p>On 18 October 2026. There is no fixed limit on the number of participants.</p>
 												</div></div>
 											</li>
 											<li class="faq-item">
 												<button class="faq-q" type="button" aria-expanded="false" aria-controls="faq-a-2">
-													<span class="faq-ic icon solid fa-money-bill-wave" aria-hidden="true"></span>
-													<span class="faq-t">What does it cost?</span>
+													<span class="faq-ic icon solid fa-language" aria-hidden="true"></span>
+													<span class="faq-t">What language is it in?</span>
 													<span class="faq-chev" aria-hidden="true"></span>
 												</button>
 												<div class="faq-a" id="faq-a-2"><div>
-													<p>Nothing. Participation is free, you just have to bring your creativity and good will.</p>
+													<p>BreaQ runs in both Romanian and English.</p>
 												</div></div>
 											</li>
 											<li class="faq-item">
 												<button class="faq-q" type="button" aria-expanded="false" aria-controls="faq-a-3">
-													<span class="faq-ic icon solid fa-search-location" aria-hidden="true"></span>
-													<span class="faq-t">Where is the event?</span>
+													<span class="faq-ic icon solid fa-user-friends" aria-hidden="true"></span>
+													<span class="faq-t">Do I need a team?</span>
 													<span class="faq-chev" aria-hidden="true"></span>
 												</button>
 												<div class="faq-a" id="faq-a-3"><div>
-													<p>In Bucharest: the hackathon at the CAMPUS Research Institute and the presentation session at the Military Technical Academy “Ferdinand I”. See the <a href="#venue">venue section</a> for maps.</p>
+													<p>No. Register on your own and we match you with a team at the event, or name your team on the form. Everyone on a team registers separately.</p>
 												</div></div>
 											</li>
 											<li class="faq-item">
 												<button class="faq-q" type="button" aria-expanded="false" aria-controls="faq-a-4">
-													<span class="faq-ic icon solid fa-calendar-week" aria-hidden="true"></span>
-													<span class="faq-t">When does it happen?</span>
+													<span class="faq-ic icon solid fa-atom" aria-hidden="true"></span>
+													<span class="faq-t">How much quantum experience do I need?</span>
 													<span class="faq-chev" aria-hidden="true"></span>
 												</button>
 												<div class="faq-a" id="faq-a-4"><div>
-													<p>The 24‑hour hackathon is on 24–25 October 2026 at the CAMPUS Research Institute, and the presentation day on 14 November 2026 at the Military Technical Academy “Ferdinand I”. The detailed <a href="#schedule">schedule</a> is published with the line‑up.</p>
+													<p>None. Every level is welcome, from complete beginners to researchers. The form asks about your experience so we can balance the teams, and mentors are on the floor to help.</p>
 												</div></div>
 											</li>
 											<li class="faq-item">
 												<button class="faq-q" type="button" aria-expanded="false" aria-controls="faq-a-5">
-													<span class="faq-ic icon solid fa-network-wired" aria-hidden="true"></span>
-													<span class="faq-t">What is the format?</span>
+													<span class="faq-ic icon solid fa-trophy" aria-hidden="true"></span>
+													<span class="faq-t">Are there prizes?</span>
 													<span class="faq-chev" aria-hidden="true"></span>
 												</button>
 												<div class="faq-a" id="faq-a-5"><div>
-													<p>Two components: a presentation session that mixes professionalism, creativity and enthusiasm, and a hackathon where teams build solutions to real challenges with quantum technologies.</p>
+													<p>Yes. At the end of the 24 hours each team publishes its code and gives a short presentation to the jury, and each track awards first, second and third place. We announce the prizes closer to the event.</p>
 												</div></div>
 											</li>
 											<li class="faq-item">
@@ -603,7 +599,7 @@
 													<span class="faq-chev" aria-hidden="true"></span>
 												</button>
 												<div class="faq-a" id="faq-a-6"><div>
-													<p>Accepted participants receive an invitation to the official Discord server. You can also email <a href="mailto:partnerships@roqteam.ro">partnerships@roqteam.ro</a>.</p>
+													<p>Everyone who registers receives an invitation to the official Discord server. You can also email <a href="mailto:partnerships@roqteam.ro">partnerships@roqteam.ro</a>.</p>
 												</div></div>
 											</li>
 											<li class="faq-item">
@@ -618,11 +614,31 @@
 											</li>
 											<li class="faq-item">
 												<button class="faq-q" type="button" aria-expanded="false" aria-controls="faq-a-8">
+													<span class="faq-ic icon solid fa-couch" aria-hidden="true"></span>
+													<span class="faq-t">Can I sleep on site?</span>
+													<span class="faq-chev" aria-hidden="true"></span>
+												</button>
+												<div class="faq-a" id="faq-a-8"><div>
+													<p>You can, but we don’t recommend it. There are no beds on site, only beanbags and a few sofas.</p>
+												</div></div>
+											</li>
+											<li class="faq-item">
+												<button class="faq-q" type="button" aria-expanded="false" aria-controls="faq-a-9">
+													<span class="faq-ic icon solid fa-clock" aria-hidden="true"></span>
+													<span class="faq-t">Do the clocks change during the hackathon?</span>
+													<span class="faq-chev" aria-hidden="true"></span>
+												</button>
+												<div class="faq-a" id="faq-a-9"><div>
+													<p>Yes. Summer time ends in the night: at 04:00 on Sunday 25 October the clocks go back to 03:00, so the night is an hour longer. Every time we publish is Bucharest local time, and the hackathon ends at 14:00 by Sunday’s clock.</p>
+												</div></div>
+											</li>
+											<li class="faq-item">
+												<button class="faq-q" type="button" aria-expanded="false" aria-controls="faq-a-10">
 													<span class="faq-ic icon solid fa-pizza-slice" aria-hidden="true"></span>
 													<span class="faq-t">Are meals provided?</span>
 													<span class="faq-chev" aria-hidden="true"></span>
 												</button>
-												<div class="faq-a" id="faq-a-8"><div>
+												<div class="faq-a" id="faq-a-10"><div>
 													<p>Yes, meals and refreshments are provided. Please indicate any dietary restrictions when you register.</p>
 												</div></div>
 											</li>
@@ -632,36 +648,35 @@
 									<!-- Closing call -->
 									<section id="join" class="section_space cta">
 										<h3 class="major">Ready to break the boundaries?</h3>
-										<p>Registration is free and takes a couple of minutes. Accepted participants get the Discord invite and every practical detail from there.</p>
+										<p>Registration is free, takes a couple of minutes and closes on 18 October. Everyone who registers gets a place, and the Discord invite with every practical detail.</p>
 										<a href="register.html" class="button primary">Register</a>
 									</section>
 
-									<!-- <section class="features">
-										<article>
-											<a href="#" class="image"><img src="images/pic04.jpg" alt="" /></a>
-											<h3 class="major">Sed feugiat lorem</h3>
-											<p>Lorem ipsum dolor sit amet, consectetur adipiscing vehicula id nulla dignissim dapibus ultrices.</p>
-											<a href="#" class="special">Learn more</a>
-										</article>
-										<article>
-											<a href="#" class="image"><img src="images/pic05.jpg" alt="" /></a>
-											<h3 class="major">Nisl placerat</h3>
-											<p>Lorem ipsum dolor sit amet, consectetur adipiscing vehicula id nulla dignissim dapibus ultrices.</p>
-											<a href="#" class="special">Learn more</a>
-										</article>
-									</section> -->
-									
-									<!-- <section>
-										<div class="container">
-											<header>
-												<h2>Registration Form</h2>
-											</header>
-											<div class="col-12 " style="align-items: center;">
-												<iframe src="https://docs.google.com/forms/d/e/1FAIpQLSd-QaUSP9TJy2iyGObSvOBR0d6q1P2kXjY4Lmw5Vn49BtTxuw/viewform?embedded=true" width="60%" height="400" frameborder="0" marginheight="0" marginwidth="0" style="align-items: center;">Loading…</iframe>							
+									<!-- Become a sponsor: last, after the participants’ call to action; the logo rows stay under Sponsors -->
+									<section id="catalog" class="section_space">
+										<h3 class="major">Become a sponsor</h3>
+										<!-- Sponsorship catalog: the PDF lives in docs/. The cover is a dark, document-shaped tile in the
+										     page's own language; the tiers are cards, the top tier in the accent colour. -->
+										<div class="catalog">
+											<a class="catalog-cover" href="docs/BreaQ_Sponsorship_Catalog.pdf" target="_blank" rel="noopener">
+												<img src="images/BreaQ_logo_2026-light.svg" alt="" width="1024" height="1024" />
+												<span class="catalog-kicker">Sponsorship catalog</span>
+												<span class="catalog-meta">PDF · 2 pages · 0.8 MB</span>
+												<span class="catalog-go">Open <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7M8 7h9v9"/></svg></span>
+											</a>
+											<div class="catalog-body">
+												<p>The catalog has the story of the 2025 edition and what each tier includes. Tiers are cumulative: a higher tier gets everything below it.</p>
+												<ol class="tiers">
+													<li class="is-partner"><b>Partner</b><span>over €3,000</span><em>“BreaQ powered by …” and a keynote slot</em></li>
+													<li class="is-gold"><b>Gold</b><span>over €1,000</span><em>recruiting stand, logo in communications</em></li>
+													<li class="is-silver"><b>Silver</b><span>over €700</span><em>lightning talk</em></li>
+													<li class="is-bronze"><b>Bronze</b><span>over €400</span><em>banner in the networking area</em></li>
+												</ol>
+												<p class="tiers-note"><b>Supporter</b>Beyond cash: technology, expertise, prizes, food and drinks.</p>
+												<p class="catalog-actions"><a href="docs/BreaQ_Sponsorship_Catalog.pdf" target="_blank" rel="noopener" class="button primary">Open the catalog <small>PDF · 0.8 MB</small></a> <a href="mailto:partnerships@roqteam.ro" class="button">Write to us</a></p>
 											</div>
-										</div> 
-									</section> -->
-
+										</div>
+									</section>
 
 								</div>
 							</div>
@@ -672,25 +687,6 @@
 					<section id="footer" class="section_space">
 						<div class="inner">
 							<h2 class="major">Get in touch</h2>
-							<!-- <form method="post" action="#">
-								<div class="fields">
-									<div class="field">
-										<label for="name">Name</label>
-										<input type="text" name="name" id="name" />
-									</div>
-									<div class="field">
-										<label for="email">Email</label>
-										<input type="email" name="email" id="email" />
-									</div>
-									<div class="field">
-										<label for="message">Message</label>
-										<textarea name="message" id="message" rows="4"></textarea>
-									</div>
-								</div>
-								<ul class="actions">
-									<li><input type="submit" value="Send Message" /></li>
-								</ul>
-							</form> -->
 							<ul class="contact">
 								<li class="icon brands alt fa-linkedin-in"><a href="https://www.linkedin.com/company/roqteam/"><em><b>RoQTeam</b></em></a></li>
 								<li class="icon solid fa-envelope"><a href="mailto:partnerships@roqteam.ro"><em><b>partnerships@roqteam.ro</b></em></a></li>
@@ -710,7 +706,6 @@
 			<script src="assets/js/breakpoints.min.js"></script>
 			<script src="assets/js/util.js"></script>
 			<script src="assets/js/main.js"></script>
-			<script src="assets/js/script.js"></script>
 			<script src="assets/js/breaq.js"></script>
 	</body>
 </html>

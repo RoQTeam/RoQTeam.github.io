@@ -209,6 +209,14 @@
 	/* What's next: countdown to the hackathon, orbit animation       */
 	/* ------------------------------------------------------------ */
 
+	// The orbit is SMIL, which CSS cannot stop: freeze it for visitors who ask for less motion.
+	// At time 0 the satellites sit at their start offsets, spread apart with the labels clear.
+	var orbitSvg = document.querySelector('svg.orbits');
+	if (orbitSvg && reduceMotion && orbitSvg.pauseAnimations) {
+		orbitSvg.pauseAnimations();
+		if (orbitSvg.setCurrentTime) orbitSvg.setCurrentTime(0);
+	}
+
 	// Staged countdown: data-countdown-stages is a JSON list, in order. A stage with "target"
 	// counts down to that time; one with "until" shows its label (no digits) until that time;
 	// the last stage, with neither, is the message that stays after the event.
@@ -445,7 +453,7 @@
 			}
 
 			var singles = ':scope > h3.major, :scope > p, :scope > .button, :scope > a.special, :scope > .sp-hint, :scope > .tier, :scope > .logos-note, :scope > .gal, :scope > h4';
-			var groups = ':scope > .glance, :scope > .kit, :scope > .logos, :scope > .venues, :scope > .faq, :scope > .ch-grid, :scope > .next-wrap, :scope > .soon-grid, :scope > .res, :scope > .ch-cols, :scope > .ch-list, :scope > .catalog, :scope > .mosaic';
+			var groups = ':scope > .glance, :scope > .kit, :scope > .logos, :scope > .venues, :scope > .faq, :scope > .ch-grid, :scope > .next-wrap, :scope > .soon-grid, :scope > .res, :scope > .ch-cols, :scope > .ch-list, :scope > .catalog, :scope > .mosaic, :scope > .stats';
 
 			forEach(document.querySelectorAll('.wrapper .inner > section'), function (section) {
 				// only what is below the first screen: the hero has its own entrance
@@ -764,6 +772,7 @@
 		var slides = Array.prototype.slice.call(gal.querySelectorAll('.gal-slide'));
 		var cur = gal.querySelector('.gal-cur');
 		var total = gal.querySelector('.gal-total');
+		var live = gal.querySelector('.gal-count[aria-live]');
 		var bar = gal.querySelector('.gal-progress i');
 		var prev = gal.querySelector('.gal-prev');
 		var next = gal.querySelector('.gal-next');
@@ -781,6 +790,12 @@
 		function pad(n) { return (n < 10 ? '0' : '') + n; }
 
 		if (total) total.textContent = pad(count);
+
+		// The counter is read out when the visitor moves the strip, not on every autoplay step,
+		// which would make a screen reader announce "02 / 16", "03 / 16"… every five seconds.
+		function announce(on) {
+			if (live) live.setAttribute('aria-live', on ? 'polite' : 'off');
+		}
 
 		function setCurrent(i) {
 			index = i;
@@ -823,7 +838,7 @@
 				if (best === target) { target = null; window.clearTimeout(targetTimer); }
 				return;
 			}
-			if (best !== index) setCurrent(best);
+			if (best !== index) { announce(true); setCurrent(best); }
 		}
 
 		track.addEventListener('scroll', function () {
@@ -831,18 +846,19 @@
 			settle = window.setTimeout(syncFromScroll, 120);
 		}, { passive: true });
 
-		if (prev) prev.addEventListener('click', function () { goTo(index - 1); });
-		if (next) next.addEventListener('click', function () { goTo(index + 1); });
+		if (prev) prev.addEventListener('click', function () { announce(true); goTo(index - 1); });
+		if (next) next.addEventListener('click', function () { announce(true); goTo(index + 1); });
 
 		track.addEventListener('keydown', function (ev) {
-			if (ev.key === 'ArrowRight') { ev.preventDefault(); goTo(index + 1); }
-			else if (ev.key === 'ArrowLeft') { ev.preventDefault(); goTo(index - 1); }
+			if (ev.key === 'ArrowRight') { ev.preventDefault(); announce(true); goTo(index + 1); }
+			else if (ev.key === 'ArrowLeft') { ev.preventDefault(); announce(true); goTo(index - 1); }
 		});
 
 		// Autoplay: gentle, and only while the gallery is on screen and untouched.
 		// Off from the start under reduced motion; the play button can still start it on request.
 		function tick() {
 			if (paused || !inView || document.hidden) return;
+			announce(false);
 			goTo(index + 1);
 		}
 
@@ -873,7 +889,7 @@
 			};
 			playBtn.addEventListener('click', function () {
 				auto = !auto;
-				if (auto) { startAuto(); goTo(index + 1); } else { stopAuto(); }
+				if (auto) { startAuto(); announce(false); goTo(index + 1); } else { stopAuto(); }
 				syncPlay();
 			});
 			syncPlay();

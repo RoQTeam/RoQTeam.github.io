@@ -26,6 +26,7 @@
 	.chap-nav, .chap-nav *,
 	.hero-row, .hero-row *,
 	.glance, .glance *,
+	.stats, .stats *,
 	.xp, .xp *,
 	.ch-grid, .ch-grid *,
 	.venues, .venues *,
@@ -521,8 +522,9 @@
 			stroke-width: 1;
 		}
 
+		/* nearly solid: the satellites pass behind it */
 		.orbits .core {
-			fill: rgba(76, 92, 150, 0.55);
+			fill: rgba(62, 74, 122, 0.92);
 			stroke: rgba(255, 255, 255, 0.28);
 			stroke-width: 1;
 		}
@@ -662,6 +664,38 @@
 		.next-digits b {
 			font-size: 1.9em;
 		}
+
+		/* the countdown first, then a smaller orbit, then the text: .next-body steps out of the
+		   way (display: contents) so its children can be ordered around the drawing */
+		.next-wrap {
+			display: flex;
+			flex-direction: column;
+			gap: 1.25em;
+		}
+
+			.next-body {
+				display: contents;
+			}
+
+			.next-count {
+				order: -2;
+				margin: 0;
+			}
+
+			.orbits {
+				order: -1;
+				align-self: center;
+				max-width: 15em;
+			}
+
+			.next-body p,
+			.next-body .next-actions {
+				margin: 0;
+			}
+
+			.next-body .next-gcal {
+				margin-top: -0.5em;
+			}
 
 	}
 
@@ -1151,6 +1185,12 @@
 		max-width: 36em;
 	}
 
+	/* when a section follows (the sponsor section on breaq.html), the same air under the
+	   button as under any other section */
+	.cta:not(:last-child) > .button {
+		margin-bottom: 2em;
+	}
+
 	@media screen and (max-width: 736px) {
 
 		.cta .button {
@@ -1222,6 +1262,22 @@
 
 	}
 
+	/* the page title is an h1 (one top-level heading per page) and keeps the theme's hero h2 look */
+	#wrapper > header h1 {
+		border-bottom: solid 2px rgba(255, 255, 255, 0.125);
+		font-size: 2em;
+		margin-bottom: 0.8em;
+		padding-bottom: 0.4em;
+	}
+
+	@media screen and (max-width: 736px) {
+
+		#wrapper > header h1 {
+			font-size: 1.25em;
+		}
+
+	}
+
 	.hero-row {
 		display: flex;
 		flex-wrap: wrap;
@@ -1251,6 +1307,20 @@
 			margin-left: auto;
 		}
 
+		/* the button with the deadline under it (breaq.html) */
+		.hero-cta {
+			display: flex;
+			flex-direction: column;
+			align-items: flex-start;
+			gap: 0.6em;
+		}
+
+			.hero-cta small {
+				font-size: 0.68em;
+				letter-spacing: 0.04em;
+				color: var(--bq-fg-light);
+			}
+
 	@media screen and (max-width: 736px) {
 
 		.hero-row {
@@ -1259,6 +1329,11 @@
 
 		.hero-row .button {
 			margin-left: 0;
+			width: 100%;
+		}
+
+		.hero-cta {
+			align-items: center;
 			width: 100%;
 		}
 
@@ -1320,6 +1395,17 @@
 			line-height: 1.45;
 			color: #ffffff;
 		}
+
+			/* a quiet label above each line of dates: Hackathon, Presentations */
+			.glance-k {
+				display: block;
+				font-size: 0.8em;
+				color: var(--bq-fg-light);
+			}
+
+				.glance-k ~ .glance-k {
+					margin-top: 0.55em;
+				}
 
 	@media screen and (max-width: 980px) {
 
@@ -1406,7 +1492,7 @@
 	}
 
 /* ------------------------------------------------------------------ */
-/* Logos: organizers as marks, sponsors and partners as tiles          */
+/* Logos: organizers, sponsors and partners as tiles                   */
 /* ------------------------------------------------------------------ */
 
 	.logos {
@@ -1434,25 +1520,10 @@
 			transform: scale(1.04);
 		}
 
-	.logos--marks {
-		grid-template-columns: repeat(3, minmax(0, 1fr));
-	}
-
-		.logos--marks li {
-			height: 9em;
-		}
-
-		.logos--marks img {
-			width: auto;
-			max-width: 80%;
-			max-height: 100%;
-			object-fit: contain;
-		}
-
 	/* tiles: one dark surface for every logo (transparent exports in images/opt/logos),
 	   the logo contained inside with air around it; a tile is a link where we have one */
 	.logos--tiles {
-		/* as many columns as fit: five supporters make one row, four partners make one row */
+		/* as many columns as fit: the organizers, the supporters and the partners each make one row */
 		grid-template-columns: repeat(auto-fit, minmax(8em, 1fr));
 	}
 
@@ -1495,6 +1566,11 @@
 			object-fit: contain;
 		}
 
+		/* a round seal in dark blue: a thin light rim lifts its edge off the dark tile */
+		.logos .tile--seal img {
+			filter: drop-shadow(0 0 0.6px rgba(255, 255, 255, 0.9)) drop-shadow(0 0 6px rgba(255, 255, 255, 0.2));
+		}
+
 		/* the K in the small Kfea file is tiny; do not blow it up */
 		.logos .tile img[width="86"] {
 			max-height: 70%;
@@ -1508,8 +1584,7 @@
 		}
 
 	/* sponsors: one ranked row on the supporters' four-column grid, then equal supporters.
-	   Gold spans three columns; silver takes one at full row height; bronze takes one at the
-	   size of a supporter tile and sits at the top, so the tile size follows the tier.
+	   Gold spans three columns; silver and bronze take one each, at the full height of the row.
 	   The tier's colour is the line along the tile's top edge and the tag in its corner. */
 	.logos.logos--rank {
 		grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1536,11 +1611,6 @@
 		}
 
 		.logos.logos--rank .is-silver {
-			aspect-ratio: 3 / 2;
-		}
-
-		.logos.logos--rank .is-bronze {
-			align-self: start;
 			aspect-ratio: 3 / 2;
 		}
 
@@ -1577,10 +1647,6 @@
 
 	@media screen and (max-width: 736px) {
 
-		.logos--marks li {
-			height: 6em;
-		}
-
 		.logos--tiles {
 			grid-template-columns: repeat(2, minmax(0, 1fr));
 		}
@@ -1612,6 +1678,7 @@
 			/* half width, like a supporter tile on a phone */
 			.logos.logos--rank .is-bronze {
 				width: calc(50% - 0.5em);
+				aspect-ratio: 3 / 2;
 			}
 
 	}
@@ -1733,7 +1800,8 @@
 				right: 0;
 				top: 0;
 				padding: 1.1em 1.2em 2.4em 1.2em;
-				background: linear-gradient(to bottom, rgba(38, 40, 56, 0.97) 0%, rgba(38, 40, 56, 0.9) 55%, rgba(38, 40, 56, 0) 100%);
+				/* solid down to the links, fading only across the bottom padding, so no map label shows behind the text */
+				background: linear-gradient(to bottom, rgba(38, 40, 56, 0.97) 0%, rgba(38, 40, 56, 0.95) calc(100% - 2.4em), rgba(38, 40, 56, 0) 100%);
 			}
 
 				.venue-info h4 {
@@ -2016,6 +2084,12 @@
 			transition: opacity 0.45s var(--bq-ease-out), transform 0.55s var(--bq-ease-out);
 		}
 
+		.sp-role abbr {
+			text-decoration: none;
+			border: 0;
+			cursor: help;
+		}
+
 		.sp-role {
 			margin: 0.55em 0 0 0;
 			font-size: 0.62em;
@@ -2122,7 +2196,9 @@
 			grid-template-rows: 1fr;
 		}
 
+		/* room for three lines of role on every card, so the names line up across the row */
 		.sp-grid--open .sp-role {
+			min-height: 4.5em;
 			opacity: 1;
 			transform: none;
 		}
@@ -2642,6 +2718,75 @@
 		.tl-abs p {
 			padding: 0 0 1em 0;
 		}
+
+	}
+
+/* ------------------------------------------------------------------ */
+/* Last edition in numbers: the glance row's frame, the countdown's    */
+/* light numerals                                                       */
+/* ------------------------------------------------------------------ */
+
+	.stats {
+		display: grid;
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+		margin: 0 0 2em 0;
+		border-top: 1px solid var(--bq-line);
+		border-bottom: 1px solid var(--bq-line);
+	}
+
+		/* the number reads first, the label under it; the markup keeps dt before dd */
+		.stats > div {
+			display: flex;
+			flex-direction: column-reverse;
+			justify-content: flex-end;
+			gap: 0.45em;
+			padding: 1.1em 1.25em;
+			border-left: 1px solid var(--bq-line);
+		}
+
+			.stats > div:first-child {
+				padding-left: 0;
+				border-left: 0;
+			}
+
+		.stats dt {
+			margin: 0;
+			font-family: Raleway, Helvetica, sans-serif;
+			font-size: 0.55em;
+			font-weight: 700;
+			letter-spacing: 0.25em;
+			text-transform: uppercase;
+			color: var(--bq-fg-light);
+		}
+
+		.stats dd {
+			margin: 0;
+			font-family: Raleway, Helvetica, sans-serif;
+			font-size: 2.2em;
+			font-weight: 200;
+			line-height: 1;
+			font-variant-numeric: tabular-nums;
+			color: #ffffff;
+		}
+
+	@media screen and (max-width: 736px) {
+
+		.stats {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+
+			.stats > div:nth-child(3) {
+				padding-left: 0;
+				border-left: 0;
+			}
+
+			.stats > div:nth-child(n + 3) {
+				border-top: 1px solid var(--bq-line);
+			}
+
+			.stats dd {
+				font-size: 1.8em;
+			}
 
 	}
 
@@ -3265,14 +3410,13 @@
 /* tiers as a row of cards, the top tier in the accent colour           */
 /* ------------------------------------------------------------------ */
 
+	/* its own section at the end of the page: the section heading does the separating */
 	.catalog {
 		display: grid;
 		grid-template-columns: minmax(11em, 13.5em) 1fr;
 		gap: 2.5em;
 		align-items: start;
-		margin: 2.25em 0 0;
-		padding-top: 2.25em;
-		border-top: solid 1px var(--bq-line);
+		margin: 0 0 2em 0;
 	}
 
 		/* the cover: A4 proportions, the page's own dark, a folded corner cut with clip-path.
@@ -3366,10 +3510,6 @@
 				.catalog-cover:focus-visible .catalog-go svg {
 					transform: translate(2px, -2px);
 				}
-
-		.catalog-body h4 {
-			margin: 0 0 0.6em;
-		}
 
 		.catalog-body > p {
 			margin: 0 0 1.25em;
