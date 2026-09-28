@@ -2,18 +2,20 @@
  * BreaQ 2026 registration backend: Google Apps Script.
  *
  * What it does
- *   - receives the JSON that register.html posts
+ *   - receives the JSON that register.html (the hackathon) and register-conference.html post;
+ *     the "attend" field says which: "hackathon" or "conference"
  *   - appends one row per registration to a Google Sheet (tab "Registrations")
  *   - sends a confirmation email to the participant and a short notice to the team
  *   - ignores obvious bots (honeypot field, forms submitted in under 3 seconds)
- *   - answers a second registration with the same email without creating a duplicate row
+ *   - answers a second registration for the same event with the same email without creating a
+ *     duplicate row; the same person registering for both events gets one row per event
  *
  * Setup (once, about five minutes; also in README.md)
  *   1. Create a Google Sheet, e.g. "BreaQ 2026 registrations".
  *   2. Extensions -> Apps Script. Replace the editor content with this file. Save.
  *   3. Deploy -> New deployment -> type "Web app".
  *      Execute as: Me. Who has access: Anyone. Deploy, then authorise the permissions it asks for.
- *   4. Copy the web app URL (ends in /exec) into register.html: data-endpoint="...".
+ *   4. Copy the web app URL (ends in /exec) into register.html and register-conference.html: data-endpoint="...".
  *   5. Test: fill the form on the site. A row appears in the sheet and two emails go out.
  *
  * To change this script later: edit, save, then Deploy -> Manage deployments -> pencil -> Version: New version -> Deploy.
@@ -61,7 +63,7 @@ function doPost(e) {
 	lock.waitLock(10000);
 	try {
 		var sheet = sheet_();
-		if (isRegistered_(sheet, email)) {
+		if (isRegistered_(sheet, email, clean_(data.attend))) {
 			return json_({ ok: true, duplicate: true });
 		}
 		sheet.appendRow([
@@ -96,44 +98,60 @@ function sheet_() {
 	return sheet;
 }
 
-function isRegistered_(sheet, email) {
+// one registration per email and event: the same email may register for the hackathon and the conference
+function isRegistered_(sheet, email, attend) {
 	var last = sheet.getLastRow();
 	if (last < 2) return false;
-	var col = COLUMNS.indexOf('Email') + 1;
-	var emails = sheet.getRange(2, col, last - 1, 1).getValues();
+	var emailCol = COLUMNS.indexOf('Email') + 1;
+	var attendCol = COLUMNS.indexOf('Attends') + 1;
+	var emails = sheet.getRange(2, emailCol, last - 1, 1).getValues();
+	var attends = sheet.getRange(2, attendCol, last - 1, 1).getValues();
 	for (var i = 0; i < emails.length; i++) {
-		if (String(emails[i][0]).trim().toLowerCase() === email) return true;
+		if (String(emails[i][0]).trim().toLowerCase() === email && String(attends[i][0]) === attend) return true;
 	}
 	return false;
 }
 
-function attendsText_(attend) {
-	if (attend === 'hackathon') return 'the hackathon on 24–25 October at the CAMPUS Research Institute';
-	if (attend === 'presentations') return 'the presentations day on 14 November at the Military Technical Academy “Ferdinand I”';
-	return 'the hackathon on 24–25 October at the CAMPUS Research Institute and the presentations day on 14 November at the Military Technical Academy “Ferdinand I”';
+// what each form registers for; "presentations" is the older name of the conference
+function event_(attend) {
+	if (attend === 'conference' || attend === 'presentations') {
+		return {
+			name: 'the BreaQ Conference',
+			what: 'the BreaQ Conference on 14 November at the Military Technical Academy “Ferdinand I”',
+			next: 'the practical details (the programme, the room, how to get in) come by email closer to the date.',
+			ics: SITE + '/breaq-2026-conference.ics',
+			page: SITE + '/breaq-conference.html'
+		};
+	}
+	return {
+		name: 'the BreaQ Hackathon',
+		what: 'the BreaQ Hackathon on 24–25 October at the CAMPUS Research Institute',
+		next: 'the Discord invite and the practical details (rooms, what to bring, the challenges) come by email closer to the date.',
+		ics: SITE + '/breaq-2026-hackathon.ics',
+		page: SITE + '/breaq.html'
+	};
 }
 
 function sendConfirmation_(email, data) {
 	var name = clean_(data.first_name);
-	var what = attendsText_(data.attend);
-	var subject = 'You are registered for BreaQ 2026';
+	var ev = event_(data.attend);
+	var subject = 'You are registered for ' + ev.name;
 	var text =
 		'Hi ' + name + ',\n\n' +
-		'You are registered for ' + what + '.\n\n' +
-		'What happens next: the Discord invite and the practical details (rooms, what to bring, the programme) ' +
-		'come by email closer to the dates. Registration is free.\n\n' +
-		'Add both dates to your calendar: ' + SITE + '/breaq-2026.ics\n' +
-		'Event page: ' + SITE + '/breaq.html\n\n' +
+		'You are registered for ' + ev.what + '.\n\n' +
+		'What happens next: ' + ev.next + ' Registration is free.\n\n' +
+		'Add it to your calendar: ' + ev.ics + '\n' +
+		'Event page: ' + ev.page + '\n\n' +
 		'Questions? Reply to this email.\n\n' +
 		'See you there,\nRoQTeam';
 	var html =
 		'<div style="font-family:Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:#2e3141;max-width:560px">' +
 		'<p style="font-size:12px;letter-spacing:3px;text-transform:uppercase;color:#ff8c00;margin:0 0 6px">BreaQ 2026</p>' +
 		'<h2 style="margin:0 0 18px;font-weight:700">You are registered, ' + esc_(name) + '.</h2>' +
-		'<p>You are in for ' + esc_(what) + '.</p>' +
-		'<p>What happens next: the Discord invite and the practical details (rooms, what to bring, the programme) come by email closer to the dates. Registration is free.</p>' +
-		'<p style="margin:24px 0"><a href="' + SITE + '/breaq-2026.ics" style="background:#4c5c96;color:#fff;text-decoration:none;padding:12px 20px;border-radius:3px;font-weight:700;letter-spacing:1px">Add both dates to calendar</a></p>' +
-		'<p style="color:#666">Event page: <a href="' + SITE + '/breaq.html" style="color:#4c5c96">' + SITE + '/breaq.html</a><br>Questions? Just reply to this email.</p>' +
+		'<p>You are in for ' + esc_(ev.what) + '.</p>' +
+		'<p>What happens next: ' + esc_(ev.next) + ' Registration is free.</p>' +
+		'<p style="margin:24px 0"><a href="' + ev.ics + '" style="background:#4c5c96;color:#fff;text-decoration:none;padding:12px 20px;border-radius:3px;font-weight:700;letter-spacing:1px">Add to calendar</a></p>' +
+		'<p style="color:#666">Event page: <a href="' + ev.page + '" style="color:#4c5c96">' + ev.page + '</a><br>Questions? Just reply to this email.</p>' +
 		'<p>See you there,<br>RoQTeam</p></div>';
 	MailApp.sendEmail({ to: email, subject: subject, body: text, htmlBody: html, name: SENDER_NAME, replyTo: REPLY_TO });
 }
@@ -143,12 +161,12 @@ function sendNotice_(email, data) {
 		clean_(data.first_name) + ' ' + clean_(data.last_name) + ' <' + email + '>',
 		clean_(data.affiliation) + ' · ' + clean_(data.status) + ' · ' + clean_(data.experience),
 		'Attends: ' + clean_(data.attend) + (data.tracks && data.tracks.length ? ' · Tracks: ' + data.tracks.join(', ') : ''),
-		'Team: ' + clean_(data.team) + (data.team_name ? ' · ' + clean_(data.team_name) : ''),
+		data.team ? 'Team: ' + clean_(data.team) + (data.team_name ? ' · ' + clean_(data.team_name) : '') : '',
 		data.motivation ? 'Motivation: ' + clean_(data.motivation) : '',
 		data.dietary ? 'Dietary: ' + clean_(data.dietary) : '',
 		'Sheet: ' + SpreadsheetApp.getActiveSpreadsheet().getUrl()
 	].filter(String);
-	MailApp.sendEmail({ to: NOTIFY, subject: 'BreaQ 2026 registration: ' + clean_(data.first_name) + ' ' + clean_(data.last_name), body: lines.join('\n'), name: SENDER_NAME });
+	MailApp.sendEmail({ to: NOTIFY, subject: 'BreaQ 2026 ' + clean_(data.attend) + ' registration: ' + clean_(data.first_name) + ' ' + clean_(data.last_name), body: lines.join('\n'), name: SENDER_NAME });
 }
 
 function clean_(v) {

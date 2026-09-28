@@ -1,13 +1,13 @@
 <!DOCTYPE HTML>
 <html lang="en">
 	<head>
-		<title>Register for the hackathon · BreaQ 2026</title>
-		<meta name="description" content="Register for the BreaQ Hackathon: 24 hours of quantum computing in teams, on 24–25 October 2026 at the CAMPUS Research Institute, Bucharest. Free." />
+		<title>Register for the conference · BreaQ 2026</title>
+		<meta name="description" content="Register for the BreaQ Conference: a day of talks on quantum computing, communication and sensing, on Saturday 14 November 2026 at the Military Technical Academy “Ferdinand I”, Bucharest. Free." />
 		<meta property="og:type" content="website" />
-		<meta property="og:title" content="Register for the BreaQ Hackathon 2026" />
-		<meta property="og:description" content="Free. Two minutes. 24 hours of quantum computing in teams, 24–25 October at the CAMPUS Research Institute." />
-		<meta property="og:image" content="https://roqteam.ro/images/share/breaq-2026.jpg" />
-		<meta property="og:url" content="https://roqteam.ro/register.html" />
+		<meta property="og:title" content="Register for the BreaQ Conference 2026" />
+		<meta property="og:description" content="Free. Two minutes. A day of talks on 14 November at the Military Technical Academy “Ferdinand I”, Bucharest." />
+		<meta property="og:image" content="https://roqteam.ro/images/share/breaq-conference-2026.jpg" />
+		<meta property="og:url" content="https://roqteam.ro/register-conference.html" />
 		<meta name="twitter:card" content="summary_large_image" />
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
@@ -30,12 +30,11 @@
 								<button class="dropbtn" type="button" aria-controls="site-menu" aria-expanded="false">Menu</button>
 								<div class="dropdown-content" id="site-menu">
 									<a href="index.html">Home</a>
+									<a href="breaq-conference.html">BreaQ Conference</a>
+									<a href="breaq-conference.html#faq">FAQ</a>
+									<a href="breaq-conference.html#venue">Venue</a>
 									<a href="breaq.html">BreaQ 2026</a>
-									<a href="register-conference.html">Register for the conference</a>
-									<a href="breaq.html#faq">FAQ</a>
-									<a href="breaq.html#venue">Venue</a>
-									<a href="photos-2025.html">2025 in photos</a>
-									<a href="breaq-2025.html">BreaQ 2025</a>
+									<a href="register.html">Register for the hackathon</a>
 								</div>
 							</div>
 						</nav>
@@ -46,12 +45,12 @@
 						<header>
 							<div class="inner">
 								<div class="ch-hero-text">
-									<h2>Register for the BreaQ Hackathon</h2>
-									<p>Free. Two minutes. 24 hours of quantum computing in teams.</p>
+									<h2>Register for the BreaQ Conference</h2>
+									<p>Free. Two minutes. A day of talks on quantum technologies.</p>
 									<div class="hero-row">
-										<span class="hero-fact"><b>24–25 October</b>Hackathon · CAMPUS Research Institute</span>
-										<!-- the conference has its own form -->
-										<a class="hero-fact" href="register-conference.html"><b>14 November</b>The conference has its own form</a>
+										<span class="hero-fact"><b>14 November</b>Conference · Military Technical Academy</span>
+										<!-- the hackathon has its own form -->
+										<a class="hero-fact" href="register.html"><b>24–25 October</b>The hackathon has its own form</a>
 									</div>
 								</div>
 								<figure class="ch-hero-art"><img src="images/BreaQ_logo_2026-light.svg" alt="" /></figure>
@@ -63,19 +62,19 @@
 								<div class="inner">
 
 									<!--
-										Hackathon registration. The conference has its own form (register-conference.html) posting
-										to the same endpoint; the hidden "attend" field tells the two apart in the sheet.
-										The form posts JSON to a Google Apps Script web app that writes a Google Sheet and sends
-										the confirmation email. Deploy tools/register-backend.gs (steps in README.md) and paste the
-										web app URL into data-endpoint. While data-endpoint is empty, the page sends people to
-										the form at data-fallback instead, so nothing is ever lost.
+										Conference registration: the same form and script as register.html (the hackathon's), with
+										fewer questions. It posts to the same endpoint; the hidden "attend" field says "conference".
+										Paste the same web app URL into data-endpoint here as on register.html. While it is empty,
+										the page sends people to the form at data-fallback instead, so nothing is ever lost.
 									-->
 									<form id="reg" class="reg" method="post" action="#" novalidate
-										data-draft="breaq-2026-hackathon"
+										data-draft="breaq-2026-conference"
 										data-endpoint=""
 										data-fallback="https://forms.gle/o1wqxXgzeF2QGtxC7">
 
 										<p class="reg-fallback" hidden>Online registration on this page is not switched on yet. <a href="https://forms.gle/o1wqxXgzeF2QGtxC7" target="_blank" rel="noopener">Register with the current form</a> instead.</p>
+
+										<input type="hidden" name="attend" value="conference" />
 
 										<fieldset class="reg-step">
 											<legend><span class="reg-n">1</span>About you</legend>
@@ -91,7 +90,7 @@
 												<div class="field half">
 													<label for="email">Email</label>
 													<input type="email" name="email" id="email" required autocomplete="email" inputmode="email" maxlength="120" />
-													<small>The confirmation, the Discord invite and every practical detail go here.</small>
+													<small>The confirmation and every practical detail go here.</small>
 												</div>
 												<div class="field half">
 													<label for="phone">Phone <span class="opt">optional</span></label>
@@ -121,72 +120,16 @@
 														<option>Other</option>
 													</select>
 												</div>
-												<div class="field half">
-													<label for="experience">Experience with quantum computing</label>
-													<select name="experience" id="experience" required>
-														<option value="">Choose…</option>
-														<option>None yet, curious</option>
-														<option>Beginner: a course or some tutorials</option>
-														<option>Intermediate: built circuits or small projects</option>
-														<option>Advanced: research or work in the field</option>
-													</select>
-													<small>Every level is welcome. This helps us balance the teams.</small>
-												</div>
-												<div class="field half">
-													<label for="tshirt">T-shirt size</label>
-													<select name="tshirt" id="tshirt" required>
-														<option value="">Choose…</option>
-														<option>XS</option>
-														<option>S</option>
-														<option>M</option>
-														<option>L</option>
-														<option>XL</option>
-														<option>XXL</option>
-													</select>
-												</div>
 											</div>
 										</fieldset>
 
 										<fieldset class="reg-step">
-											<legend><span class="reg-n">3</span>The hackathon</legend>
+											<legend><span class="reg-n">3</span>Last details</legend>
 											<div class="fields">
-												<input type="hidden" name="attend" value="hackathon" />
 												<div class="field">
-													<span class="lbl">Tracks I am interested in <span class="opt">pick any</span></span>
-													<div class="choices choices--row">
-														<span><input type="checkbox" id="track-qai" name="tracks" value="Quantum AI" /><label for="track-qai">Quantum AI</label></span>
-														<span><input type="checkbox" id="track-hack" name="tracks" value="Hacking" /><label for="track-hack">Hacking</label></span>
-														<span><input type="checkbox" id="track-crypto" name="tracks" value="Crypto" /><label for="track-crypto">Crypto</label></span>
-														<span><input type="checkbox" id="track-tbd" name="tracks" value="Not sure yet" /><label for="track-tbd">Not sure yet</label></span>
-													</div>
-													<small>The 2026 challenges are announced with the programme. Tell us what draws you in for now.</small>
-												</div>
-												<div class="field half">
-													<span class="lbl">Team</span>
-													<div class="choices">
-														<span><input type="radio" id="team-solo" name="team" value="solo" checked /><label for="team-solo">Match me with a team at the event</label></span>
-														<span><input type="radio" id="team-have" name="team" value="team" /><label for="team-have">I already have a team</label></span>
-													</div>
-												</div>
-												<div class="field half" data-team hidden>
-													<label for="team_name">Team name and members</label>
-													<input type="text" name="team_name" id="team_name" maxlength="200" placeholder="Qubits United: Ana, Mihai, Ioana" />
-													<small>Everyone on the team registers separately.</small>
-												</div>
-												<div class="field">
-													<label for="motivation">Your expectations <span class="opt">optional</span></label>
-													<textarea name="motivation" id="motivation" rows="3" maxlength="300" placeholder="What would you like to get out of BreaQ?"></textarea>
-													<small>Up to 300 characters.</small>
-												</div>
-											</div>
-										</fieldset>
-
-										<fieldset class="reg-step">
-											<legend><span class="reg-n">4</span>Practical</legend>
-											<div class="fields">
-												<div class="field half">
-													<label for="dietary">Dietary needs <span class="opt">optional</span></label>
-													<input type="text" name="dietary" id="dietary" maxlength="120" placeholder="vegetarian, no nuts…" />
+													<label for="motivation">What would you like to hear about? <span class="opt">optional</span></label>
+													<textarea name="motivation" id="motivation" rows="3" maxlength="300" placeholder="Quantum cryptography, error correction, careers in quantum…"></textarea>
+													<small>Up to 300 characters. It helps us shape the programme.</small>
 												</div>
 												<div class="field half">
 													<label for="source">How did you hear about BreaQ?</label>
@@ -222,9 +165,9 @@
 
 									<div class="reg-done" id="reg-done" hidden>
 										<h3 class="major">You are registered</h3>
-										<p>Thanks, <b data-name>friend</b>. You are in for the hackathon, and a confirmation is on its way to <b data-email>your inbox</b>. The Discord invite and the practical details follow closer to the date.</p>
-										<p>Coming to the <a href="breaq-conference.html">BreaQ Conference</a> on 14 November too? It has <a href="register-conference.html">its own registration</a>.</p>
-										<p class="next-actions"><a href="breaq-2026-hackathon.ics" class="button primary" type="text/calendar">Add to calendar</a> <a href="breaq.html" class="button">Back to BreaQ 2026</a></p>
+										<p>Thanks, <b data-name>friend</b>. You are in for the BreaQ Conference, and a confirmation is on its way to <b data-email>your inbox</b>. The practical details follow closer to the date.</p>
+										<p>Hacking too? The hackathon on 24–25 October has <a href="register.html">its own registration</a>.</p>
+										<p class="next-actions"><a href="breaq-2026-conference.ics" class="button primary" type="text/calendar">Add to calendar</a> <a href="breaq-conference.html" class="button">Back to the conference</a></p>
 									</div>
 
 								</div>

@@ -18,21 +18,19 @@
 	var submitBtn = form.querySelector('button[type="submit"]');
 	var done = document.getElementById('reg-done');
 	var openedAt = Date.now();
-	var DRAFT_KEY = 'breaq-2026-registration';
+	// one draft per form: register.html (hackathon) and register-conference.html
+	var DRAFT_KEY = form.getAttribute('data-draft') || 'breaq-2026-registration';
 
 	function forEach(list, fn) { Array.prototype.forEach.call(list, fn); }
 
 	/* --- conditional fields --------------------------------------- */
 
 	function syncConditionals() {
-		var attend = form.querySelector('input[name="attend"]:checked');
-		var hackathon = !attend || attend.value !== 'presentations';
-		forEach(form.querySelectorAll('[data-hack]'), function (el) { el.hidden = !hackathon; });
 		var team = form.querySelector('input[name="team"]:checked');
-		forEach(form.querySelectorAll('[data-team]'), function (el) { el.hidden = !hackathon || !team || team.value !== 'team'; });
+		forEach(form.querySelectorAll('[data-team]'), function (el) { el.hidden = !team || team.value !== 'team'; });
 	}
 
-	forEach(form.querySelectorAll('input[name="attend"], input[name="team"]'), function (input) {
+	forEach(form.querySelectorAll('input[name="team"]'), function (input) {
 		input.addEventListener('change', syncConditionals);
 	});
 
@@ -65,7 +63,8 @@
 		var data;
 		try { data = JSON.parse(raw); } catch (e) { return; }
 		forEach(form.elements, function (el) {
-			if (!el.name || !(el.name in data) || el.name === 'website') return;
+			// hidden fields (which event the form is for) come from the page, never from a draft
+			if (!el.name || !(el.name in data) || el.name === 'website' || el.type === 'hidden') return;
 			if (el.type === 'checkbox') el.checked = el.name === 'tracks' ? data.tracks.indexOf(el.value) !== -1 : !!data[el.name];
 			else if (el.type === 'radio') el.checked = data[el.name] === el.value;
 			else el.value = data[el.name];

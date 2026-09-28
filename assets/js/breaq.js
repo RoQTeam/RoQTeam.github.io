@@ -453,7 +453,7 @@
 			}
 
 			var singles = ':scope > h3.major, :scope > p, :scope > .button, :scope > a.special, :scope > .sp-hint, :scope > .tier, :scope > .logos-note, :scope > .gal, :scope > h4';
-			var groups = ':scope > .glance, :scope > .kit, :scope > .logos, :scope > .venues, :scope > .faq, :scope > .ch-grid, :scope > .next-wrap, :scope > .soon-grid, :scope > .res, :scope > .ch-cols, :scope > .ch-list, :scope > .catalog, :scope > .mosaic, :scope > .stats';
+			var groups = ':scope > .glance, :scope > .kit, :scope > .logos, :scope > .venues, :scope > .faq, :scope > .ch-grid, :scope > .next-wrap, :scope > .soon-grid, :scope > .res, :scope > .ch-cols, :scope > .ch-list, :scope > .catalog, :scope > .mosaic, :scope > .stats, :scope > .twin, :scope > .soon-next, :scope > .talks';
 
 			forEach(document.querySelectorAll('.wrapper .inner > section'), function (section) {
 				// only what is below the first screen: the hero has its own entrance

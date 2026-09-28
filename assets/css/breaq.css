@@ -1307,6 +1307,23 @@
 			margin-left: auto;
 		}
 
+		/* a fact that leads to its own page (the conference date on breaq.html) */
+		a.hero-fact {
+			border-bottom: 0;
+		}
+
+			a.hero-fact b::after {
+				content: "\2192";
+				display: inline-block;
+				margin-left: 0.45em;
+				color: var(--bq-hot);
+				transition: transform 0.3s var(--bq-ease-out);
+			}
+
+			a.hero-fact:hover b::after {
+				transform: translateX(3px);
+			}
+
 		/* the button with the deadline under it (breaq.html) */
 		.hero-cta {
 			display: flex;
@@ -3878,4 +3895,369 @@
 	/* anchors land below the top bar and the pinned chapter strip */
 	.page-photos .wrapper .inner > section {
 		scroll-margin-top: 7.5em;
+	}
+
+/* ------------------------------------------------------------------ */
+/* The two halves of BreaQ: a panel a shade bluer than the page that   */
+/* leads to the conference (breaq.html) or back to the hackathon        */
+/* (breaq-conference.html), with a small sneak peek                     */
+/* ------------------------------------------------------------------ */
+
+	.twin {
+		position: relative;
+		isolation: isolate;
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr);
+		gap: 0 2.5em;
+		margin: 0 0 2em 0;
+		padding: 2.25em 2.5em 2.25em 2.25em;
+		border: 1px solid rgba(138, 154, 214, 0.3);
+		border-radius: 5px;
+		background:
+			radial-gradient(ellipse 55% 85% at 100% 0%, rgba(96, 114, 184, 0.36), transparent 70%),
+			linear-gradient(120deg, rgba(76, 92, 150, 0.34) 0%, rgba(62, 74, 122, 0.22) 100%);
+		overflow: hidden;
+	}
+
+		/* two faint orbits in the corner, the page's motif */
+		.twin::before,
+		.twin::after {
+			content: "";
+			position: absolute;
+			right: -7em;
+			top: -3.5em;
+			z-index: -1;
+			width: 24em;
+			height: 9em;
+			border: 1px solid rgba(255, 255, 255, 0.09);
+			border-radius: 50%;
+			transform: rotate(-20deg);
+			pointer-events: none;
+		}
+
+		.twin::after {
+			transform: rotate(32deg);
+		}
+
+		/* the date, large and light, like the countdown's numerals */
+		.twin-date {
+			display: flex;
+			flex-direction: column;
+			align-items: flex-start;
+			padding: 0.15em 2.5em 0 0;
+			border-right: 1px solid var(--bq-line);
+		}
+
+			.twin-date b {
+				font-family: Raleway, Helvetica, sans-serif;
+				font-size: 3.4em;
+				font-weight: 200;
+				letter-spacing: 0.02em;
+				line-height: 1;
+				white-space: nowrap;
+				color: #ffffff;
+			}
+
+			.twin-date span {
+				margin-top: 0.8em;
+				font-family: Raleway, Helvetica, sans-serif;
+				font-size: 0.55em;
+				font-weight: 700;
+				letter-spacing: 0.25em;
+				text-transform: uppercase;
+				color: var(--bq-hot);
+			}
+
+			.twin-date small {
+				margin-top: 0.35em;
+				font-size: 0.72em;
+				color: var(--bq-fg-light);
+			}
+
+		.twin-kicker {
+			margin: 0 0 0.7em 0;
+			font-family: Raleway, Helvetica, sans-serif;
+			font-size: 0.55em;
+			font-weight: 700;
+			letter-spacing: 0.25em;
+			text-transform: uppercase;
+			color: var(--bq-fg-light);
+		}
+
+		.twin h3 {
+			margin: 0 0 0.55em 0;
+			font-size: 1.3em;
+			letter-spacing: 0.12em;
+		}
+
+			.twin h3 a {
+				border-bottom: 0;
+			}
+
+				.twin h3 a:hover {
+					color: var(--bq-hot) !important;
+				}
+
+		.twin-body > p:not([class]) {
+			max-width: 38em;
+			margin: 0 0 1.25em 0;
+			font-size: 0.92em;
+			line-height: 1.6;
+		}
+
+		.twin-body > .twin-actions {
+			margin: 0;
+		}
+
+		/* sneak peek: a row of faces or photos with one line beside it */
+		.twin-peek {
+			display: flex;
+			flex-wrap: wrap;
+			align-items: center;
+			gap: 0.75em 1.1em;
+			margin: 0 0 1.5em 0;
+		}
+
+			.twin-peek p {
+				flex: 1 1 14em;
+				margin: 0;
+				font-size: 0.72em;
+				line-height: 1.5;
+				color: var(--bq-fg-light);
+			}
+
+		/* last year's speakers, overlapping, and a ghost for the 2026 line-up */
+		.faces {
+			display: flex;
+			list-style: none;
+			margin: 0;
+			padding: 0 0 0 0.55em;
+		}
+
+			.faces li {
+				position: relative;
+				margin: 0 0 0 -0.55em;
+				padding: 0;
+			}
+
+				.faces li:hover {
+					z-index: 1;
+				}
+
+			.faces img,
+			.faces-next {
+				display: block;
+				box-sizing: border-box;
+				width: 2.7em;
+				height: 2.7em;
+				border: 2px solid #394061;
+				border-radius: 50%;
+				object-fit: cover;
+				transition: transform 0.3s var(--bq-ease-out);
+			}
+
+				.faces li:hover img {
+					transform: translateY(-3px);
+				}
+
+			.faces-next {
+				position: relative;
+				overflow: hidden;
+				background:
+					radial-gradient(circle at 50% 40%, rgba(255, 255, 255, 0.3) 0 17%, transparent 18%),
+					radial-gradient(ellipse 36% 26% at 50% 100%, rgba(255, 255, 255, 0.3) 0 100%, transparent 101%),
+					#2a2e45;
+			}
+
+				.faces-next::after {
+					content: "";
+					position: absolute;
+					inset: 0;
+					background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.2) 50%, transparent 65%);
+					transform: translateX(-100%);
+					animation: soon-sweep 3.6s var(--bq-ease-inout) infinite;
+				}
+
+		.shots {
+			display: flex;
+			gap: 0.5em;
+			list-style: none;
+			margin: 0;
+			padding: 0;
+		}
+
+			.shots li {
+				padding: 0;
+			}
+
+			.shots img {
+				display: block;
+				width: 5.4em;
+				height: 3.7em;
+				border-radius: 3px;
+				object-fit: cover;
+			}
+
+	.twin, .twin * {
+		text-align: left;
+	}
+
+	@media screen and (max-width: 736px) {
+
+		.twin {
+			grid-template-columns: minmax(0, 1fr);
+			padding: 1.6em 1.4em;
+		}
+
+			.twin-date {
+				flex-direction: row;
+				flex-wrap: wrap;
+				align-items: baseline;
+				gap: 0.2em 0.75em;
+				margin: 0 0 1.25em 0;
+				padding: 0 0 1em 0;
+				border-right: 0;
+				border-bottom: 1px solid var(--bq-line);
+			}
+
+				.twin-date b {
+					font-size: 2.3em;
+				}
+
+				.twin-date span,
+				.twin-date small {
+					margin-top: 0;
+				}
+
+			.twin h3 {
+				font-size: 1em;
+			}
+
+			.shots img {
+				width: 4.6em;
+				height: 3.2em;
+			}
+
+	}
+
+	@media screen and (max-width: 480px) {
+
+		.twin-actions .button {
+			width: 100%;
+		}
+
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+
+		.faces-next::after {
+			animation: none;
+		}
+
+		.faces img {
+			transition: none;
+		}
+
+	}
+
+/* ------------------------------------------------------------------ */
+/* Conference page (breaq-conference.html)                             */
+/* ------------------------------------------------------------------ */
+
+	/* speakers still to come: the countdown beside the announcement */
+	.soon-next {
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr);
+		gap: 1.25em 3em;
+		align-items: start;
+		margin: 0 0 2em 0;
+	}
+
+		.soon-next .next-count {
+			margin: 0;
+		}
+
+		.soon-next-body p {
+			margin: 0 0 0.9em 0;
+			font-size: 0.92em;
+			line-height: 1.6;
+		}
+
+			.soon-next-body .next-gcal {
+				margin: 0;
+				font-size: 0.72em;
+				color: var(--bq-fg-light);
+			}
+
+	/* last year's talks: a portrait, the title, who and where */
+	.talks {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 1em;
+		list-style: none;
+		margin: 0 0 2em 0;
+		padding: 0;
+	}
+
+		.talks li {
+			display: flex;
+			align-items: flex-start;
+			gap: 1em;
+			padding: 1.1em 1.2em;
+			border: 1px solid var(--bq-line);
+			border-radius: 5px;
+		}
+
+			.talks img {
+				flex: 0 0 3em;
+				width: 3em;
+				height: 3em;
+				border-radius: 50%;
+				object-fit: cover;
+			}
+
+			.talks strong {
+				display: block;
+				font-size: 0.85em;
+				font-weight: 600;
+				line-height: 1.4;
+				color: #ffffff;
+			}
+
+			.talks small {
+				display: block;
+				margin-top: 0.4em;
+				font-size: 0.68em;
+				line-height: 1.45;
+				color: var(--bq-fg-light);
+			}
+
+	/* one venue across the full width */
+	.venues--one {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+		.venues--one .venue-map {
+			aspect-ratio: 16 / 7;
+		}
+
+	.soon-next, .soon-next *,
+	.talks, .talks * {
+		text-align: left;
+	}
+
+	@media screen and (max-width: 736px) {
+
+		.soon-next {
+			grid-template-columns: minmax(0, 1fr);
+		}
+
+		.talks {
+			grid-template-columns: minmax(0, 1fr);
+		}
+
+		.venues--one .venue-map {
+			aspect-ratio: 4 / 3.4;
+		}
+
 	}
