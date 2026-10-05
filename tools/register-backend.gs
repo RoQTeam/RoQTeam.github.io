@@ -5,6 +5,7 @@
  *   - receives the JSON that register.html (the hackathon) and register-conference.html post;
  *     the "attend" field says which: "hackathon" or "conference"
  *   - appends one row per registration to a Google Sheet (tab "Registrations")
+ *   - saves the hackathon's motivation letter (a PDF) in the Drive folder LETTERS_FOLDER and links it in the row
  *   - sends a confirmation email to the participant and a short notice to the team
  *   - ignores obvious bots (honeypot field, forms submitted in under 3 seconds)
  *   - answers a second registration for the same event with the same email without creating a
@@ -21,6 +22,9 @@
  * To change this script later: edit, save, then Deploy -> Manage deployments -> pencil -> Version: New version -> Deploy.
  * The URL stays the same. (Editing without a new version does not change what the site talks to.)
  *
+ * Motivation letters: after pasting a version that saves them, pick "setup" in the editor's function list and press Run
+ * once. Google asks for permission to use Drive, and the folder is created in the Drive of the account that owns the script.
+ *
  * Email quota: a personal Google account can send 100 emails a day from Apps Script, a Google Workspace
  * account 1,500. Two emails go out per registration.
  */
@@ -30,12 +34,19 @@ var NOTIFY = 'partnerships@roqteam.ro';       // where the "new registration" no
 var REPLY_TO = 'partnerships@roqteam.ro';
 var SENDER_NAME = 'RoQTeam · BreaQ 2026';
 var SITE = 'https://roqteam.ro';
+var LETTERS_FOLDER = 'BreaQ 2026 motivation letters';   // Drive folder, created on first use (or by setup)
+var LETTER_MAX_BYTES = 5 * 1024 * 1024;                  // register.js has the same limit
 
 var COLUMNS = [
 	'Timestamp', 'First name', 'Last name', 'Email', 'Phone', 'University or company', 'Status',
 	'Experience', 'T-shirt', 'Attends', 'Tracks', 'Team', 'Team name and members', 'Motivation',
-	'Dietary', 'Heard from', 'Consent', 'Conduct', 'Seconds on page', 'Page'
+	'Dietary', 'Heard from', 'Consent', 'Conduct', 'Seconds on page', 'Page', 'Motivation letter'
 ];
+
+// run once from the editor: asks for Drive access and creates the letters folder
+function setup() {
+	Logger.log('Motivation letters go to ' + lettersFolder_().getUrl());
+}
 
 function doGet() {
 	return json_({ ok: true, service: 'breaq-2026-registration' });
@@ -55,9 +66,26 @@ function doPost(e) {
 	}
 
 	var email = String(data.email || '').trim().toLowerCase();
-	if (!data.first_name || !data.last_name || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) || !data.consent) {
-		return json_({ ok: false, error: 'Please fill in your name and a valid email, and accept the data notice.' });
+	if (!data.first_name || !data.last_name || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) || !data.consent || !data.conduct) {
+		return json_({ ok: false, error: 'Please fill in your name and a valid email, and tick both boxes at the end of the form.' });
 	}
+
+	// the motivation letter (hackathon form): checked here, saved once we know the registration is new
+	var letter = null;
+	if (data.letter && data.letter.data) {
+		try {
+			letter = Utilities.base64Decode(String(data.letter.data));
+		} catch (err) {
+			return json_({ ok: false, error: 'We could not read the motivation letter. Please choose the PDF again.' });
+		}
+		if (letter.length > LETTER_MAX_BYTES) {
+			return json_({ ok: false, error: 'The motivation letter is over 5 MB. Please upload a smaller PDF.' });
+		}
+		if (letter.length < 4 || letter[0] !== 37 || letter[1] !== 80 || letter[2] !== 68 || letter[3] !== 70) {   // "%PDF"
+			return json_({ ok: false, error: 'The motivation letter has to be a PDF.' });
+		}
+	}
+	var letterUrl = '';
 
 	var lock = LockService.getScriptLock();
 	lock.waitLock(10000);
@@ -66,6 +94,11 @@ function doPost(e) {
 		if (isRegistered_(sheet, email, clean_(data.attend))) {
 			return json_({ ok: true, duplicate: true });
 		}
+		// a Drive hiccup must not lose the registration: the row still goes in, with a note instead of the link
+		if (letter) {
+			try { letterUrl = saveLetter_(letter, email, data); }
+			catch (err) { Logger.log('letter not saved: ' + err); letterUrl = 'upload failed: ' + err; }
+		}
 		sheet.appendRow([
 			new Date(),
 			clean_(data.first_name), clean_(data.last_name), email, clean_(data.phone),
@@ -73,14 +106,14 @@ function doPost(e) {
 			clean_(data.attend), (data.tracks || []).join(', '), clean_(data.team), clean_(data.team_name),
 			clean_(data.motivation), clean_(data.dietary), clean_(data.source),
 			data.consent ? 'yes' : 'no', data.conduct ? 'yes' : 'no',
-			data.seconds_on_page || '', clean_(data.page)
+			data.seconds_on_page || '', clean_(data.page), letterUrl
 		]);
 	} finally {
 		lock.releaseLock();
 	}
 
 	try { sendConfirmation_(email, data); } catch (err) { Logger.log('confirmation failed: ' + err); }
-	try { if (NOTIFY) sendNotice_(email, data); } catch (err) { Logger.log('notice failed: ' + err); }
+	try { if (NOTIFY) sendNotice_(email, data, letterUrl); } catch (err) { Logger.log('notice failed: ' + err); }
 
 	return json_({ ok: true });
 }
@@ -94,8 +127,23 @@ function sheet_() {
 		sheet.appendRow(COLUMNS);
 		sheet.getRange(1, 1, 1, COLUMNS.length).setFontWeight('bold');
 		sheet.setFrozenRows(1);
+	} else if (sheet.getLastColumn() < COLUMNS.length) {
+		// a sheet made by an older version: add the headers of the newer columns
+		var from = sheet.getLastColumn() + 1;
+		sheet.getRange(1, from, 1, COLUMNS.length - from + 1).setValues([COLUMNS.slice(from - 1)]).setFontWeight('bold');
 	}
 	return sheet;
+}
+
+function lettersFolder_() {
+	var found = DriveApp.getFoldersByName(LETTERS_FOLDER);
+	return found.hasNext() ? found.next() : DriveApp.createFolder(LETTERS_FOLDER);
+}
+
+// "Popescu Ana - ana@example.com.pdf", so the folder sorts by name
+function saveLetter_(bytes, email, data) {
+	var name = clean_(data.last_name) + ' ' + clean_(data.first_name) + ' - ' + email + '.pdf';
+	return lettersFolder_().createFile(Utilities.newBlob(bytes, 'application/pdf', name)).getUrl();
 }
 
 // one registration per email and event: the same email may register for the hackathon and the conference
@@ -156,7 +204,7 @@ function sendConfirmation_(email, data) {
 	MailApp.sendEmail({ to: email, subject: subject, body: text, htmlBody: html, name: SENDER_NAME, replyTo: REPLY_TO });
 }
 
-function sendNotice_(email, data) {
+function sendNotice_(email, data, letterUrl) {
 	var lines = [
 		clean_(data.first_name) + ' ' + clean_(data.last_name) + ' <' + email + '>',
 		clean_(data.affiliation) + ' · ' + clean_(data.status) + ' · ' + clean_(data.experience),
@@ -164,6 +212,7 @@ function sendNotice_(email, data) {
 		data.team ? 'Team: ' + clean_(data.team) + (data.team_name ? ' · ' + clean_(data.team_name) : '') : '',
 		data.motivation ? 'Motivation: ' + clean_(data.motivation) : '',
 		data.dietary ? 'Dietary: ' + clean_(data.dietary) : '',
+		letterUrl ? 'Motivation letter: ' + letterUrl : '',
 		'Sheet: ' + SpreadsheetApp.getActiveSpreadsheet().getUrl()
 	].filter(String);
 	MailApp.sendEmail({ to: NOTIFY, subject: 'BreaQ 2026 ' + clean_(data.attend) + ' registration: ' + clean_(data.first_name) + ' ' + clean_(data.last_name), body: lines.join('\n'), name: SENDER_NAME });

@@ -13,6 +13,17 @@
 		margin: 0 0 2em;
 	}
 
+	/* the hero's introduction on register.html: a paragraph to read, not the theme's uppercase tagline */
+	#wrapper > header p.reg-lede {
+		max-width: 36em;
+		font-family: inherit;
+		font-size: 0.95em;
+		font-weight: 300;
+		letter-spacing: 0;
+		line-height: 1.7;
+		text-transform: none;
+	}
+
 	.reg-fallback {
 		margin: 0 0 2em;
 		padding: 0.9em 1.1em;
@@ -158,6 +169,36 @@
 		.reg .field.is-invalid input[type="checkbox"] + label:before {
 			border-color: #ff6b66;
 		}
+
+		/* the motivation letter: the theme's input box around the browser's file picker */
+		.reg input[type="file"] {
+			display: block;
+			box-sizing: border-box;
+			width: 100%;
+			padding: 0.75em 1em;
+			border: solid 2px rgba(255, 255, 255, 0.125);
+			border-radius: 5px;
+			background: rgba(255, 255, 255, 0.025);
+			color: inherit;
+			font-size: 0.9em;
+			cursor: pointer;
+			transition: border-color 0.2s ease, box-shadow 0.2s ease;
+		}
+
+			.reg input[type="file"]::file-selector-button {
+				margin-right: 1em;
+				padding: 0.45em 1em;
+				border: solid 1px var(--bq-hot);
+				border-radius: 3px;
+				background: transparent;
+				font-family: Raleway, Helvetica, sans-serif;
+				font-size: 0.8em;
+				font-weight: 700;
+				letter-spacing: 0.1em;
+				text-transform: uppercase;
+				color: #fff;
+				cursor: pointer;
+			}
 
 		.reg ::placeholder {
 			color: rgba(255, 255, 255, 0.28);

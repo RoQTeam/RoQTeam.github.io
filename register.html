@@ -5,7 +5,7 @@
 		<meta name="description" content="Register for the BreaQ Hackathon: quantum computing in teams, on 24–25 October 2026 at the CAMPUS Research Institute, Bucharest. Free." />
 		<meta property="og:type" content="website" />
 		<meta property="og:title" content="Register for the BreaQ Hackathon 2026" />
-		<meta property="og:description" content="Free. Two minutes. Quantum computing in teams, 24–25 October at the CAMPUS Research Institute." />
+		<meta property="og:description" content="Free. Quantum computing in teams, 24–25 October at the CAMPUS Research Institute." />
 		<meta property="og:image" content="https://roqteam.ro/images/share/breaq-2026.jpg" />
 		<meta property="og:url" content="https://roqteam.ro/register.html" />
 		<meta name="twitter:card" content="summary_large_image" />
@@ -48,7 +48,7 @@
 							<div class="inner">
 								<div class="ch-hero-text">
 									<h2>Register for the BreaQ Hackathon</h2>
-									<p>Free. Two minutes. Quantum computing in teams.</p>
+									<p class="reg-lede">We only need a few details from you, plus a short motivation letter in Romanian or English, uploaded as a PDF, so please have it ready before filling in the form. No need to be formal: we won’t judge your writing style! We just want to get to know you, your background, any quantum-related experience you have (or anything else you feel is relevant), what drives you, and why you’d like to participate.</p>
 									<div class="hero-row">
 										<span class="hero-fact"><b>24–25 October</b>Hackathon · CAMPUS Research Institute</span>
 										<!-- the conference has its own form -->
@@ -152,6 +152,7 @@
 											<legend><span class="reg-n">3</span>The hackathon</legend>
 											<div class="fields">
 												<input type="hidden" name="attend" value="hackathon" />
+												<!-- the track names may change when the 2026 challenges are final -->
 												<div class="field">
 													<span class="lbl">Tracks I am interested in <span class="opt">pick any</span></span>
 													<div class="choices choices--row">
@@ -162,22 +163,11 @@
 													</div>
 													<small>The 2026 challenges are announced with the programme. Tell us what draws you in for now.</small>
 												</div>
-												<div class="field half">
-													<span class="lbl">Team</span>
-													<div class="choices">
-														<span><input type="radio" id="team-solo" name="team" value="solo" checked /><label for="team-solo">Match me with a team at the event</label></span>
-														<span><input type="radio" id="team-have" name="team" value="team" /><label for="team-have">I already have a team</label></span>
-													</div>
-												</div>
-												<div class="field half" data-team hidden>
-													<label for="team_name">Team name and members</label>
-													<input type="text" name="team_name" id="team_name" maxlength="200" placeholder="Qubits United: Ana, Mihai, Ioana" />
-													<small>Everyone on the team registers separately.</small>
-												</div>
+												<!-- register.js reads the PDF and sends it with the rest; the Apps Script saves it to Drive -->
 												<div class="field">
-													<label for="motivation">Your expectations <span class="opt">optional</span></label>
-													<textarea name="motivation" id="motivation" rows="3" maxlength="300" placeholder="What would you like to get out of BreaQ?"></textarea>
-													<small>Up to 300 characters.</small>
+													<label for="letter">Motivation letter</label>
+													<input type="file" name="letter" id="letter" accept="application/pdf,.pdf" required />
+													<small>A PDF in Romanian or English, up to 5 MB.</small>
 												</div>
 											</div>
 										</fieldset>
@@ -202,7 +192,8 @@
 													</select>
 												</div>
 												<div class="field">
-													<input type="checkbox" id="consent" name="consent" required /><label for="consent">I agree that RoQTeam stores this information to organise BreaQ 2026 and contacts me about the event. To have it removed, <a href="mailto:partnerships@roqteam.ro">write to us</a>.</label>
+													<!-- TODO: docs/BreaQ_2026_GDPR.pdf is the GDPR notice the team is sending; until it is in docs/ the link is broken -->
+													<input type="checkbox" id="consent" name="consent" required /><label for="consent">I have read the <a href="docs/BreaQ_2026_GDPR.pdf" target="_blank" rel="noopener">GDPR privacy notice</a> and agree that RoQTeam processes my personal data to organise BreaQ 2026.</label>
 												</div>
 												<div class="field">
 													<input type="checkbox" id="conduct" name="conduct" required /><label for="conduct">I will treat everyone at BreaQ with respect and follow the organisers’ instructions.</label>
