@@ -221,6 +221,11 @@
 		padding: 0;
 	}
 
+		/* two items (the conference): two columns, so the row is not a third empty */
+		.kit.kit--2 {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+
 		.kit li {
 			display: flex;
 			align-items: flex-start;
@@ -385,7 +390,8 @@
 			grid-template-columns: 1fr;
 		}
 
-		.kit {
+		.kit,
+		.kit.kit--2 {
 			grid-template-columns: 1fr;
 			gap: 1.25em 0;
 		}
@@ -1189,6 +1195,14 @@
 	   button as under any other section */
 	.cta:not(:last-child) > .button {
 		margin-bottom: 2em;
+	}
+
+	/* two buttons, one per event (breaq.html): the full width, so they fit side by side */
+	.cta .cta-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.75em 1em;
+		max-width: none;
 	}
 
 	@media screen and (max-width: 736px) {
@@ -4005,9 +4019,31 @@
 			line-height: 1.6;
 		}
 
+		/* where it happens, right under the title (the panels on breaq.html) */
+		.twin-where {
+			margin: -0.15em 0 1em 0;
+			font-size: 0.8em;
+			color: var(--bq-fg-light);
+		}
+
+			.twin-where .icon {
+				margin-right: 0.55em;
+				color: var(--bq-hot);
+			}
+
+		/* the event page and, on breaq.html, its form side by side, with the deadline beside them */
 		.twin-body > .twin-actions {
+			display: flex;
+			flex-wrap: wrap;
+			align-items: center;
+			gap: 0.75em 1em;
 			margin: 0;
 		}
+
+			.twin-actions small {
+				font-size: 0.72em;
+				color: var(--bq-fg-light);
+			}
 
 		/* sneak peek: a row of faces or photos with one line beside it */
 		.twin-peek {

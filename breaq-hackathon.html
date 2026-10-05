@@ -1,0 +1,474 @@
+<!DOCTYPE HTML>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>BreaQ Hackathon 2026 · RoQTeam</title>
+		<meta name="description" content="The BreaQ Hackathon: teams take on real quantum computing challenges, with mentors on the floor and prizes at the end, on 24–25 October 2026 at the CAMPUS Research Institute, Bucharest. Free, and every level is welcome." />
+		<meta property="og:type" content="website" />
+		<meta property="og:title" content="BreaQ Hackathon 2026 · 24–25 October, Bucharest" />
+		<meta property="og:description" content="Teams take on real quantum computing challenges, with mentors on the floor and prizes at the end, on 24–25 October 2026 at the CAMPUS Research Institute, Bucharest. Free, and every level is welcome." />
+		<meta property="og:site_name" content="RoQTeam" />
+		<meta property="og:locale" content="en_US" />
+		<meta property="og:image" content="https://roqteam.ro/images/share/breaq-2026.jpg" />
+		<meta property="og:image:width" content="1200" />
+		<meta property="og:image:height" content="630" />
+		<meta property="og:image:alt" content="BreaQ 2026: quantum hackathon on 24–25 October at the CAMPUS Research Institute, Bucharest" />
+		<meta property="og:url" content="https://roqteam.ro/breaq-hackathon.html" />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:image:alt" content="BreaQ 2026: quantum hackathon on 24–25 October at the CAMPUS Research Institute, Bucharest" />
+		<!--
+			Event structured data for the hackathon. The times also appear in the About block, the countdown,
+			breaq-2026-hackathon.ics, breaq-2026.ics and the hackathon entry on breaq.html: change them together.
+		-->
+		<script type="application/ld+json">
+		{
+			"@context": "https://schema.org",
+			"@type": "Event",
+			"name": "BreaQ 2026 Hackathon",
+			"description": "A quantum hackathon: teams work on real challenges with mentors on the floor and prizes at the end. Part of BreaQ 2026, RoQTeam's annual quantum event in Bucharest. Free to attend.",
+			"image": "https://roqteam.ro/images/share/breaq-2026.jpg",
+			"url": "https://roqteam.ro/breaq-hackathon.html",
+			"startDate": "2026-10-24T09:00:00+03:00",
+			"endDate": "2026-10-25T14:00:00+02:00",
+			"eventStatus": "https://schema.org/EventScheduled",
+			"eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+			"isAccessibleForFree": true,
+			"location": {
+				"@type": "Place",
+				"name": "CAMPUS Research Institute",
+				"address": {
+					"@type": "PostalAddress",
+					"streetAddress": "Splaiul Independenței 313",
+					"addressLocality": "București",
+					"postalCode": "060042",
+					"addressCountry": "RO"
+				}
+			},
+			"organizer": {
+				"@type": "Organization",
+				"name": "RoQTeam",
+				"url": "https://roqteam.ro/",
+				"email": "partnerships@roqteam.ro"
+			},
+			"offers": {
+				"@type": "Offer",
+				"url": "https://roqteam.ro/register.html",
+				"price": "0",
+				"priceCurrency": "RON",
+				"availability": "https://schema.org/InStock",
+				"validThrough": "2026-10-18"
+			},
+			"superEvent": {
+				"@type": "Event",
+				"name": "BreaQ 2026",
+				"url": "https://roqteam.ro/breaq.html"
+			}
+		}
+		</script>
+		<link rel="stylesheet" href="assets/css/main.css" />
+		<link rel="stylesheet" href="assets/css/breaq.css" />
+		<link rel="icon" type="image/png" href="images/favicon-2026.png">
+		<noscript><link rel="stylesheet" href="assets/css/noscript.css" /></noscript>
+	</head>
+	<body class="is-preload page-art page-motion">
+		<div class="progress" aria-hidden="true"><i></i></div>
+
+		<!--
+			BREAQ HACKATHON
+			The hackathon of BreaQ 2026, built like breaq-conference.html: breaq.html is the event page, and each
+			of the two halves has a panel (.twin) that leads to the other. The challenges are "coming soon":
+			replace the ghost cards with .ch cards (as in Last year's challenges) once they are announced.
+		-->
+
+		<!-- Video Background: the same footage as breaq.html -->
+			<div class="video-bg video-overlay">
+				<!-- breaq.js attaches the source unless the screen is small, data saver is on, or reduced motion is preferred -->
+				<video autoplay muted loop playsinline preload="metadata" data-src="images/3Qubits BreaQ169.mp4" aria-hidden="true"></video>
+			</div>
+			<div class="video-overlay"></div>
+
+		<!-- Page Wrapper -->
+			<div id="page-wrapper">
+
+				<!-- Header -->
+					<header id="header">
+						<nav>
+							<a href="register.html" class="hdr-cta">Register</a>
+							<div class="dropdown">
+								<button class="dropbtn" type="button" aria-controls="site-menu" aria-expanded="false">Menu</button>
+								<div class="dropdown-content" id="site-menu">
+									<a href="index.html">Home</a>
+									<a href="breaq.html">BreaQ 2026</a>
+									<a href="#about">About</a>
+									<a href="#challenges">Challenges</a>
+									<a href="#last-year">Last year’s challenges</a>
+									<a href="#sponsors">Sponsors</a>
+									<a href="#venue">Venue</a>
+									<a href="#faq">FAQ</a>
+									<a href="#conference">BreaQ Conference</a>
+									<a href="breaq-2025.html">BreaQ 2025</a>
+								</div>
+							</div>
+						</nav>
+					</header>
+
+				<!-- Wrapper -->
+					<section id="wrapper">
+						<header>
+							<div class="inner">
+								<div class="ch-hero-text">
+									<a class="crumb" href="breaq.html">BreaQ 2026 · Hackathon</a>
+									<h1>BreaQ Hackathon</h1>
+									<p>Teams on real quantum challenges, with mentors on the floor</p>
+									<div class="hero-row">
+										<span class="hero-fact"><b>24–25 October</b>Saturday to Sunday · Bucharest</span>
+										<span class="hero-fact"><b>CAMPUS Research Institute</b>Splaiul Independenței 313</span>
+										<span class="hero-cta"><a href="register.html" class="button primary">Register</a><small>Free · closes 18 October</small></span>
+									</div>
+								</div>
+								<figure class="ch-hero-art"><img src="images/BreaQ_logo_2026-light.svg" alt="" /></figure>
+							</div>
+						</header>
+
+						<!-- Content -->
+							<div class="wrapper">
+								<div class="inner">
+
+									<!-- About -->
+									<section id="about" class="section_space">
+										<h3 class="major">About the hackathon</h3>
+										<p>The BreaQ Hackathon is the part of BreaQ where you build: teams take on real quantum computing challenges at the CAMPUS Research Institute, with mentors on the floor and prizes at the end. Every level is welcome, from complete beginners to researchers, and the <a href="breaq-conference.html">BreaQ Conference</a> follows three weeks later.</p>
+										<dl class="glance">
+											<div>
+												<dt><span class="glance-ic icon solid fa-calendar-alt" aria-hidden="true"></span>When</dt>
+												<dd>Sat 24 Oct, 09:00 → Sun 25 Oct, 14:00</dd>
+											</div>
+											<div>
+												<dt><span class="glance-ic icon solid fa-map-marker-alt" aria-hidden="true"></span>Where</dt>
+												<dd>CAMPUS Research Institute, Bucharest</dd>
+											</div>
+											<div>
+												<dt><span class="glance-ic icon solid fa-ticket-alt" aria-hidden="true"></span>Cost</dt>
+												<dd>Free, meals included</dd>
+											</div>
+											<div>
+												<dt><span class="glance-ic icon solid fa-hourglass-half" aria-hidden="true"></span>Register by</dt>
+												<dd>18 October. <a href="register.html">Registration</a> takes a couple of minutes.</dd>
+											</div>
+										</dl>
+									</section>
+
+									<!-- What to expect: the three challenges, coming soon. One block, as the conference's speakers: ghost cards, the countdown and the news. -->
+									<section id="challenges" class="section_space">
+										<h3 class="major">What to Expect <span class="soon-tag">Coming soon</span></h3>
+										<p>Three challenges on real quantum problems, each with a starter kit, mentors on the floor and prizes for the top three teams. They are announced in the coming weeks.</p>
+										<div class="soon-grid soon-grid--3" aria-hidden="true">
+											<div class="soon-card soon-card--art" style="--i: 0">
+												<img src="images/opt/quantum_cryptanalysis-line.webp" alt="" loading="lazy" />
+												<span class="soon-index">01</span>
+												<div class="soon-strip"><h4 class="soon-name">Challenge</h4><p class="soon-sub">To be announced</p></div>
+											</div>
+											<div class="soon-card soon-card--art" style="--i: 1">
+												<img src="images/opt/quantum_machine_learning-line.webp" alt="" loading="lazy" />
+												<span class="soon-index">02</span>
+												<div class="soon-strip"><h4 class="soon-name">Challenge</h4><p class="soon-sub">To be announced</p></div>
+											</div>
+											<div class="soon-card soon-card--art" style="--i: 2">
+												<img src="images/opt/quantum_hacking-line.webp" alt="" loading="lazy" />
+												<span class="soon-index">03</span>
+												<div class="soon-strip"><h4 class="soon-name">Challenge</h4><p class="soon-sub">To be announced</p></div>
+											</div>
+										</div>
+										<div class="soon-next">
+											<div class="next-count" data-countdown-stages='[{"label":"Registration closes in","target":"2026-10-18T23:59:59+03:00"},{"label":"The hackathon starts in","target":"2026-10-24T09:00:00+03:00"},{"label":"The hackathon is on. Good luck, teams!","until":"2026-10-25T14:00:00+02:00"},{"label":"That was the BreaQ 2026 Hackathon. Thank you, and see you at the conference!"}]'>
+												<p class="next-count-label">Registration closes in</p>
+												<div class="next-digits">
+													<div><b data-unit="d">–</b><span>days</span></div>
+													<div><b data-unit="h">–</b><span>hours</span></div>
+													<div><b data-unit="m">–</b><span>minutes</span></div>
+													<div><b data-unit="s">–</b><span>seconds</span></div>
+												</div>
+											</div>
+											<div class="soon-next-body">
+												<p>The challenges and the schedule are announced in the coming weeks, here and on <a href="https://www.linkedin.com/company/roqteam/" target="_blank" rel="noopener">RoQTeam’s LinkedIn</a>. Curious what a challenge looks like? <a href="#last-year">See last year’s</a>.</p>
+												<p class="next-gcal">Add it to your calendar: <a href="breaq-2026-hackathon.ics" type="text/calendar">calendar file</a> · <a href="https://calendar.google.com/calendar/render?action=TEMPLATE&amp;text=BreaQ+2026+Hackathon&amp;dates=20261024T060000Z%2F20261025T120000Z&amp;location=CAMPUS+Research+Institute%2C+Splaiul+Independen%C8%9Bei+313%2C+Bucure%C8%99ti&amp;details=Quantum+hackathon.+Details%3A+https%3A%2F%2Froqteam.ro%2Fbreaq-hackathon.html" target="_blank" rel="noopener">Google Calendar</a> · iPhone and Mac: <a href="webcal://roqteam.ro/breaq-2026-hackathon.ics">subscribe</a>, it updates itself if the times change</p>
+											</div>
+										</div>
+									</section>
+
+									<!-- Last year's challenges: the three tracks of BreaQ 2025, with the descriptions from breaq-2025.html.
+									     Longer descriptions are on their way from the team: replace the paragraphs when they arrive. -->
+									<section id="last-year" class="section_space">
+										<h3 class="major">Last year’s challenges</h3>
+										<p>At the first BreaQ, in November 2025, every team picked one of three challenges:</p>
+										<div class="ch-grid">
+											<article class="ch">
+												<span class="image fit"><img src="images/opt/quantum_cryptanalysis.webp" alt="" loading="lazy" /></span>
+												<span class="ch-tag">Built with Classiq</span>
+												<h4>Quantum Codebreaking</h4>
+												<p>Quantum cryptanalysis algorithms pose a great threat to currently deployed cryptosystems, especially on the public‑key side. Within this challenge, participants used Classiq to implement state‑of‑the‑art quantum algorithms with direct applications in the field of cryptanalysis.</p>
+											</article>
+											<article class="ch">
+												<span class="image fit"><img src="images/opt/quantum_machine_learning.webp" alt="" loading="lazy" /></span>
+												<span class="ch-tag">Built with PennyLane</span>
+												<h4>Entangled Learning</h4>
+												<p>Quantum machine learning harnesses superposition and entanglement to encode data in high‑dimensional quantum feature spaces, potentially revealing correlations inaccessible to classical models. Participants explored these advantages using PennyLane, developing and testing quantum models on a classically challenging dataset.</p>
+											</article>
+											<article class="ch">
+												<span class="image fit"><img src="images/opt/quantum_hacking.webp" alt="" loading="lazy" /></span>
+												<span class="ch-tag">Quantum hacking</span>
+												<h4>Breaking Quantum Realities</h4>
+												<p>Quantum hacking exposes weaknesses in quantum devices, algorithms and communication protocols. Participants explored how real‑world imperfections can be exploited, showing that even quantum technologies are not immune to attack.</p>
+											</article>
+										</div>
+										<a href="breaq-2025.html" class="special">The full BreaQ 2025 page: programme, speakers, photos</a>
+									</section>
+
+									<!--
+										Organizers, sponsors and partners of the hackathon. Kept separately from breaq.html and
+										breaq-conference.html: add or remove a tile here and the other pages stay as they are.
+										The tile markup and the light logo exports (images/opt/logos) are the same on all three.
+									-->
+
+									<!-- Organizers -->
+									<section id="organizers" class="section_space">
+										<h3 class="major">Organizers</h3>
+										<ul class="logos logos--tiles">
+											<li><a class="tile" href="index.html"><img src="images/opt/logos/roqteam.webp" alt="RoQTeam" loading="lazy" width="330" height="360" /></a></li>
+											<li><a class="tile" href="https://campus.pub.ro/" target="_blank" rel="noopener"><img src="images/opt/logos/campus.webp" alt="CAMPUS Research Institute" loading="lazy" width="330" height="360" /></a></li>
+											<li><a class="tile" href="https://mta.ro/" target="_blank" rel="noopener"><img src="images/opt/logos/atm.webp" alt="Military Technical Academy Ferdinand I" loading="lazy" width="306" height="360" /></a></li>
+										</ul>
+									</section>
+
+									<!-- Sponsors -->
+									<section id="sponsors" class="section_space">
+										<h3 class="major">Sponsors</h3>
+										<!-- Ranked row: the tile size says the tier (is-gold, is-silver, is-bronze), the tag in the corner names it. Supporters below are equal. -->
+										<ul class="logos logos--rank">
+											<li class="is-gold">
+												<a class="tile" href="https://www.fsastech.com/en-eu/" target="_blank" rel="noopener"><span class="tier-tag">Gold sponsor</span><img src="images/opt/logos/fsas.webp" alt="Fsas Technologies, a Fujitsu company" loading="lazy" width="900" height="367" /></a>
+											</li>
+											<li class="is-bronze">
+												<a class="tile" href="https://www.nxp.com/" target="_blank" rel="noopener"><span class="tier-tag">Bronze sponsor</span><img src="images/opt/logos/nxp.webp" alt="NXP" loading="lazy" width="900" height="310" /></a>
+											</li>
+										</ul>
+										<h4 class="tier">Supporters <span>food, drinks and merch</span></h4>
+										<ul class="logos logos--tiles">
+											<li class="tile--brand" style="--tile-bg: #e8e7e1"><a class="tile" href="https://artesana.ro/" target="_blank" rel="noopener"><img src="images/opt/logos/artesana.webp" alt="Artesana" loading="lazy" width="900" height="316" /></a></li>
+											<li><a class="tile" href="https://sipit.ro/" target="_blank" rel="noopener"><img src="images/opt/logos/sipit.webp" alt="Sipit" loading="lazy" width="900" height="540" /></a></li>
+											<li><a class="tile" href="https://www.sap.com/" target="_blank" rel="noopener"><img src="images/opt/logos/sap.webp" alt="SAP" loading="lazy" width="900" height="472" /></a></li>
+										</ul>
+										<p class="logos-note">More sponsors are announced as they confirm. Want to support the hackathon? <a href="mailto:partnerships@roqteam.ro">Write to us</a>.</p>
+									</section>
+
+									<!-- Partners -->
+									<section id="partners" class="section_space">
+										<h3 class="major">Partners</h3>
+										<!-- a tile is a link where the partner has a site of its own; ITA does not, so it stays a span -->
+										<ul class="logos logos--tiles">
+											<li><a class="tile" href="https://haitaprogramatorilor.com/" target="_blank" rel="noopener"><img src="images/opt/logos/haita.webp" alt="Haita Programatorilor" loading="lazy" width="510" height="347" /></a></li>
+											<li><span class="tile"><img src="images/opt/logos/ita.webp" alt="Advanced Technologies Institute" loading="lazy" width="618" height="614" /></span></li>
+											<li><a class="tile" href="https://students.2space.ro/" target="_blank" rel="noopener"><img src="images/opt/logos/2space.webp" alt="2Space" loading="lazy" width="900" height="321" /></a></li>
+										</ul>
+									</section>
+
+									<!-- Venue -->
+									<section id="venue" class="section_space">
+										<h3 class="major">Venue</h3>
+										<div class="venues venues--one">
+											<div class="venue">
+												<div class="venue-map">
+													<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1424.4616049212914!2d26.046913794546196!3d44.434737374678974!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x40b201c4f8a217a7%3A0x39b9e6d086b107fa!2sCentrul%20CAMPUS!5e0!3m2!1sen!2sro!4v1761516188194!5m2!1sen!2sro" title="Map: CAMPUS Research Institute" loading="lazy" referrerpolicy="no-referrer-when-downgrade" tabindex="-1"></iframe>
+													<div class="venue-info">
+														<p class="venue-when">24–25 October · Hackathon</p>
+														<h4>CAMPUS Research Institute</h4>
+														<p class="venue-addr">Splaiul Independenței nr. 313, Sector 6, București, 060042</p>
+														<p class="venue-links"><a class="ch-more" href="https://www.google.com/maps/search/?api=1&amp;query=Centrul%20CAMPUS%2C%20Splaiul%20Independen%C8%9Bei%20313%2C%20Bucure%C8%99ti" target="_blank" rel="noopener">Open in Google Maps</a><a class="ch-more" href="https://www.google.com/maps/dir/?api=1&amp;destination=Centrul%20CAMPUS%2C%20Splaiul%20Independen%C8%9Bei%20313%2C%20Bucure%C8%99ti" target="_blank" rel="noopener">Directions</a></p>
+													</div>
+												</div>
+											</div>
+										</div>
+									</section>
+
+									<!-- FAQ -->
+									<section id="faq" class="section_space">
+										<h3 class="major">FAQ</h3>
+										<ul class="faq">
+											<li class="faq-item">
+												<button class="faq-q" type="button" aria-expanded="false" aria-controls="faq-a-1">
+													<span class="faq-ic icon solid fa-hourglass-half" aria-hidden="true"></span>
+													<span class="faq-t">When does registration close?</span>
+													<span class="faq-chev" aria-hidden="true"></span>
+												</button>
+												<div class="faq-a" id="faq-a-1"><div>
+													<p>On 18 October 2026. There is no fixed limit on the number of participants.</p>
+												</div></div>
+											</li>
+											<li class="faq-item">
+												<button class="faq-q" type="button" aria-expanded="false" aria-controls="faq-a-conf">
+													<span class="faq-ic icon solid fa-microphone-alt" aria-hidden="true"></span>
+													<span class="faq-t">Can I come to the conference too?</span>
+													<span class="faq-chev" aria-hidden="true"></span>
+												</button>
+												<div class="faq-a" id="faq-a-conf"><div>
+													<p>Yes. The <a href="breaq-conference.html">BreaQ Conference</a> on 14 November is open to everyone, whether or not you take part in the hackathon. It has <a href="register-conference.html">its own registration form</a>; the Register buttons on this page are for the hackathon.</p>
+												</div></div>
+											</li>
+											<li class="faq-item">
+												<button class="faq-q" type="button" aria-expanded="false" aria-controls="faq-a-2">
+													<span class="faq-ic icon solid fa-language" aria-hidden="true"></span>
+													<span class="faq-t">What language is it in?</span>
+													<span class="faq-chev" aria-hidden="true"></span>
+												</button>
+												<div class="faq-a" id="faq-a-2"><div>
+													<p>BreaQ runs in both Romanian and English.</p>
+												</div></div>
+											</li>
+											<li class="faq-item">
+												<button class="faq-q" type="button" aria-expanded="false" aria-controls="faq-a-3">
+													<span class="faq-ic icon solid fa-user-friends" aria-hidden="true"></span>
+													<span class="faq-t">Do I need a team?</span>
+													<span class="faq-chev" aria-hidden="true"></span>
+												</button>
+												<div class="faq-a" id="faq-a-3"><div>
+													<p>No. Register on your own and we match you with a team at the event, or name your team on the form. Everyone on a team registers separately.</p>
+												</div></div>
+											</li>
+											<li class="faq-item">
+												<button class="faq-q" type="button" aria-expanded="false" aria-controls="faq-a-4">
+													<span class="faq-ic icon solid fa-atom" aria-hidden="true"></span>
+													<span class="faq-t">How much quantum experience do I need?</span>
+													<span class="faq-chev" aria-hidden="true"></span>
+												</button>
+												<div class="faq-a" id="faq-a-4"><div>
+													<p>None. Every level is welcome, from complete beginners to researchers. The form asks about your experience so we can balance the teams, and mentors are on the floor to help.</p>
+												</div></div>
+											</li>
+											<li class="faq-item">
+												<button class="faq-q" type="button" aria-expanded="false" aria-controls="faq-a-5">
+													<span class="faq-ic icon solid fa-trophy" aria-hidden="true"></span>
+													<span class="faq-t">Are there prizes?</span>
+													<span class="faq-chev" aria-hidden="true"></span>
+												</button>
+												<div class="faq-a" id="faq-a-5"><div>
+													<p>Yes. At the end of the hackathon each team publishes its code and gives a short presentation to the jury, and each challenge awards first, second and third place. We announce the prizes closer to the event.</p>
+												</div></div>
+											</li>
+											<li class="faq-item">
+												<button class="faq-q" type="button" aria-expanded="false" aria-controls="faq-a-6">
+													<span class="faq-ic icon brands fa-discord" aria-hidden="true"></span>
+													<span class="faq-t">How do I contact the organizers?</span>
+													<span class="faq-chev" aria-hidden="true"></span>
+												</button>
+												<div class="faq-a" id="faq-a-6"><div>
+													<p>Everyone who registers receives an invitation to the official Discord server. You can also email <a href="mailto:partnerships@roqteam.ro">partnerships@roqteam.ro</a>.</p>
+												</div></div>
+											</li>
+											<li class="faq-item">
+												<button class="faq-q" type="button" aria-expanded="false" aria-controls="faq-a-7">
+													<span class="faq-ic icon solid fa-laptop" aria-hidden="true"></span>
+													<span class="faq-t">What should I bring?</span>
+													<span class="faq-chev" aria-hidden="true"></span>
+												</button>
+												<div class="faq-a" id="faq-a-7"><div>
+													<p>A valid ID for registration, your laptop, and the will to learn while having fun.</p>
+												</div></div>
+											</li>
+											<li class="faq-item">
+												<button class="faq-q" type="button" aria-expanded="false" aria-controls="faq-a-8">
+													<span class="faq-ic icon solid fa-couch" aria-hidden="true"></span>
+													<span class="faq-t">Can I sleep on site?</span>
+													<span class="faq-chev" aria-hidden="true"></span>
+												</button>
+												<div class="faq-a" id="faq-a-8"><div>
+													<p>You can, but we don’t recommend it. There are no beds on site, only beanbags and a few sofas.</p>
+												</div></div>
+											</li>
+											<li class="faq-item">
+												<button class="faq-q" type="button" aria-expanded="false" aria-controls="faq-a-9">
+													<span class="faq-ic icon solid fa-clock" aria-hidden="true"></span>
+													<span class="faq-t">Do the clocks change during the hackathon?</span>
+													<span class="faq-chev" aria-hidden="true"></span>
+												</button>
+												<div class="faq-a" id="faq-a-9"><div>
+													<p>Yes. Summer time ends in the night: at 04:00 on Sunday 25 October the clocks go back to 03:00, so the night is an hour longer. Every time we publish is Bucharest local time, and the hackathon ends at 14:00 by Sunday’s clock.</p>
+												</div></div>
+											</li>
+											<li class="faq-item">
+												<button class="faq-q" type="button" aria-expanded="false" aria-controls="faq-a-10">
+													<span class="faq-ic icon solid fa-pizza-slice" aria-hidden="true"></span>
+													<span class="faq-t">Are meals provided?</span>
+													<span class="faq-chev" aria-hidden="true"></span>
+												</button>
+												<div class="faq-a" id="faq-a-10"><div>
+													<p>Yes, meals and refreshments are provided. Please indicate any dietary restrictions when you register.</p>
+												</div></div>
+											</li>
+										</ul>
+									</section>
+
+									<!-- BreaQ Conference: the mirror of the hackathon panel on breaq-conference.html.
+									     The faces are 2025 speakers (160 px copies in images/opt/faces): swap in the 2026 line-up once it is announced. -->
+									<section id="conference" class="section_space">
+										<div class="twin">
+											<div class="twin-date"><b>14</b><span>November</span><small>Saturday</small></div>
+											<div class="twin-body">
+												<p class="twin-kicker">BreaQ 2026 · Part two</p>
+												<h3><a href="breaq-conference.html">BreaQ Conference</a></h3>
+												<p>Three weeks after the hackathon, BreaQ moves on stage: a day of talks by researchers and industry experts at the Military Technical Academy “Ferdinand I”. Open to everyone, whether or not you hacked.</p>
+												<div class="twin-peek">
+													<ul class="faces">
+														<li><img src="images/opt/faces/Cristina_Cirstoiu.webp" alt="Cristina Cirstoiu" title="Cristina Cirstoiu · Quantinuum" width="160" height="160" loading="lazy" /></li>
+														<li><img src="images/opt/faces/Radu-Ionicioiu.webp" alt="Radu Ionicioiu" title="Radu Ionicioiu · IFIN-HH" width="160" height="160" loading="lazy" /></li>
+														<li><img src="images/opt/faces/Stefan-Ataman.webp" alt="Ștefan Ataman" title="Ștefan Ataman · ELI-NP" width="160" height="160" loading="lazy" /></li>
+														<li><img src="images/opt/faces/Thierry.webp" alt="Thierry Kaldenbach" title="Thierry Kaldenbach · German Aerospace Center" width="160" height="160" loading="lazy" /></li>
+														<li><img src="images/opt/faces/Cosmin-Andrei.webp" alt="Cosmin Andrei" title="Cosmin Andrei · University of Oxford" width="160" height="160" loading="lazy" /></li>
+														<li><img src="images/opt/faces/Gabriel-Pavel.webp" alt="Gabriel Pavel" title="Gabriel Pavel · Fsas Technologies" width="160" height="160" loading="lazy" /></li>
+														<li aria-hidden="true"><span class="faces-next"></span></li>
+													</ul>
+													<p>On stage in 2025: speakers from Quantinuum, ELI-NP, IFIN-HH, the German Aerospace Center and Oxford. The 2026 line-up is announced soon.</p>
+												</div>
+												<p class="twin-actions"><a href="breaq-conference.html" class="button">The conference page</a></p>
+											</div>
+										</div>
+									</section>
+
+									<!-- Closing call -->
+									<section id="join" class="section_space cta">
+										<h3 class="major">Ready to break the boundaries?</h3>
+										<p>Registration is free, takes a couple of minutes and closes on 18 October. Everyone who registers gets a place, and the Discord invite with every practical detail. Coming to the talks too? The conference has <a href="register-conference.html">its own form</a>.</p>
+										<a href="register.html" class="button primary">Register</a>
+									</section>
+
+								</div>
+							</div>
+
+					</section>
+
+				<!-- Footer -->
+					<section id="footer" class="section_space">
+						<div class="inner">
+							<h2 class="major">Get in touch</h2>
+							<ul class="contact">
+								<li class="icon brands alt fa-linkedin-in"><a href="https://www.linkedin.com/company/roqteam/"><em><b>RoQTeam</b></em></a></li>
+								<li class="icon solid fa-envelope"><a href="mailto:partnerships@roqteam.ro"><em><b>partnerships@roqteam.ro</b></em></a></li>
+							</ul>
+							<ul class="copyright">
+								<li>&copy; RoQTeam. All rights reserved.</li><li>Design: HTML5 UP</li>
+							</ul>
+						</div>
+					</section>
+
+			</div>
+
+		<!-- Scripts -->
+			<script src="assets/js/jquery.min.js"></script>
+			<script src="assets/js/jquery.scrollex.min.js"></script>
+			<script src="assets/js/browser.min.js"></script>
+			<script src="assets/js/breakpoints.min.js"></script>
+			<script src="assets/js/util.js"></script>
+			<script src="assets/js/main.js"></script>
+			<script src="assets/js/breaq.js"></script>
+	</body>
+</html>
