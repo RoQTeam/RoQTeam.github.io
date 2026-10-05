@@ -34,6 +34,7 @@ JOBS = [
     ('sts',        'images/STS.png',        'key',  900),
     ('2space',     'images/2space.png',     'key',  900),
     ('haita',      'images/haita.png',      'key',  900),
+    ('securebydesign', 'images/securebydesign.png', 'keep', 900),
 ]
 
 def border_colour(a):
