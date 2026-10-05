@@ -23,6 +23,7 @@ os.makedirs(OUT, exist_ok=True)
 JOBS = [
     # name,        source,                  mode,   max px
     ('fsas',       'images/Fsas.png',       'key',  900),
+    ('cybalgoris', 'images/cybalgoris.png', 'keep', 900),
     ('nxp',        'images/nxp.png',        'keep', 900),
     ('sap',        'images/sap.png',        'keep', 900),
     ('artesana',   'images/artesana.png',   'key',  900),

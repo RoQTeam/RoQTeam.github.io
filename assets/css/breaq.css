@@ -1317,6 +1317,49 @@
 				color: #ffffff;
 			}
 
+		/* a fact with its icon in front, ringed like the About block's (the date and the venue on the event pages) */
+		.hero-fact--ic {
+			display: grid;
+			grid-template-columns: auto minmax(0, 1fr);
+			align-items: center;
+			gap: 0.2em 0.9em;
+		}
+
+			.hero-fact--ic .hero-ic {
+				grid-row: 1 / span 2;
+				display: grid;
+				place-items: center;
+				width: 3em;
+				height: 3em;
+				border-radius: 50%;
+				border: 1.5px solid rgba(255, 140, 0, 0.55);
+				color: var(--bq-hot);
+				letter-spacing: 0;
+			}
+
+				.hero-fact--ic .hero-ic::before {
+					font-size: 1.15em;
+				}
+
+			.hero-fact--ic b,
+			.hero-fact--ic > span:not(.hero-ic) {
+				grid-column: 2;
+			}
+
+		/* the date over the venue, the button beside them: with their icons the three do not fit on one line */
+		.hero-row.hero-row--stack {
+			display: grid;
+			grid-template-columns: auto auto;
+			justify-content: start;
+			align-items: center;
+			gap: 1.1em 3em;
+		}
+
+			.hero-row--stack .hero-cta {
+				grid-column: 2;
+				grid-row: 1 / span 2;
+			}
+
 		.hero-row .button {
 			margin-left: auto;
 		}
@@ -1367,6 +1410,15 @@
 			align-items: center;
 			width: 100%;
 		}
+
+		.hero-row.hero-row--stack {
+			grid-template-columns: minmax(0, 1fr);
+		}
+
+			.hero-row--stack .hero-cta {
+				grid-column: auto;
+				grid-row: auto;
+			}
 
 	}
 
@@ -1675,6 +1727,29 @@
 			.logos.logos--rank .is-gold .tile img {
 				max-height: 6.5em;
 			}
+
+	/* gold, silver and bronze in one row: nine columns, 4 / 3 / 2, so each tier is a step smaller.
+	   Wide screens only; on phones the tiers stack (see the 736px block below). */
+	@media screen and (min-width: 737px) {
+
+		.logos.logos--rank:has(.is-silver) {
+			grid-template-columns: repeat(9, minmax(0, 1fr));
+		}
+
+			.logos.logos--rank:has(.is-silver) .is-gold {
+				grid-column: span 4;
+			}
+
+			.logos.logos--rank:has(.is-silver) .is-silver {
+				grid-column: span 3;
+				aspect-ratio: auto;
+			}
+
+			.logos.logos--rank:has(.is-silver) .is-bronze {
+				grid-column: span 2;
+			}
+
+	}
 
 	@media screen and (max-width: 736px) {
 
