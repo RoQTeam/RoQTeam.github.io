@@ -1675,8 +1675,11 @@
 		margin-bottom: 2.25em;
 	}
 
+		/* the full width of their column, said outright: with an aspect-ratio and only "stretch" to go on,
+		   Safari sizes a tile from its content instead, and the silver one came out 172 px wide with no logo */
 		.logos.logos--rank li {
 			display: block;
+			width: 100%;
 			--tier: var(--bq-fg-light);
 		}
 
@@ -1723,9 +1726,14 @@
 				color: var(--tier);
 			}
 
-			/* an absolute cap: a percentage here would let the logo's natural size set the row height */
+			/* an absolute cap: a percentage here would let the logo's natural size set the row height
+			   (and Safari can resolve it to nothing) */
 			.logos.logos--rank .is-gold .tile img {
 				max-height: 6.5em;
+			}
+
+			.logos.logos--rank .is-silver .tile img {
+				max-height: 5em;
 			}
 
 	/* gold, silver and bronze in one row: nine columns, 4 / 3 / 2, so each tier is a step smaller.
