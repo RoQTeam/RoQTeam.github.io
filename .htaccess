@@ -1,0 +1,40 @@
+# roqteam.ro (Hosterion, LiteSpeed reads these Apache rules): addresses without .html, HTTPS only,
+# and the site's own 404 page. GitHub Pages (roqteam.github.io) ignores this file: it leaves dotfiles
+# out of the build, and it already serves /breaq for breaq.html on its own.
+#
+#   /breaq             serves breaq.html, no redirect
+#   /breaq.html        301 to /breaq, so old links and the site's own .html links still work
+#   /breaq/            301 to /breaq (a trailing slash would break the pages' relative links)
+#   /index.html        301 to /, and /QFF24_main/index.html to /QFF24_main/
+#   query strings are kept; #anchors never reach the server and stay as they are
+
+Options -MultiViews
+DirectoryIndex index.html
+ErrorDocument 404 /404.html
+
+<IfModule mod_rewrite.c>
+	RewriteEngine On
+
+	# HTTPS only (the server already redirects today; kept here so this file does not undo it)
+	RewriteCond %{HTTPS} !=on
+	RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L,NE]
+
+	# /index.html and /folder/index.html -> / and /folder/
+	RewriteCond %{THE_REQUEST} \s/+((?:[^?\s]*/)?)index\.html[?\s] [NC]
+	RewriteRule ^ /%1 [R=301,L,NE]
+
+	# /page.html -> /page (THE_REQUEST is what the browser asked for, so the rewrite below cannot loop back here)
+	RewriteCond %{THE_REQUEST} \s/+([^?\s]+?)\.html[?\s] [NC]
+	RewriteRule ^ /%1 [R=301,L,NE]
+
+	# /page/ -> /page, for anything that is not a real folder (/QFF24_main/ stays as it is)
+	RewriteCond %{REQUEST_FILENAME} !-d
+	RewriteRule ^(.+)/$ /$1 [R=301,L]
+
+	# /page -> page.html; never on an address that already ends in .html, so it cannot loop
+	RewriteCond %{REQUEST_URI} !\.html$
+	RewriteCond %{REQUEST_FILENAME} !-d
+	RewriteCond %{REQUEST_FILENAME} !-f
+	RewriteCond %{REQUEST_FILENAME}.html -f
+	RewriteRule ^(.*[^/])$ $1.html [L]
+</IfModule>
