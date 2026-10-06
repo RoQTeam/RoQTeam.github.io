@@ -27,6 +27,10 @@
  *
  * Email quota: a personal Google account can send 100 emails a day from Apps Script, a Google Workspace
  * account 1,500. Two emails go out per registration.
+ *
+ * Emails not arriving: the "Emails" column says, per registration, whether the confirmation and the notice went
+ * out or why not. To test sending on its own, pick "checkEmail" in the editor's function list and press Run:
+ * the log shows the sending account, the quota left today and the result of the test emails.
  */
 
 var SHEET_NAME = 'Registrations';
@@ -40,12 +44,35 @@ var LETTER_MAX_BYTES = 5 * 1024 * 1024;                  // register.js has the 
 var COLUMNS = [
 	'Timestamp', 'First name', 'Last name', 'Email', 'Phone', 'University or company', 'Status',
 	'Experience', 'T-shirt', 'Attends', 'Tracks', 'Team', 'Team name and members', 'Motivation',
-	'Dietary', 'Heard from', 'Consent', 'Conduct', 'Seconds on page', 'Page', 'Motivation letter'
+	'Dietary', 'Heard from', 'Consent', 'Conduct', 'Seconds on page', 'Page', 'Motivation letter', 'Emails'
 ];
 
 // run once from the editor: asks for Drive access and creates the letters folder
 function setup() {
 	Logger.log('Motivation letters go to ' + lettersFolder_().getUrl());
+}
+
+// run from the editor when emails do not arrive; put your own outside address in TEST_TO to test delivery
+// beyond roqteam.ro too
+function checkEmail() {
+	var TEST_TO = '';
+	var me = Session.getEffectiveUser().getEmail();
+	Logger.log('Sending as: ' + me);
+	Logger.log('Emails left today: ' + MailApp.getRemainingDailyQuota());
+	// one test per channel: GmailApp sends like the Gmail inbox does, MailApp is Apps Script's own mail service
+	[me, NOTIFY, TEST_TO].filter(String).forEach(function (to) {
+		['GmailApp', 'MailApp'].forEach(function (via) {
+			var msg = { to: to, subject: 'BreaQ registration: test via ' + via, body: 'If this arrived, the registration script can send email to ' + to + ' through ' + via + '.', name: SENDER_NAME, replyTo: REPLY_TO };
+			try {
+				if (via === 'GmailApp') GmailApp.sendEmail(msg.to, msg.subject, msg.body, { name: msg.name, replyTo: msg.replyTo });
+				else MailApp.sendEmail(msg);
+				Logger.log('Test via ' + via + ' to ' + to + ': sent');
+			} catch (err) {
+				Logger.log('Test via ' + via + ' to ' + to + ': FAILED: ' + err);
+			}
+		});
+	});
+	Logger.log('Emails left today after the test: ' + MailApp.getRemainingDailyQuota());
 }
 
 function doGet() {
@@ -108,12 +135,21 @@ function doPost(e) {
 			data.consent ? 'yes' : 'no', data.conduct ? 'yes' : 'no',
 			data.seconds_on_page || '', clean_(data.page), letterUrl
 		]);
+		var row = sheet.getLastRow();
 	} finally {
 		lock.releaseLock();
 	}
 
-	try { sendConfirmation_(email, data); } catch (err) { Logger.log('confirmation failed: ' + err); }
-	try { if (NOTIFY) sendNotice_(email, data, letterUrl); } catch (err) { Logger.log('notice failed: ' + err); }
+	// a failed email must not fail the registration, but it has to show: the "Emails" column says what happened
+	var sent = [];
+	try { sent.push('confirmation sent via ' + sendConfirmation_(email, data)); }
+	catch (err) { console.error('confirmation failed: ' + err); sent.push('confirmation FAILED: ' + err); }
+	if (NOTIFY) {
+		try { sent.push('notice sent via ' + sendNotice_(email, data, letterUrl)); }
+		catch (err) { console.error('notice failed: ' + err); sent.push('notice FAILED: ' + err); }
+	}
+	try { sheet.getRange(row, COLUMNS.indexOf('Emails') + 1).setValue(sent.join('; ')); }
+	catch (err) { console.error('could not record the emails: ' + err); }
 
 	return json_({ ok: true });
 }
@@ -201,7 +237,7 @@ function sendConfirmation_(email, data) {
 		'<p style="margin:24px 0"><a href="' + ev.ics + '" style="background:#4c5c96;color:#fff;text-decoration:none;padding:12px 20px;border-radius:3px;font-weight:700;letter-spacing:1px">Add to calendar</a></p>' +
 		'<p style="color:#666">Event page: <a href="' + ev.page + '" style="color:#4c5c96">' + ev.page + '</a><br>Questions? Just reply to this email.</p>' +
 		'<p>See you there,<br>RoQTeam</p></div>';
-	MailApp.sendEmail({ to: email, subject: subject, body: text, htmlBody: html, name: SENDER_NAME, replyTo: REPLY_TO });
+	return send_({ to: email, subject: subject, body: text, htmlBody: html, name: SENDER_NAME, replyTo: REPLY_TO });
 }
 
 function sendNotice_(email, data, letterUrl) {
@@ -215,7 +251,23 @@ function sendNotice_(email, data, letterUrl) {
 		letterUrl ? 'Motivation letter: ' + letterUrl : '',
 		'Sheet: ' + SpreadsheetApp.getActiveSpreadsheet().getUrl()
 	].filter(String);
-	MailApp.sendEmail({ to: NOTIFY, subject: 'BreaQ 2026 ' + clean_(data.attend) + ' registration: ' + clean_(data.first_name) + ' ' + clean_(data.last_name), body: lines.join('\n'), name: SENDER_NAME });
+	return send_({ to: NOTIFY, subject: 'BreaQ 2026 ' + clean_(data.attend) + ' registration: ' + clean_(data.first_name) + ' ' + clean_(data.last_name), body: lines.join('\n'), name: SENDER_NAME });
+}
+
+// GmailApp first: it sends through the account's Gmail, as the inbox does, where MailApp's messages to outside
+// addresses bounced; MailApp stays as the fallback. Returns which one sent, for the "Emails" column.
+function send_(msg) {
+	var options = { name: msg.name };
+	if (msg.htmlBody) options.htmlBody = msg.htmlBody;
+	if (msg.replyTo) options.replyTo = msg.replyTo;
+	try {
+		GmailApp.sendEmail(msg.to, msg.subject, msg.body, options);
+		return 'GmailApp';
+	} catch (err) {
+		console.error('GmailApp failed, trying MailApp: ' + err);
+		MailApp.sendEmail(msg);
+		return 'MailApp';
+	}
 }
 
 function clean_(v) {
