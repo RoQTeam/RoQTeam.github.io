@@ -763,6 +763,40 @@
 	});
 
 	/* ------------------------------------------------------------ */
+	/* Hackathon run: during the event, a "Now" needle on the bar     */
+	/* and the moment in progress lit among the cards                 */
+	/* ------------------------------------------------------------ */
+
+	// Times are full timestamps with their offset (data-start, data-from…), so the night the clocks go
+	// back counts its extra hour and every visitor sees Bucharest's schedule whatever their own time zone.
+	forEach(document.querySelectorAll('[data-run]'), function (run) {
+		var start = Date.parse(run.getAttribute('data-start'));
+		var end = Date.parse(run.getAttribute('data-end'));
+		var needle = run.querySelector('.run-now');
+		var cards = run.querySelectorAll('.run-card[data-from]');
+		if (isNaN(start) || isNaN(end)) return;
+
+		function tick() {
+			var now = Date.now();
+			var on = now >= start && now < end;
+			if (needle) {
+				needle.hidden = !on;
+				if (on) needle.style.setProperty('--at', ((now - start) / (end - start) * 100).toFixed(2) + '%');
+			}
+			forEach(cards, function (card) {
+				var from = Date.parse(card.getAttribute('data-from'));
+				// a moment without an end (stop coding) stays lit for half an hour
+				var to = card.hasAttribute('data-to') ? Date.parse(card.getAttribute('data-to')) : from + 30 * 60000;
+				card.classList.toggle('is-now', now >= from && now < to);
+				card.classList.toggle('is-past', on && now >= to);
+			});
+		}
+
+		tick();
+		window.setInterval(tick, 30000);
+	});
+
+	/* ------------------------------------------------------------ */
 	/* Gallery                                                        */
 	/* ------------------------------------------------------------ */
 

@@ -49,7 +49,7 @@
 				"@type": "Organization",
 				"name": "RoQTeam",
 				"url": "https://roqteam.ro/",
-				"email": "partnerships@roqteam.ro"
+				"email": "breaq2026@roqteam.ro"
 			},
 			"offers": {
 				"@type": "Offer",
@@ -67,7 +67,7 @@
 		}
 		</script>
 		<link rel="stylesheet" href="assets/css/main.css" />
-		<link rel="stylesheet" href="assets/css/breaq.css?v=20261005" />
+		<link rel="stylesheet" href="assets/css/breaq.css?v=20261010" />
 		<link rel="icon" type="image/png" href="images/favicon-2026.png">
 		<noscript><link rel="stylesheet" href="assets/css/noscript.css" /></noscript>
 	</head>
@@ -102,6 +102,8 @@
 									<a href="breaq.html">BreaQ 2026</a>
 									<a href="#about">About</a>
 									<a href="#challenges">Challenges</a>
+									<a href="#schedule">Schedule</a>
+									<a href="#prizes">Prizes</a>
 									<a href="#last-year">Last year’s challenges</a>
 									<a href="#sponsors">Sponsors</a>
 									<a href="#venue">Venue</a>
@@ -162,7 +164,7 @@
 									<!-- What to expect: this year's three challenges, then the countdown and the news -->
 									<section id="challenges" class="section_space">
 										<h3 class="major">What to Expect</h3>
-										<p>Three challenges on real quantum problems, each with a starter kit, mentors on the floor and prizes for the top three teams. New to quantum? Quantum Foundations is designed for you.</p>
+										<p>Three challenges on real quantum problems, each with a starter kit, mentors on the floor and <a href="#prizes">prizes</a> for its top three teams: 500, 300 and 100 RON. New to quantum? Quantum Foundations is designed for you.</p>
 										<div class="ch-grid">
 											<article class="ch">
 												<span class="image fit"><img src="images/opt/quantum_foundations_2026.webp" alt="" loading="lazy" /></span>
@@ -194,10 +196,167 @@
 												</div>
 											</div>
 											<div class="soon-next-body">
-												<p>The schedule and the prizes are announced in the coming weeks, here and on <a href="https://www.linkedin.com/company/roqteam/" target="_blank" rel="noopener">RoQTeam’s LinkedIn</a>. Curious how last year went? <a href="#last-year">See last year’s challenges</a>.</p>
+												<p>The <a href="#schedule">schedule</a> and the <a href="#prizes">prizes</a> are out. News comes here and on <a href="https://www.linkedin.com/company/roqteam/" target="_blank" rel="noopener">RoQTeam’s LinkedIn</a>. Curious how last year went? <a href="#last-year">See last year’s challenges</a>.</p>
 												<p class="next-gcal">Add it to your calendar: <a href="breaq-2026-hackathon.ics" type="text/calendar">calendar file</a> · <a href="https://calendar.google.com/calendar/render?action=TEMPLATE&amp;text=BreaQ+2026+Hackathon&amp;dates=20261024T060000Z%2F20261025T120000Z&amp;location=CAMPUS+Research+Institute%2C+Splaiul+Independen%C8%9Bei+313%2C+Bucure%C8%99ti&amp;details=Quantum+hackathon.+Details%3A+https%3A%2F%2Froqteam.ro%2Fbreaq-hackathon.html" target="_blank" rel="noopener">Google Calendar</a> · iPhone and Mac: <a href="webcal://roqteam.ro/breaq-2026-hackathon.ics">subscribe</a>, it updates itself if the times change</p>
 											</div>
 										</div>
+									</section>
+
+									<!-- Schedule: the whole hackathon on one bar, drawn to scale in real hours (so the night the clocks go back is an
+									     hour longer), then its moments as cards. During the event breaq.js moves a "Now" needle along the bar and
+									     lights the card in progress, from the timestamps in data-start, data-end, data-from and data-to.
+									     The positions (--s, --w, --at) are percentages of the 30 hours from Saturday 09:00 to Sunday 14:00. -->
+									<section id="schedule" class="section_space">
+										<h3 class="major">Schedule</h3>
+										<div class="run" data-run data-start="2026-10-24T09:00:00+03:00" data-end="2026-10-25T14:00:00+02:00">
+											<p>From Saturday 09:00 to Sunday 14:00, Bucharest time. Coding runs from 10:30 on Saturday to 09:00 on Sunday, around the workshops and the meals and right through the night, which is an hour longer: at 04:00 the clocks go back to 03:00.</p>
+
+											<div class="run-chart" aria-hidden="true" style="--dusk: 31.06%; --dawn: 75.67%">
+												<div class="run-days">
+													<span style="--at: 0%">Saturday 24</span>
+													<span style="--at: 50%">Sunday 25</span>
+												</div>
+												<div class="run-ticks">
+													<span class="run-tick run-tick--start" style="--at: 0%">09</span>
+													<span class="run-tick run-tick--minor" style="--at: 10.0%">12</span>
+													<span class="run-tick" style="--at: 20.0%">15</span>
+													<span class="run-tick run-tick--minor" style="--at: 30.0%">18</span>
+													<span class="run-tick" style="--at: 40.0%">21</span>
+													<span class="run-tick run-tick--minor" style="--at: 50.0%">00</span>
+													<span class="run-tick run-tick--minor" style="--at: 60.0%">03</span>
+													<span class="run-tick run-tick--minor" style="--at: 73.33%">06</span>
+													<span class="run-tick" style="--at: 83.33%">09</span>
+													<span class="run-tick run-tick--minor" style="--at: 93.33%">12</span>
+													<span class="run-tick run-tick--end" style="--at: 100%">14</span>
+													<span class="run-tick run-tick--dst" style="--at: 63.33%" title="At 04:00 the clocks go back to 03:00">+1h</span>
+												</div>
+												<div class="run-track">
+													<span class="run-seg run-key" style="--s: 0%; --w: 3.33%" data-label="09:00 – 10:00 · Official opening"></span>
+													<span class="run-seg run-code" style="--s: 5.0%; --w: 10.0%" data-label="10:30 – 13:30 · Start hacking!"></span>
+													<span class="run-seg run-talk" style="--s: 16.67%; --w: 1.66%" data-label="14:00 – 14:30 · Workshop"></span>
+													<span class="run-seg run-code" style="--s: 18.33%; --w: 1.67%" data-label="14:30 – 15:00 · Coding time"></span>
+													<span class="run-seg run-meal" style="--s: 20.0%; --w: 1.67%" data-label="15:00 – 15:30 · Lunch"></span>
+													<span class="run-seg run-code" style="--s: 21.67%; --w: 15.0%" data-label="15:30 – 20:00 · Coding time"></span>
+													<span class="run-seg run-talk" style="--s: 36.67%; --w: 1.66%" data-label="20:00 – 20:30 · Workshop"></span>
+													<span class="run-seg run-code" style="--s: 38.33%; --w: 5.0%" data-label="20:30 – 22:00 · Coding time"></span>
+													<span class="run-seg run-meal" style="--s: 43.33%; --w: 1.67%" data-label="22:00 – 22:30 · Dinner"></span>
+													<span class="run-seg run-code" style="--s: 45.0%; --w: 11.67%" data-label="22:30 – 02:00 · Coding time"></span>
+													<span class="run-seg run-meal is-late" style="--s: 56.67%; --w: 1.66%" data-label="02:00 – 02:30 · Snack"></span>
+													<span class="run-seg run-code is-late" style="--s: 58.33%; --w: 16.67%" data-label="02:30 – 06:30 · Coding time"></span>
+													<span class="run-seg run-meal is-late" style="--s: 75.0%; --w: 1.67%" data-label="06:30 – 07:00 · Breakfast"></span>
+													<span class="run-seg run-code is-late" style="--s: 76.67%; --w: 6.66%" data-label="07:00 – 09:00 · Coding time"></span>
+													<span class="run-stop" style="--at: 83.33%" data-label="09:00 · Stop coding"></span>
+													<span class="run-seg run-key is-late" style="--s: 85.0%; --w: 8.33%" data-label="09:30 – 12:00 · Judging"></span>
+													<span class="run-seg run-award is-late" style="--s: 93.33%; --w: 6.67%" data-label="12:00 – 14:00 · Awards"></span>
+													<span class="run-midnight"></span>
+													<span class="run-now" hidden></span>
+												</div>
+												<div class="run-sky">
+													<span class="icon solid fa-sun" style="--at: 15.53%"></span>
+													<span class="icon solid fa-moon" style="--at: 53.37%"></span>
+													<span class="icon solid fa-sun" style="--at: 87.84%"></span>
+												</div>
+											</div>
+
+											<ul class="run-legend" aria-hidden="true">
+												<li class="run-legend--code">Coding</li>
+												<li class="run-legend--talk">Workshops</li>
+												<li class="run-legend--meal">Meals</li>
+												<li class="run-legend--key">Opening and judging</li>
+												<li class="run-legend--award">Awards</li>
+											</ul>
+
+											<div class="run-day">
+												<h4>Saturday 24 October</h4>
+												<ol class="run-cards">
+													<li class="run-card run-card--key" data-from="2026-10-24T09:00:00+03:00" data-to="2026-10-24T10:00:00+03:00">
+														<span class="run-card-ic icon solid fa-door-open" aria-hidden="true"></span>
+														<span class="run-card-time"><b>09:00</b> – 10:00</span>
+														<span class="run-card-title">Official opening</span>
+													</li>
+													<li class="run-card run-card--code" data-from="2026-10-24T10:30:00+03:00" data-to="2026-10-24T13:30:00+03:00">
+														<span class="run-card-ic icon solid fa-laptop-code" aria-hidden="true"></span>
+														<span class="run-card-time"><b>10:30</b> – 13:30</span>
+														<span class="run-card-title">Start hacking!</span>
+													</li>
+													<li class="run-card run-card--talk" data-from="2026-10-24T14:00:00+03:00" data-to="2026-10-24T14:30:00+03:00">
+														<span class="run-card-ic icon solid fa-chalkboard-teacher" aria-hidden="true"></span>
+														<span class="run-card-time"><b>14:00</b> – 14:30</span>
+														<span class="run-card-title">Workshop</span>
+													</li>
+													<li class="run-card run-card--meal" data-from="2026-10-24T15:00:00+03:00" data-to="2026-10-24T15:30:00+03:00">
+														<span class="run-card-ic icon solid fa-utensils" aria-hidden="true"></span>
+														<span class="run-card-time"><b>15:00</b> – 15:30</span>
+														<span class="run-card-title">Lunch</span>
+													</li>
+													<li class="run-card run-card--talk" data-from="2026-10-24T20:00:00+03:00" data-to="2026-10-24T20:30:00+03:00">
+														<span class="run-card-ic icon solid fa-chalkboard-teacher" aria-hidden="true"></span>
+														<span class="run-card-time"><b>20:00</b> – 20:30</span>
+														<span class="run-card-title">Workshop</span>
+													</li>
+													<li class="run-card run-card--meal" data-from="2026-10-24T22:00:00+03:00" data-to="2026-10-24T22:30:00+03:00">
+														<span class="run-card-ic icon solid fa-pizza-slice" aria-hidden="true"></span>
+														<span class="run-card-time"><b>22:00</b> – 22:30</span>
+														<span class="run-card-title">Dinner</span>
+													</li>
+												</ol>
+											</div>
+											<div class="run-day">
+												<h4>Sunday 25 October</h4>
+												<ol class="run-cards">
+													<li class="run-card run-card--meal" data-from="2026-10-25T02:00:00+03:00" data-to="2026-10-25T02:30:00+03:00">
+														<span class="run-card-ic icon solid fa-cookie-bite" aria-hidden="true"></span>
+														<span class="run-card-time"><b>02:00</b> – 02:30</span>
+														<span class="run-card-title">Snack</span>
+													</li>
+													<li class="run-card run-card--meal" data-from="2026-10-25T06:30:00+02:00" data-to="2026-10-25T07:00:00+02:00">
+														<span class="run-card-ic icon solid fa-coffee" aria-hidden="true"></span>
+														<span class="run-card-time"><b>06:30</b> – 07:00</span>
+														<span class="run-card-title">Breakfast</span>
+													</li>
+													<li class="run-card run-card--stop" data-from="2026-10-25T09:00:00+02:00">
+														<span class="run-card-ic icon solid fa-hand-paper" aria-hidden="true"></span>
+														<span class="run-card-time"><b>09:00</b></span>
+														<span class="run-card-title">Stop coding</span>
+													</li>
+													<li class="run-card run-card--key" data-from="2026-10-25T09:30:00+02:00" data-to="2026-10-25T12:00:00+02:00">
+														<span class="run-card-ic icon solid fa-balance-scale" aria-hidden="true"></span>
+														<span class="run-card-time"><b>09:30</b> – 12:00</span>
+														<span class="run-card-title">Judging</span>
+													</li>
+													<li class="run-card run-card--award" data-from="2026-10-25T12:00:00+02:00" data-to="2026-10-25T14:00:00+02:00">
+														<span class="run-card-ic icon solid fa-trophy" aria-hidden="true"></span>
+														<span class="run-card-time"><b>12:00</b> – 14:00</span>
+														<span class="run-card-title">Awards</span>
+														<a class="run-card-more" href="#prizes">500 · 300 · 100 RON</a>
+													</li>
+												</ol>
+											</div>
+										</div>
+									</section>
+
+									<!-- Prizes: the same podium in each of the three challenges. In the markup 1st, 2nd, 3rd (the order read out);
+									     the grid puts 1st in the middle, on the highest step. -->
+									<section id="prizes" class="section_space">
+										<h3 class="major">Prizes</h3>
+										<p>Each of the three challenges, Quantum Foundations, Quantum AI and Quantum Hacking, has its own podium. The jury picks the top three teams of every challenge, and the prizes are handed out on Sunday from 12:00.</p>
+										<ol class="podium">
+											<li class="podium-step podium-step--1">
+												<span class="podium-ic icon solid fa-trophy" aria-hidden="true"></span>
+												<span class="podium-place">1st place</span>
+												<span class="podium-sum"><b>500</b> RON</span>
+											</li>
+											<li class="podium-step podium-step--2">
+												<span class="podium-ic icon solid fa-medal" aria-hidden="true"></span>
+												<span class="podium-place">2nd place</span>
+												<span class="podium-sum"><b>300</b> RON</span>
+											</li>
+											<li class="podium-step podium-step--3">
+												<span class="podium-ic icon solid fa-medal" aria-hidden="true"></span>
+												<span class="podium-place">3rd place</span>
+												<span class="podium-sum"><b>100</b> RON</span>
+											</li>
+										</ol>
 									</section>
 
 									<!-- Last year's challenges: the three tracks of BreaQ 2025, as the team described them -->
@@ -264,7 +423,7 @@
 											<li><a class="tile" href="https://sipit.ro/" target="_blank" rel="noopener"><img src="images/opt/logos/sipit.webp" alt="Sipit" loading="lazy" width="900" height="540" /></a></li>
 											<li><a class="tile" href="https://www.sap.com/" target="_blank" rel="noopener"><img src="images/opt/logos/sap.webp" alt="SAP" loading="lazy" width="900" height="472" /></a></li>
 										</ul>
-										<p class="logos-note">More sponsors are announced as they confirm. Want to support the hackathon? <a href="mailto:partnerships@roqteam.ro">Write to us</a>.</p>
+										<p class="logos-note">More sponsors are announced as they confirm. Want to support the hackathon? <a href="mailto:breaq2026@roqteam.ro">Write to us</a>.</p>
 									</section>
 
 									<!-- Partners -->
@@ -359,7 +518,7 @@
 													<span class="faq-chev" aria-hidden="true"></span>
 												</button>
 												<div class="faq-a" id="faq-a-5"><div>
-													<p>Yes. At the end of the hackathon each team publishes its code and gives a short presentation to the jury, and each challenge awards first, second and third place. We announce the prizes closer to the event.</p>
+													<p>Yes. At the end of the hackathon each team publishes its code and gives a short presentation to the jury, and each challenge awards first, second and third place: 500, 300 and 100 RON. See <a href="#prizes">the prizes</a>.</p>
 												</div></div>
 											</li>
 											<li class="faq-item">
@@ -369,7 +528,7 @@
 													<span class="faq-chev" aria-hidden="true"></span>
 												</button>
 												<div class="faq-a" id="faq-a-6"><div>
-													<p>Everyone who registers receives an invitation to the official Discord server. You can also email <a href="mailto:partnerships@roqteam.ro">partnerships@roqteam.ro</a>.</p>
+													<p>Everyone who registers receives an invitation to the official Discord server. You can also email <a href="mailto:breaq2026@roqteam.ro">breaq2026@roqteam.ro</a>.</p>
 												</div></div>
 											</li>
 											<li class="faq-item">
@@ -459,7 +618,7 @@
 							<h2 class="major">Get in touch</h2>
 							<ul class="contact">
 								<li class="icon brands alt fa-linkedin-in"><a href="https://www.linkedin.com/company/roqteam/"><em><b>RoQTeam</b></em></a></li>
-								<li class="icon solid fa-envelope"><a href="mailto:partnerships@roqteam.ro"><em><b>partnerships@roqteam.ro</b></em></a></li>
+								<li class="icon solid fa-envelope"><a href="mailto:breaq2026@roqteam.ro"><em><b>breaq2026@roqteam.ro</b></em></a></li>
 							</ul>
 							<ul class="copyright">
 								<li>&copy; RoQTeam. All rights reserved.</li><li>Design: HTML5 UP</li>
@@ -476,6 +635,6 @@
 			<script src="assets/js/breakpoints.min.js"></script>
 			<script src="assets/js/util.js"></script>
 			<script src="assets/js/main.js"></script>
-			<script src="assets/js/breaq.js?v=20261005"></script>
+			<script src="assets/js/breaq.js?v=20261010"></script>
 	</body>
 </html>

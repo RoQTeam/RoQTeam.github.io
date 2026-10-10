@@ -1,0 +1,135 @@
+<!DOCTYPE HTML>
+<html lang="en">
+	<head>
+		<title>Team dashboard · BreaQ Hackathon</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="robots" content="noindex, nofollow" />
+		<meta name="referrer" content="no-referrer" />
+		<!-- only its own files run, and it talks only to the Apps Script
+		     (script.google.com answers through a redirect to script.googleusercontent.com) -->
+		<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src https://script.google.com https://script.googleusercontent.com; base-uri 'none'; form-action 'none'" />
+		<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Raleway:700|Source+Sans+Pro:300,400,600&amp;display=swap" />
+		<link rel="stylesheet" href="assets/css/fontawesome-all.min.css" />
+		<link rel="stylesheet" href="assets/css/teams.css?v=20261010" />
+		<link rel="icon" type="image/png" href="images/favicon-2026.png">
+	</head>
+	<body>
+
+		<!--
+			The team dashboard of the BreaQ Hackathon: what the organisers post for the teams (announcements, each
+			challenge's resources, how to submit, practical details), with the schedule live. It reads the "Team
+			dashboard" tab of the registrations sheet through the same Apps Script as the forms and the admin page
+			(tools/register-backend.gs, the "board" action), which answers only to an accepted participant's own code
+			(or the admin key). The code is in the acceptance email; the admin page shows it and posts what appears
+			here. Each participant also sees their own team, answers "are you coming?", asks for a mentor (the
+			mentors take it on mentors.html) and sends their feedback after the event. data-endpoint is the same web
+			app URL as on register.html and admin.html.
+		-->
+		<main class="tm" id="teams"
+			data-endpoint="https://script.google.com/macros/s/AKfycbwLAgxidNtxQiuxIsLQPgdlOuFQRu_1cNSOj1Gs1kQ_O-Vq38CV9XRbViZb1qNrm_xW/exec">
+
+			<!-- Locked: the participant code -->
+			<section class="lock" id="lock">
+				<form class="lock-card" id="lock-form" novalidate>
+					<img class="lock-logo" src="images/BreaQ_logo_2026-light.svg" alt="BreaQ 2026" />
+					<p class="eyebrow">BreaQ Hackathon · 24–25 October</p>
+					<h1>Team dashboard</h1>
+					<p class="muted">For the accepted teams of the BreaQ Hackathon: your team, the announcements, the schedule, the challenge resources, a mentor when you are stuck and how to submit. Your personal code is in your acceptance email.</p>
+					<label for="code">Your code</label>
+					<input type="text" id="code" name="code" placeholder="ABCD-EFGH" autocomplete="off" autocapitalize="characters" spellcheck="false" required />
+					<label class="check"><input type="checkbox" id="remember" checked /> Remember on this device</label>
+					<p class="err" id="lock-err" role="alert" hidden></p>
+					<button type="submit" class="btn primary" id="lock-btn">Open</button>
+					<p class="muted small">No code? The dashboard opens for accepted participants only; everything public is on <a href="breaq-hackathon.html">the hackathon page</a>. Organisers: the admin key opens it.</p>
+				</form>
+			</section>
+
+			<!-- Unlocked -->
+			<section class="dash" id="dash" hidden>
+
+				<header class="top">
+					<div>
+						<p class="eyebrow">BreaQ Hackathon · 24–25 October</p>
+						<h1>Team dashboard</h1>
+						<p class="who" id="who"></p>
+					</div>
+					<div class="top-actions">
+						<span class="meta" id="meta" aria-live="polite"></span>
+						<button type="button" class="btn small ghost notify" id="notify" aria-pressed="false" hidden><span class="icon solid fa-bell" aria-hidden="true"></span><span class="notify-label">Notify me</span></button>
+						<button type="button" class="btn small" id="refresh">Refresh</button>
+						<a class="btn small ghost" href="breaq-hackathon.html">Hackathon page</a>
+						<button type="button" class="btn small ghost" id="lock-now">Sign out</button>
+					</div>
+				</header>
+
+				<p class="err" id="dash-err" role="alert" hidden></p>
+
+				<!-- where the hackathon is: now, next, and the countdown that matters -->
+				<section class="live" id="live" aria-label="Now"></section>
+
+				<!-- yours: what is up to you now ("are you coming?" before the day, "ask a mentor" during it, the feedback
+				     after) and your team, side by side on a wide screen -->
+				<div class="mine" id="mine" hidden>
+					<section class="act" id="act" aria-live="polite" hidden></section>
+					<section class="panel team-panel" id="team-panel" aria-labelledby="team-h" hidden>
+						<h2 id="team-h"><span class="icon solid fa-users" aria-hidden="true"></span>Your team</h2>
+						<div id="team"></div>
+					</section>
+				</div>
+
+				<!-- two columns on a wide screen; on a phone the main one first -->
+				<div class="board">
+
+					<div class="board-main">
+
+					<section class="panel ann-panel" aria-labelledby="ann-h">
+						<div class="panel-head">
+							<h2 id="ann-h"><span class="icon solid fa-bullhorn" aria-hidden="true"></span>Announcements <span class="count" id="ann-count"></span></h2>
+						</div>
+						<div id="ann" aria-live="polite"></div>
+					</section>
+
+					<section class="panel check-panel" aria-labelledby="check-h">
+						<div class="panel-head">
+							<h2 id="check-h"><span class="icon solid fa-tasks" aria-hidden="true"></span>Before you come <span class="count" id="check-count"></span></h2>
+						</div>
+						<div id="check"></div>
+					</section>
+
+					<section class="panel res-panel" aria-labelledby="res-h">
+						<h2 id="res-h"><span class="icon solid fa-toolbox" aria-hidden="true"></span>Challenge resources</h2>
+						<div id="res"></div>
+					</section>
+
+					</div>
+
+					<div class="board-side">
+
+					<section class="panel sub-panel" aria-labelledby="sub-h">
+						<h2 id="sub-h"><span class="icon solid fa-flag-checkered" aria-hidden="true"></span>Submission</h2>
+						<div id="sub"></div>
+					</section>
+
+					<section class="panel prac-panel" aria-labelledby="prac-h">
+						<h2 id="prac-h"><span class="icon solid fa-info-circle" aria-hidden="true"></span>Practical info</h2>
+						<div id="prac"></div>
+					</section>
+
+					<section class="panel sched-panel" aria-labelledby="sched-h">
+						<h2 id="sched-h"><span class="icon solid fa-clock" aria-hidden="true"></span>Schedule <span class="count">Bucharest time</span></h2>
+						<div id="sched"></div>
+					</section>
+
+					</div>
+
+				</div>
+
+			</section>
+
+		</main>
+
+		<script src="assets/js/notify.js?v=20261010"></script>
+		<script src="assets/js/teams.js?v=20261010"></script>
+	</body>
+</html>

@@ -1,0 +1,355 @@
+<!DOCTYPE HTML>
+<html lang="en">
+	<head>
+		<title>Registrations · BreaQ 2026 admin</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="robots" content="noindex, nofollow" />
+		<meta name="referrer" content="no-referrer" />
+		<!-- the page holds personal data once unlocked: only its own files run, and it talks only to the Apps Script
+		     (script.google.com answers through a redirect to script.googleusercontent.com) -->
+		<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src https://script.google.com https://script.googleusercontent.com; base-uri 'none'; form-action 'none'" />
+		<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Raleway:700|Source+Sans+Pro:300,400,600&amp;display=swap" />
+		<link rel="stylesheet" href="assets/css/admin.css?v=20261010" />
+		<link rel="icon" type="image/png" href="images/favicon-2026.png">
+	</head>
+	<body>
+
+		<!--
+			Admin page for the BreaQ 2026 registrations. It reads the Google Sheet through the same Apps Script as the
+			registration forms (tools/register-backend.gs, the "list" action), which answers only to the admin key.
+			Run adminKey in the Apps Script editor to see the key. data-endpoint is the same web app URL as on
+			register.html and register-conference.html.
+		-->
+		<main class="adm" id="admin"
+			data-endpoint="https://script.google.com/macros/s/AKfycbwLAgxidNtxQiuxIsLQPgdlOuFQRu_1cNSOj1Gs1kQ_O-Vq38CV9XRbViZb1qNrm_xW/exec">
+
+			<!-- Locked: the key -->
+			<section class="lock" id="lock">
+				<form class="lock-card" id="lock-form" novalidate>
+					<img class="lock-logo" src="images/BreaQ_logo_2026-light.svg" alt="BreaQ 2026" />
+					<h1>Registrations</h1>
+					<p class="muted">For the organisers. The key is in the Apps Script editor: run <code>adminKey</code>.</p>
+					<!-- lets a password manager file the key under a name -->
+					<input type="text" name="username" value="BreaQ admin" autocomplete="username" hidden />
+					<label for="key">Admin key</label>
+					<input type="password" id="key" name="key" autocomplete="current-password" spellcheck="false" required />
+					<label class="check"><input type="checkbox" id="remember" /> Remember on this device</label>
+					<p class="err" id="lock-err" role="alert" hidden></p>
+					<button type="submit" class="btn primary" id="lock-btn">Open</button>
+				</form>
+			</section>
+
+			<!-- Unlocked: the registrations -->
+			<section class="dash" id="dash" hidden>
+
+				<header class="top">
+					<div>
+						<p class="eyebrow">BreaQ 2026</p>
+						<h1>Registrations</h1>
+					</div>
+					<div class="top-actions">
+						<span class="meta" id="meta" aria-live="polite"></span>
+						<button type="button" class="btn" id="refresh">Refresh</button>
+						<a class="btn" id="sheet-link" href="#" target="_blank" rel="noopener" hidden>Open the sheet</a>
+						<button type="button" class="btn ghost" id="lock-now">Lock</button>
+					</div>
+				</header>
+
+				<p class="err" id="dash-err" role="alert" hidden></p>
+
+				<!-- the registrations; the hackathon's teams; the check-in at the door; what the teams see on teams.html;
+				     the certificates and the feedback after the event -->
+				<div class="seg views" role="group" aria-label="View" id="f-view">
+					<button type="button" data-view="regs" aria-pressed="true">Registrations</button>
+					<button type="button" data-view="teams" aria-pressed="false">Teams</button>
+					<button type="button" data-view="checkin" aria-pressed="false">Check-in</button>
+					<button type="button" data-view="board" aria-pressed="false">Team dashboard</button>
+					<button type="button" data-view="after" aria-pressed="false">After the event</button>
+				</div>
+
+				<div class="view" id="view-regs">
+
+				<div class="tiles" id="tiles"></div>
+
+				<div class="bar-row">
+					<div class="seg" role="group" aria-label="Event" id="f-event">
+						<button type="button" data-event="all" aria-pressed="true">All</button>
+						<button type="button" data-event="hackathon" aria-pressed="false">Hackathon</button>
+						<button type="button" data-event="conference" aria-pressed="false">Conference</button>
+					</div>
+					<input type="search" id="search" placeholder="Search names, emails, universities…" aria-label="Search" autocomplete="off" spellcheck="false" />
+				</div>
+
+				<section class="panel" aria-labelledby="per-day-h">
+					<h2 id="per-day-h">Registrations per day</h2>
+					<div class="days" id="days"></div>
+				</section>
+
+				<div class="breakdowns" id="breakdowns"></div>
+
+				<!-- Decision emails (hackathon): Accept, Waitlist and Deny only note the decision; this button sends what is
+				     due, after showing who gets what (the "decisions" action of the Apps Script) -->
+				<section class="panel send-panel" id="send-panel" aria-labelledby="send-h">
+					<div class="panel-head">
+						<div>
+							<h2 id="send-h">Decision emails</h2>
+							<p class="send-status" id="send-status"></p>
+						</div>
+						<button type="button" class="btn primary" id="send-open">Send decision emails</button>
+					</div>
+					<p class="muted send-help">Accept, Waitlist and Deny only note the decision. Nothing goes out until you press Send, which first shows who gets what. Google allows about 100 emails a day: the accepted go first, then the waiting list, then the denied, and the next day’s Send carries on. Registration closes on 18 October at 23:59.</p>
+				</section>
+
+				<section class="panel" aria-labelledby="people-h">
+					<div class="panel-head">
+						<h2 id="people-h">People <span class="count" id="shown"></span></h2>
+						<div class="panel-actions">
+							<span class="note" id="copied" aria-live="polite"></span>
+							<button type="button" class="btn small" id="copy-emails">Copy emails</button>
+							<button type="button" class="btn small" id="download">Download CSV</button>
+						</div>
+					</div>
+					<!-- about the hackathon: hidden in the conference view -->
+					<div class="filters" id="filters">
+						<div class="seg" role="group" aria-label="Who" id="f-kind">
+							<button type="button" data-kind="all" aria-pressed="true">All <span class="n"></span></button>
+							<button type="button" data-kind="teams" aria-pressed="false">Teams <span class="n"></span></button>
+							<button type="button" data-kind="solo" aria-pressed="false">On their own <span class="n"></span></button>
+						</div>
+						<div class="seg" role="group" aria-label="Decision" id="f-decision">
+							<button type="button" data-decision="any" aria-pressed="true">Any decision</button>
+							<button type="button" data-decision="none" aria-pressed="false">Undecided <span class="n"></span></button>
+							<button type="button" data-decision="accepted" aria-pressed="false">Accepted <span class="n"></span></button>
+							<button type="button" data-decision="waitlist" aria-pressed="false">Waitlist <span class="n"></span></button>
+							<button type="button" data-decision="denied" aria-pressed="false">Denied <span class="n"></span></button>
+						</div>
+					</div>
+					<div class="table-wrap">
+						<table class="people" id="people">
+							<thead></thead>
+							<tbody></tbody>
+						</table>
+					</div>
+					<p class="empty muted" id="empty" hidden>No registration matches.</p>
+				</section>
+
+				</div>
+
+				<!-- The hackathon's teams: who is in which (the "Hackathon team" column), each team's challenge, table, pitch
+				     and place (the sheet's "Teams" tab), and who said they are coming (the "Coming" column, answered on
+				     the team dashboard). The "team-save", "team-delete" and "team-assign" actions of the Apps Script. -->
+				<div class="view" id="view-teams" hidden>
+
+					<p class="err" id="teams-err" role="alert" hidden></p>
+
+					<div class="tiles" id="teams-tiles"></div>
+
+					<div class="teams-cols">
+
+						<section class="panel" aria-labelledby="teams-h">
+							<div class="panel-head">
+								<h2 id="teams-h">Teams <span class="count" id="teams-count"></span></h2>
+								<div class="panel-actions">
+									<span class="note" id="teams-note" aria-live="polite"></span>
+									<button type="button" class="btn small" id="teams-suggest">Make teams from the registrations</button>
+									<button type="button" class="btn small primary" id="team-new">New team</button>
+								</div>
+							</div>
+							<p class="muted teams-help">Each participant sees their team on the dashboard: its name, challenge, table, teammates and pitch time. <b>Make teams from the registrations</b> puts the accepted people who registered together into a team each. The place (1st, 2nd, 3rd in its challenge) goes on the certificates, and the team sees it after the awards.</p>
+							<div class="tgrid" id="teams-list"></div>
+						</section>
+
+						<section class="panel" aria-labelledby="loose-h">
+							<h2 id="loose-h">Not in a team yet <span class="count" id="loose-count"></span></h2>
+							<div id="loose"></div>
+						</section>
+
+					</div>
+
+				</div>
+
+				<!-- The check-in at the door: the accepted participants, found by name; "Check in" fills the "Checked in"
+				     column (the "checkin" action), which the certificates go by. -->
+				<div class="view" id="view-checkin" hidden>
+
+					<p class="err" id="checkin-err" role="alert" hidden></p>
+
+					<div class="tiles" id="checkin-tiles"></div>
+
+					<section class="panel" aria-label="Check-in">
+						<div class="checkin-bar">
+							<input type="search" id="checkin-search" placeholder="Name, email or team…" aria-label="Find someone" autocomplete="off" spellcheck="false" />
+							<div class="seg" role="group" aria-label="Who" id="checkin-filter">
+								<button type="button" data-f="out" aria-pressed="true">Not here yet <span class="n"></span></button>
+								<button type="button" data-f="in" aria-pressed="false">Here <span class="n"></span></button>
+								<button type="button" data-f="all" aria-pressed="false">Everyone <span class="n"></span></button>
+							</div>
+						</div>
+						<ul class="clist" id="checkin-list"></ul>
+						<p class="empty muted" id="checkin-empty" hidden></p>
+					</section>
+
+				</div>
+
+				<!-- The team dashboard (teams.html, roqteam.ro/teams): who can open it, and what is posted there.
+				     The "board-admin", "board-save" and "board-delete" actions of the Apps Script; everything is kept
+				     in the sheet's "Team dashboard" tab. -->
+				<div class="view" id="view-board" hidden>
+
+					<p class="err" id="board-err" role="alert" hidden></p>
+
+					<section class="panel board-access" aria-labelledby="board-access-h">
+						<div class="panel-head">
+							<div>
+								<h2 id="board-access-h">Who can open it <span class="count" id="board-access"></span></h2>
+								<p class="muted">The accepted participants only, each with the personal code from their acceptance email, at <a id="board-page" href="teams.html" target="_blank" rel="noopener">roqteam.ro/teams</a>. Changing someone’s decision shuts their code out at once. Someone lost the email? Their code is in their full view: Registrations, then their name. Organisers open it with the admin key.</p>
+							</div>
+						</div>
+					</section>
+
+					<!-- the mentor queue (mentors.html): its link, with the mentor key ("mentor-key" changes it) -->
+					<section class="panel board-access" aria-labelledby="mentors-h">
+						<div class="panel-head">
+							<div>
+								<h2 id="mentors-h">Mentors</h2>
+								<p class="muted">The teams press “Ask a mentor” on the dashboard; the mentors see the requests, oldest first, at <a id="mentor-page" href="mentors.html" target="_blank" rel="noopener">roqteam.ro/mentors</a>, take one and mark it done. Send the mentors their link: it carries the mentor key, which opens the queue and nothing else. A new key shuts the old link out at once.</p>
+							</div>
+							<div class="panel-actions">
+								<span class="note" id="mentor-note" aria-live="polite"></span>
+								<button type="button" class="btn small" id="mentor-copy">Copy the mentors’ link</button>
+								<a class="btn small ghost" id="mentor-open" href="mentors.html" target="_blank" rel="noopener">Open the queue</a>
+								<button type="button" class="btn small ghost" id="mentor-renew">New key</button>
+							</div>
+						</div>
+					</section>
+
+					<div class="board-cols">
+
+						<section class="panel board-form-panel" aria-labelledby="board-form-h">
+							<h2 id="board-form-h">Post on the dashboard</h2>
+							<form class="bform" id="board-form" novalidate>
+								<div class="seg bform-sections" role="group" aria-label="Where it goes" id="board-section">
+									<button type="button" data-section="announcement" aria-pressed="true">Announcement</button>
+									<button type="button" data-section="resource" aria-pressed="false">Resource</button>
+									<button type="button" data-section="checklist" aria-pressed="false">Checklist</button>
+									<button type="button" data-section="submission" aria-pressed="false">Submission</button>
+									<button type="button" data-section="practical" aria-pressed="false">Practical</button>
+								</div>
+								<p class="muted bform-help" id="board-help"></p>
+								<label class="bform-field" id="board-challenge-field" hidden>
+									<span>Challenge</span>
+									<select id="board-challenge">
+										<option value="">All three challenges</option>
+										<option>Quantum Foundations</option>
+										<option>Quantum AI</option>
+										<option>Quantum Hacking</option>
+									</select>
+								</label>
+								<label class="bform-field">
+									<span>Title</span>
+									<input type="text" id="board-title" maxlength="160" autocomplete="off" />
+								</label>
+								<label class="bform-field">
+									<span>Text <em>optional · a blank line starts a paragraph, web addresses become links</em></span>
+									<textarea id="board-text" rows="6" maxlength="5000"></textarea>
+								</label>
+								<label class="bform-field">
+									<span>Link <em>optional</em></span>
+									<input type="url" id="board-link" placeholder="https://" autocomplete="off" />
+								</label>
+								<label class="check" id="board-pinned-field"><input type="checkbox" id="board-pinned" /> Pin it: stays on top of the announcements</label>
+								<p class="err" id="board-form-err" role="alert" hidden></p>
+								<div class="bform-actions">
+									<button type="submit" class="btn primary" id="board-submit">Post</button>
+									<button type="button" class="btn ghost" id="board-cancel" hidden>Cancel</button>
+									<span class="note" id="board-note" aria-live="polite"></span>
+								</div>
+							</form>
+						</section>
+
+						<section class="panel board-list-panel" aria-labelledby="board-list-h">
+							<div class="panel-head">
+								<h2 id="board-list-h">On the dashboard <span class="count" id="board-count"></span></h2>
+								<a class="btn small" id="board-open" href="teams.html" target="_blank" rel="noopener">Open it</a>
+							</div>
+							<div id="board-list"></div>
+						</section>
+
+					</div>
+
+				</div>
+
+				<!-- After the event: the certificates (the "certificates" action: who gets one, a sample, the send) and the
+				     feedback the participants sent from the dashboard (the sheet's "Feedback" tab, without names) -->
+				<div class="view" id="view-after" hidden>
+
+					<p class="err" id="after-err" role="alert" hidden></p>
+
+					<section class="panel send-panel" aria-labelledby="cert-h">
+						<div class="panel-head">
+							<div>
+								<h2 id="cert-h">Certificates <span class="count" id="cert-count"></span></h2>
+								<p class="send-status" id="cert-status"></p>
+							</div>
+							<div class="panel-actions">
+								<button type="button" class="btn small" id="cert-sample">Send me a sample</button>
+								<button type="button" class="btn primary" id="cert-send">Send certificates</button>
+							</div>
+						</div>
+						<p class="muted send-help">Each accepted participant checked in at the door gets one PDF, once, made from the Google Slides template with their name, team, challenge and place. The email links to the feedback form on their dashboard. <span id="cert-template"></span></p>
+						<div id="cert-result" aria-live="polite"></div>
+					</section>
+
+					<section class="panel" aria-labelledby="fb-h">
+						<h2 id="fb-h">Feedback <span class="count" id="fb-count"></span></h2>
+						<div class="tiles" id="fb-tiles"></div>
+						<div class="fb-cols" id="fb-cols">
+							<div>
+								<h3>What worked best</h3>
+								<ul class="fb-list" id="fb-best"></ul>
+							</div>
+							<div>
+								<h3>What to change</h3>
+								<ul class="fb-list" id="fb-change"></ul>
+							</div>
+						</div>
+					</section>
+
+				</div>
+
+			</section>
+
+			<dialog class="detail" id="detail" aria-labelledby="detail-name">
+				<div class="detail-head">
+					<div>
+						<p class="eyebrow" id="detail-event"></p>
+						<h2 id="detail-name"></h2>
+					</div>
+					<button type="button" class="btn ghost small" id="detail-close">Close</button>
+				</div>
+				<div class="detail-decision" id="detail-decision" hidden></div>
+				<div id="detail-fields"></div>
+			</dialog>
+
+			<dialog class="detail send-dlg" id="send-dlg" aria-labelledby="send-dlg-h">
+				<div class="detail-head">
+					<div>
+						<p class="eyebrow">Hackathon</p>
+						<h2 id="send-dlg-h">Decision emails</h2>
+					</div>
+					<button type="button" class="btn ghost small" id="send-close">Close</button>
+				</div>
+				<div id="send-body" aria-live="polite"></div>
+				<div class="send-actions">
+					<button type="button" class="btn primary" id="send-go" hidden>Send</button>
+				</div>
+			</dialog>
+
+			<div class="tip" id="tip" role="tooltip" hidden></div>
+
+		</main>
+
+		<script src="assets/js/admin.js?v=20261010"></script>
+	</body>
+</html>

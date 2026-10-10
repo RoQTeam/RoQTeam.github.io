@@ -12,8 +12,8 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
 		<link rel="stylesheet" href="assets/css/main.css" />
-		<link rel="stylesheet" href="assets/css/breaq.css?v=20261005" />
-		<link rel="stylesheet" href="assets/css/register.css?v=20261005" />
+		<link rel="stylesheet" href="assets/css/breaq.css?v=20261010" />
+		<link rel="stylesheet" href="assets/css/register.css?v=20261009" />
 		<link rel="icon" type="image/png" href="images/favicon-2026.png">
 		<noscript><link rel="stylesheet" href="assets/css/noscript.css" /></noscript>
 	</head>
@@ -152,6 +152,10 @@
 											<legend><span class="reg-n">3</span>The hackathon</legend>
 											<div class="fields">
 												<input type="hidden" name="attend" value="hackathon" />
+												<div class="field reg-notice" role="note">
+													<span class="icon solid fa-exclamation-triangle" aria-hidden="true"></span>
+													<p><b>Teams have at most 3 people</b>, you included. Coming with teammates? Each of them registers too, on this form and with their own motivation letter.</p>
+												</div>
 												<!-- the three 2026 challenges, as on breaq-hackathon.html#challenges -->
 												<div class="field">
 													<span class="lbl">Tracks I am interested in <span class="opt">pick any</span></span>
@@ -162,6 +166,19 @@
 														<span><input type="checkbox" id="track-tbd" name="tracks" value="Not sure yet" /><label for="track-tbd">Not sure yet</label></span>
 													</div>
 													<small>Quantum Foundations is designed for beginners. <a href="breaq-hackathon.html#challenges" target="_blank" rel="noopener">What each challenge is about</a></small>
+												</div>
+												<!-- Quantum AI can be done alone or in a team: register.js shows this while that track is ticked -->
+												<div class="field" data-track="Quantum AI" hidden>
+													<span class="lbl">Quantum AI: on your own or in a team?</span>
+													<div class="choices choices--row">
+														<span><input type="radio" id="team-solo" name="team" value="solo" checked /><label for="team-solo">On my own</label></span>
+														<span><input type="radio" id="team-have" name="team" value="team" /><label for="team-have">With a team I already have</label></span>
+													</div>
+												</div>
+												<div class="field" data-team hidden>
+													<label for="team_name">Your teammates</label>
+													<input type="text" name="team_name" id="team_name" maxlength="200" required placeholder="Ana Popescu, Mihai Ionescu" />
+													<small>Their names as they write them on their own registrations: everyone on the team registers separately, with their own motivation letter, and we review a team’s registrations together.</small>
 												</div>
 												<!-- register.js reads the PDF and sends it with the rest; the Apps Script saves it to Drive -->
 												<div class="field">
@@ -230,7 +247,7 @@
 							<h2 class="major">Get in touch</h2>
 							<ul class="contact">
 								<li class="icon brands alt fa-linkedin-in"><a href="https://www.linkedin.com/company/roqteam/"><em><b>RoQTeam</b></em></a></li>
-								<li class="icon solid fa-envelope"><a href="mailto:partnerships@roqteam.ro"><em><b>partnerships@roqteam.ro</b></em></a></li>
+								<li class="icon solid fa-envelope"><a href="mailto:breaq2026@roqteam.ro"><em><b>breaq2026@roqteam.ro</b></em></a></li>
 							</ul>
 							<ul class="copyright">
 								<li>&copy; RoQTeam. All rights reserved.</li><li>Design: HTML5 UP</li>
@@ -248,7 +265,7 @@
 			<script src="assets/js/util.js"></script>
 			<script src="assets/js/main.js"></script>
 			<script src="assets/js/script.js"></script>
-			<script src="assets/js/breaq.js?v=20261005"></script>
-			<script src="assets/js/register.js?v=20261005"></script>
+			<script src="assets/js/breaq.js?v=20261010"></script>
+			<script src="assets/js/register.js?v=20261007b"></script>
 	</body>
 </html>

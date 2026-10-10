@@ -19,6 +19,7 @@
 	.sp-hint,
 	.sp-card, .sp-card *,
 	.sched, .sched *,
+	.run, .run *,
 	.gal, .gal *,
 	.catalog, .catalog *,
 	.mosaic, .mosaic *,
@@ -2832,6 +2833,554 @@
 		.tl-abs p {
 			padding: 0 0 1em 0;
 		}
+
+	}
+
+/* ------------------------------------------------------------------ */
+/* Hackathon run: the whole hackathon on one bar, then its moments      */
+/* ------------------------------------------------------------------ */
+
+	.run {
+		--run-code: #6f80c4;
+		--run-talk: var(--bq-hot);
+		--run-meal: #e0b74f;
+		--run-key: #ffffff;
+		--run-award: #ffc04d;
+		margin: 0 0 2em 0;
+	}
+
+	/* the chart: days, hours, the bar, then the sky (sun, moon, sun) */
+	.run-chart {
+		position: relative;
+		margin: 2.2em 0 0 0;
+	}
+
+		.run-days,
+		.run-ticks,
+		.run-sky {
+			position: relative;
+		}
+
+			.run-days span,
+			.run-ticks span,
+			.run-sky span {
+				position: absolute;
+				top: 0;
+				left: var(--at);
+				transform: translateX(-50%);
+				white-space: nowrap;
+			}
+
+		.run-days {
+			height: 1.1em;
+			margin: 0 0 0.5em 0;
+			font-family: Raleway, Helvetica, sans-serif;
+			font-size: 0.55em;
+			font-weight: 700;
+			letter-spacing: 0.25em;
+			text-transform: uppercase;
+			color: var(--bq-hot);
+		}
+
+			/* each day's name starts at its first hour: Saturday at the left edge, Sunday at midnight */
+			.run-days span {
+				transform: none;
+			}
+
+				.run-days span + span {
+					padding-left: 0.9em;
+				}
+
+		.run-ticks {
+			height: 1.5em;
+			font-family: Raleway, Helvetica, sans-serif;
+			font-size: 0.55em;
+			font-weight: 700;
+			letter-spacing: 0.08em;
+			font-variant-numeric: tabular-nums;
+			color: var(--bq-fg-light);
+		}
+
+			.run-ticks .run-tick--start {
+				transform: none;
+			}
+
+			.run-ticks .run-tick--end {
+				transform: translateX(-100%);
+			}
+
+			.run-tick--dst {
+				padding: 0 0.45em;
+				border-radius: 3px;
+				background: rgba(255, 140, 0, 0.18);
+				color: var(--bq-hot);
+				line-height: 1.5;
+				margin-top: -0.1em;
+			}
+
+	.run-track {
+		position: relative;
+		height: 2.6em;
+		border-radius: 6px;
+		background: rgba(255, 255, 255, 0.035);
+		box-shadow: inset 0 0 0 1px var(--bq-line);
+	}
+
+		.run-seg {
+			position: absolute;
+			top: 5px;
+			bottom: 5px;
+			left: calc(var(--s) + 1px);
+			width: calc(var(--w) - 2px);
+			min-width: 3px;
+			border-radius: 3px;
+			transition: filter 0.2s var(--bq-ease-out);
+		}
+
+		.run-code {
+			background:
+				repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.09) 0 5px, rgba(255, 255, 255, 0) 5px 11px),
+				var(--run-code);
+		}
+
+		.run-talk { background: var(--run-talk); }
+		.run-meal { background: var(--run-meal); }
+		.run-key { background: var(--run-key); }
+		.run-award { background: linear-gradient(90deg, var(--run-award), var(--bq-hot)); }
+
+		/* stop coding: a line across the bar */
+		.run-stop {
+			position: absolute;
+			top: -4px;
+			bottom: -4px;
+			left: var(--at);
+			width: 3px;
+			margin-left: -1.5px;
+			border-radius: 2px;
+			background: #ffffff;
+		}
+
+		.run-midnight {
+			position: absolute;
+			left: 50%;
+			top: -3.4em;
+			bottom: -0.5em;
+			border-left: 1px dashed rgba(255, 255, 255, 0.28);
+			pointer-events: none;
+		}
+
+		/* during the event: where we are */
+		.run-now {
+			position: absolute;
+			z-index: 3;
+			top: -8px;
+			bottom: -8px;
+			left: var(--at);
+			width: 2px;
+			margin-left: -1px;
+			background: var(--bq-hot);
+			box-shadow: 0 0 0 3px rgba(255, 140, 0, 0.25);
+			pointer-events: none;
+		}
+
+			.run-now::after {
+				content: "Now";
+				position: absolute;
+				top: calc(100% + 4px);
+				left: 50%;
+				transform: translateX(-50%);
+				padding: 0.15em 0.5em;
+				border-radius: 3px;
+				background: var(--bq-hot);
+				color: #1f2130;
+				font-family: Raleway, Helvetica, sans-serif;
+				font-size: 0.5em;
+				font-weight: 700;
+				letter-spacing: 0.15em;
+				text-transform: uppercase;
+			}
+
+	/* with a mouse, each block names itself (the cards below say it all for everyone) */
+	@media (hover: hover) {
+
+		.run-seg:hover,
+		.run-stop:hover {
+			filter: brightness(1.15);
+		}
+
+		.run-seg:hover::after,
+		.run-stop:hover::after {
+			content: attr(data-label);
+			position: absolute;
+			z-index: 4;
+			bottom: calc(100% + 12px);
+			left: 0;
+			padding: 0.45em 0.75em;
+			border-radius: 4px;
+			background: #ffffff;
+			box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+			color: #1f2130;
+			font-size: 0.6em;
+			font-weight: 600;
+			letter-spacing: 0.02em;
+			white-space: nowrap;
+			pointer-events: none;
+		}
+
+			.run-seg.is-late:hover::after,
+			.run-stop:hover::after {
+				left: auto;
+				right: 0;
+			}
+
+	}
+
+	.run-sky {
+		height: 2.2em;
+		margin: 0.55em 0 0 0;
+	}
+
+		/* daylight, dusk, night, dawn: a thin line under the bar */
+		.run-sky::before {
+			content: "";
+			position: absolute;
+			left: 0;
+			right: 0;
+			top: 50%;
+			height: 3px;
+			margin-top: -1.5px;
+			border-radius: 3px;
+			background: linear-gradient(90deg,
+				rgba(255, 210, 122, 0.6) 0,
+				rgba(255, 210, 122, 0.6) calc(var(--dusk) - 3%),
+				rgba(111, 128, 196, 0.45) calc(var(--dusk) + 3%),
+				rgba(111, 128, 196, 0.45) calc(var(--dawn) - 3%),
+				rgba(255, 210, 122, 0.6) calc(var(--dawn) + 3%),
+				rgba(255, 210, 122, 0.6) 100%);
+		}
+
+		.run-sky span {
+			top: 50%;
+			display: grid;
+			place-items: center;
+			width: 2em;
+			height: 2em;
+			margin-top: -1em;
+			border-radius: 50%;
+			background: var(--bq-bg);
+			font-size: 0.75em;
+			color: #ffd27a;
+		}
+
+			.run-sky .fa-moon {
+				color: #c9cfdb;
+			}
+
+	.run-legend {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5em 1.6em;
+		margin: 1.1em 0 0 0;
+		padding: 0;
+		list-style: none;
+		font-size: 0.62em;
+		letter-spacing: 0.03em;
+		color: var(--bq-fg-light);
+	}
+
+		.run-legend li {
+			margin: 0;
+			padding: 0;
+		}
+
+			.run-legend li::before {
+				content: "";
+				display: inline-block;
+				width: 0.9em;
+				height: 0.9em;
+				margin-right: 0.55em;
+				border-radius: 2px;
+				vertical-align: -0.1em;
+				background: var(--c);
+			}
+
+		.run-legend--code { --c: var(--run-code); }
+		.run-legend--talk { --c: var(--run-talk); }
+		.run-legend--meal { --c: var(--run-meal); }
+		.run-legend--key { --c: var(--run-key); }
+		.run-legend--award { --c: linear-gradient(90deg, var(--run-award), var(--bq-hot)); }
+
+	/* the moments, day by day */
+	.run-day {
+		margin: 2.4em 0 0 0;
+	}
+
+		.run-day h4 {
+			margin: 0 0 1em 0;
+			font-size: 0.6em;
+			letter-spacing: 0.25em;
+			color: var(--bq-hot);
+		}
+
+	/* six across: Saturday's six moments on one row, Sunday's five under them */
+	.run-cards {
+		display: grid;
+		grid-template-columns: repeat(6, minmax(0, 1fr));
+		gap: 0.85em;
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.run-card {
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		gap: 0.3em;
+		margin: 0;
+		padding: 1.05em 1em 1.1em 1em;
+		border: 1px solid var(--bq-line);
+		border-top: 3px solid var(--c);
+		border-radius: 5px;
+		background: rgba(255, 255, 255, 0.035);
+		transition: opacity 0.4s var(--bq-ease-out), border-color 0.3s var(--bq-ease-out), background-color 0.3s var(--bq-ease-out), transform 0.3s var(--bq-ease-out);
+	}
+
+		.run-card--code { --c: var(--run-code); }
+		.run-card--talk { --c: var(--run-talk); }
+		.run-card--meal { --c: var(--run-meal); }
+		.run-card--key { --c: var(--run-key); }
+		.run-card--stop { --c: var(--run-key); }
+		.run-card--award { --c: var(--run-award); }
+
+		.run-card-ic {
+			margin: 0 0 0.45em 0;
+			font-size: 0.95em;
+			color: var(--c);
+		}
+
+		.run-card-time {
+			font-family: Raleway, Helvetica, sans-serif;
+			font-size: 0.6em;
+			font-weight: 700;
+			letter-spacing: 0.06em;
+			font-variant-numeric: tabular-nums;
+			color: var(--bq-fg-light);
+		}
+
+			.run-card-time b {
+				margin-right: 0.15em;
+				font-size: 1.55em;
+				letter-spacing: 0.03em;
+				color: #ffffff;
+			}
+
+		.run-card-title {
+			font-size: 0.85em;
+			font-weight: 600;
+			line-height: 1.3;
+			color: #ffffff;
+		}
+
+		.run-card.is-now {
+			border-color: var(--bq-hot);
+			background: rgba(255, 140, 0, 0.1);
+			box-shadow: 0 0 0 3px rgba(255, 140, 0, 0.18);
+		}
+
+			.run-card.is-now::after {
+				content: "Now";
+				position: absolute;
+				top: 0.9em;
+				right: 0.9em;
+				padding: 0.15em 0.5em;
+				border-radius: 3px;
+				background: var(--bq-hot);
+				color: #1f2130;
+				font-family: Raleway, Helvetica, sans-serif;
+				font-size: 0.5em;
+				font-weight: 700;
+				letter-spacing: 0.15em;
+				text-transform: uppercase;
+			}
+
+		.run-card.is-past {
+			opacity: 0.45;
+		}
+
+	@media screen and (max-width: 980px) {
+
+		.run-cards {
+			grid-template-columns: repeat(3, minmax(0, 1fr));
+		}
+
+	}
+
+	@media screen and (max-width: 736px) {
+
+		/* every six hours on a phone, and the extra hour */
+		.run-tick--minor {
+			display: none;
+		}
+
+		.run-track {
+			height: 2.2em;
+		}
+
+			.run-seg {
+				top: 4px;
+				bottom: 4px;
+				left: var(--s);
+				width: var(--w);
+				border-radius: 2px;
+			}
+
+		.run-cards {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+			gap: 0.6em;
+		}
+
+		.run-card {
+			padding: 0.85em 0.85em 0.9em 0.85em;
+		}
+
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+
+		.run-seg,
+		.run-card {
+			transition: none;
+		}
+
+	}
+
+/* ------------------------------------------------------------------ */
+/* Prizes: a podium, 1st in the middle on the highest step              */
+/* ------------------------------------------------------------------ */
+
+	.podium {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		grid-template-areas: "second first third";
+		align-items: end;
+		gap: 0.9em;
+		max-width: 36em;
+		margin: 2.2em auto 0 auto;
+		padding: 0;
+		list-style: none;
+	}
+
+		/* centred, over the theme's justified text */
+		.podium,
+		.podium * {
+			text-align: center;
+		}
+
+	.podium-step {
+		--medal: #e0b74f;
+		--medal-soft: rgba(224, 183, 79, 0.16);
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.35em;
+		margin: 0;
+		padding: 1.4em 0.75em 1.5em 0.75em;
+		border: 1px solid var(--bq-line);
+		border-top: 3px solid var(--medal);
+		border-radius: 6px 6px 0 0;
+		background: linear-gradient(to bottom, var(--medal-soft), rgba(255, 255, 255, 0.02) 70%);
+		text-align: center;
+	}
+
+		.podium-step--1 { grid-area: first; min-height: 15.5em; }
+		.podium-step--2 { grid-area: second; min-height: 13em; --medal: #c9cfdb; --medal-soft: rgba(201, 207, 219, 0.13); }
+		.podium-step--3 { grid-area: third; min-height: 11em; --medal: #c98c58; --medal-soft: rgba(201, 140, 88, 0.15); }
+
+		.podium-ic {
+			display: grid;
+			place-items: center;
+			width: 2.6em;
+			height: 2.6em;
+			margin: 0 0 0.3em 0;
+			border-radius: 50%;
+			border: 1.5px solid var(--medal);
+			color: var(--medal);
+			font-size: 1em;
+		}
+
+			.podium-step--1 .podium-ic {
+				width: 3.1em;
+				height: 3.1em;
+				font-size: 1.15em;
+				box-shadow: 0 0 22px rgba(224, 183, 79, 0.45);
+			}
+
+		.podium-place {
+			font-family: Raleway, Helvetica, sans-serif;
+			font-size: 0.55em;
+			font-weight: 700;
+			letter-spacing: 0.25em;
+			text-transform: uppercase;
+			color: var(--medal);
+		}
+
+		.podium-sum {
+			font-family: Raleway, Helvetica, sans-serif;
+			font-size: 0.7em;
+			font-weight: 700;
+			letter-spacing: 0.12em;
+			color: var(--bq-fg-light);
+		}
+
+			.podium-sum b {
+				display: block;
+				font-size: 3em;
+				line-height: 1.05;
+				letter-spacing: 0.02em;
+				color: #ffffff;
+			}
+
+			.podium-step--1 .podium-sum b {
+				font-size: 3.7em;
+			}
+
+	/* the Awards card in the schedule leads to the podium */
+	.run-card-more {
+		margin-top: 0.15em;
+		font-family: Raleway, Helvetica, sans-serif;
+		font-size: 0.55em;
+		font-weight: 700;
+		letter-spacing: 0.12em;
+		border-bottom-color: var(--run-award);
+		align-self: flex-start;
+	}
+
+	@media screen and (max-width: 480px) {
+
+		.podium {
+			gap: 0.5em;
+		}
+
+		.podium-step {
+			padding: 1.1em 0.4em 1.2em 0.4em;
+		}
+
+			.podium-step--1 { min-height: 13.5em; }
+			.podium-step--2 { min-height: 11.5em; }
+			.podium-step--3 { min-height: 10em; }
+
+			.podium-place {
+				letter-spacing: 0.15em;
+			}
+
+			.podium-sum b {
+				font-size: 2.4em;
+			}
+
+			.podium-step--1 .podium-sum b {
+				font-size: 2.9em;
+			}
 
 	}
 

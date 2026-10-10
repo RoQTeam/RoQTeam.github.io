@@ -32,6 +32,33 @@
 		font-size: 0.9em;
 	}
 
+	/* a rule people must not miss (the team size on the hackathon form) */
+	.reg .reg-notice {
+		display: flex;
+		align-items: flex-start;
+		gap: 0.9em;
+		padding: 0.9em 1.1em;
+		border-left: solid 3px var(--bq-hot);
+		background: rgba(255, 140, 0, 0.08);
+	}
+
+		.reg-notice .icon {
+			flex: none;
+			font-size: 1.1em;
+			line-height: 1.55;
+			color: var(--bq-hot);
+		}
+
+		.reg-notice p {
+			margin: 0;
+			font-size: 0.9em;
+			line-height: 1.6;
+		}
+
+		.reg-notice b {
+			color: #fff;
+		}
+
 	.reg-step {
 		position: relative;
 		margin: 0 0 3em;

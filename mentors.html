@@ -1,0 +1,96 @@
+<!DOCTYPE HTML>
+<html lang="en">
+	<head>
+		<title>Mentor queue · BreaQ Hackathon</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="robots" content="noindex, nofollow" />
+		<meta name="referrer" content="no-referrer" />
+		<!-- only its own files run, and it talks only to the Apps Script
+		     (script.google.com answers through a redirect to script.googleusercontent.com) -->
+		<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src https://script.google.com https://script.googleusercontent.com; base-uri 'none'; form-action 'none'" />
+		<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Raleway:700|Source+Sans+Pro:300,400,600&amp;display=swap" />
+		<link rel="stylesheet" href="assets/css/fontawesome-all.min.css" />
+		<link rel="stylesheet" href="assets/css/teams.css?v=20261010" />
+		<link rel="icon" type="image/png" href="images/favicon-2026.png">
+	</head>
+	<body>
+
+		<!--
+			The mentor queue of the BreaQ Hackathon: the teams' requests from "Ask a mentor" on the team dashboard
+			(teams.html), oldest first. A mentor takes one ("On my way": the team sees their name), then marks it done, or
+			puts it back for someone else. It reads and moves the "Mentor queue" tab of the registrations sheet through
+			the same Apps Script as the other pages (tools/register-backend.gs, the "mentor-…" actions), which answers
+			only to the mentor key (or the admin key). The admin page and the editor's "mentorKey" give the mentors'
+			link, which carries the key. data-endpoint is the same web app URL as on teams.html and admin.html.
+		-->
+		<main class="tm mq" id="mentors"
+			data-endpoint="https://script.google.com/macros/s/AKfycbwLAgxidNtxQiuxIsLQPgdlOuFQRu_1cNSOj1Gs1kQ_O-Vq38CV9XRbViZb1qNrm_xW/exec">
+
+			<!-- Locked: the mentor key and the mentor's name -->
+			<section class="lock" id="lock">
+				<form class="lock-card" id="lock-form" novalidate>
+					<img class="lock-logo" src="images/BreaQ_logo_2026-light.svg" alt="BreaQ 2026" />
+					<p class="eyebrow">BreaQ Hackathon · Mentors</p>
+					<h1>Mentor queue</h1>
+					<p class="muted">The teams that asked for help, oldest first. Take one, go to their table, mark it done.</p>
+					<label class="lbl" for="name">Your name <span class="muted">the team sees who is coming</span></label>
+					<input type="text" class="plain" id="name" name="name" maxlength="60" autocomplete="name" placeholder="Radu" required />
+					<label class="lbl" for="key">Mentor key</label>
+					<input type="password" class="plain" id="key" name="key" autocomplete="off" spellcheck="false" required />
+					<label class="check"><input type="checkbox" id="remember" checked /> Remember on this device</label>
+					<p class="err" id="lock-err" role="alert" hidden></p>
+					<button type="submit" class="btn primary" id="lock-btn">Open the queue</button>
+					<p class="muted small">The key is in the link the organisers sent you. Lost it? Ask at the desk.</p>
+				</form>
+			</section>
+
+			<!-- Unlocked -->
+			<section class="dash" id="dash" hidden>
+
+				<header class="top">
+					<div>
+						<p class="eyebrow">BreaQ Hackathon · Mentors</p>
+						<h1>Mentor queue</h1>
+						<p class="who"><span id="who"></span> <button type="button" class="linkish" id="rename">Change name</button></p>
+						<form class="rename" id="rename-form" novalidate hidden>
+							<input type="text" class="plain" id="rename-input" maxlength="60" aria-label="Your name" />
+							<button type="submit" class="btn small">Save</button>
+							<button type="button" class="btn small ghost" id="rename-cancel">Cancel</button>
+						</form>
+					</div>
+					<div class="top-actions">
+						<span class="meta" id="meta" aria-live="polite"></span>
+						<button type="button" class="btn small ghost notify" id="notify" aria-pressed="false" hidden><span class="icon solid fa-bell" aria-hidden="true"></span><span class="notify-label">Notify me</span></button>
+						<button type="button" class="btn small" id="refresh">Refresh</button>
+						<button type="button" class="btn small ghost" id="lock-now">Sign out</button>
+					</div>
+				</header>
+
+				<p class="err" id="dash-err" role="alert" hidden></p>
+
+				<div class="seg mq-filter" role="group" aria-label="Challenge" id="filter"></div>
+
+				<section class="panel" aria-labelledby="wait-h">
+					<h2 id="wait-h"><span class="icon solid fa-hand-paper" aria-hidden="true"></span>Waiting <span class="count" id="wait-count"></span></h2>
+					<div class="mq-list" id="waiting"></div>
+				</section>
+
+				<section class="panel" aria-labelledby="way-h">
+					<h2 id="way-h"><span class="icon solid fa-walking" aria-hidden="true"></span>On the way <span class="count" id="way-count"></span></h2>
+					<div class="mq-list" id="onway"></div>
+				</section>
+
+				<section class="panel" aria-labelledby="done-h">
+					<h2 id="done-h"><span class="icon solid fa-check" aria-hidden="true"></span>Done in the last three hours <span class="count" id="done-count"></span></h2>
+					<div id="done"></div>
+				</section>
+
+			</section>
+
+		</main>
+
+		<script src="assets/js/notify.js?v=20261010"></script>
+		<script src="assets/js/mentors.js?v=20261010"></script>
+	</body>
+</html>

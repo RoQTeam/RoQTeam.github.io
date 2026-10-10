@@ -27,14 +27,20 @@
 
 	/* --- conditional fields --------------------------------------- */
 
+	// a question that belongs to one track (data-track, the team question for Quantum AI) shows while that
+	// track is ticked; the teammates field shows when the answer is "with a team"
 	function syncConditionals() {
+		var asked = true;
+		forEach(form.querySelectorAll('[data-track]'), function (el) {
+			var box = form.querySelector('input[name="tracks"][value="' + el.getAttribute('data-track') + '"]');
+			el.hidden = !box || !box.checked;
+			if (el.querySelector('input[name="team"]')) asked = !el.hidden;
+		});
 		var team = form.querySelector('input[name="team"]:checked');
-		forEach(form.querySelectorAll('[data-team]'), function (el) { el.hidden = !team || team.value !== 'team'; });
+		forEach(form.querySelectorAll('[data-team]'), function (el) { el.hidden = !asked || !team || team.value !== 'team'; });
 	}
 
-	forEach(form.querySelectorAll('input[name="team"]'), function (input) {
-		input.addEventListener('change', syncConditionals);
-	});
+	form.addEventListener('change', syncConditionals);
 
 	/* --- draft ------------------------------------------------------ */
 
@@ -154,6 +160,8 @@
 		if (!validate()) return;
 		setError('');
 		var data = collect();
+		// answers to questions that are not showing (the team, once Quantum AI is unticked) do not go out
+		forEach(form.querySelectorAll('.field[hidden] [name]'), function (el) { delete data[el.name]; });
 		data.website = form.querySelector('[name="website"]').value;   // honeypot: bots fill it, people never see it
 		data.seconds_on_page = Math.round((Date.now() - openedAt) / 1000);
 		data.page = window.location.href;
