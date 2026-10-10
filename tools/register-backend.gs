@@ -7,10 +7,13 @@
  *   - appends one row per registration to a Google Sheet (tab "Registrations")
  *   - saves the hackathon's motivation letter (a PDF) in the Drive folder LETTERS_FOLDER and links it in the row
  *   - sends a confirmation email to the participant and a short notice to the team
- *   - ignores obvious bots (honeypot field, forms submitted in under 3 seconds)
- *   - merges a second application for the same event (the same email, or the same name with another email)
- *     into the row already there, instead of adding a row; the same person registering for both events
- *     gets one row per event. See "Applying twice" below
+ *   - ignores obvious bots (honeypot field, forms submitted in under 3 seconds), takes only names that are names,
+ *     and nothing after the deadlines (REGISTRATION_CLOSES, CONFERENCE_CLOSES)
+ *   - guards the day's emails: one confirmation per address and event every 6 hours; past MAILS_PER_HOUR
+ *     registrations in an hour their emails are held ("Emails" says so), past ROWS_PER_HOUR the form is refused
+ *   - merges a second application for the same event with the same email into the row already there, instead
+ *     of adding a row; the same person registering for both events gets one row per event. See "Applying twice"
+ *     below
  *   - hands admin.html the whole sheet, for whoever sends the admin key (see "The admin page" below)
  *
  * Setup (once, about five minutes; also in README.md)
@@ -41,9 +44,10 @@
  * To change it: Project Settings -> Script properties -> delete ADMIN_KEY, then run adminKey again; the old
  * key stops working at once, no new deployment needed.
  *
- * Applying twice: someone who sends the form again for an event they are already in (the same email, or the
- * same name however it is written, with another email) updates their row. Each new answer replaces the earlier
- * one, an empty answer keeps it, the tracks add up, the newest email becomes "Email" and the earlier ones move
+ * Applying twice: someone who sends the form again for an event they are already in, with the same email,
+ * updates their row. The same name with another email does not (it could be anyone): it goes in as a row of its
+ * own, marked ⚠ in "Merged" and in the notice, for the organisers to merge by hand when it is the same person.
+ * In an update each new answer replaces the earlier one, an empty answer keeps it, the tracks add up, the newest email becomes "Email" and the earlier ones move
  * to "Other emails". The "Merged" column logs when it happened, why the two were matched and what each changed
  * answer was before, earlier letters included, so a wrong match can be undone by hand. The same form sent twice
  * unchanged (a second click, a retry after a timeout) changes nothing and sends no email.
@@ -156,7 +160,10 @@ var NOT_ANSWERS = [
 // what the organisers can pick in the "Decision" column; each has its email in decisionEmail_
 var DECISIONS = ["accepted", "waitlist", "denied"];
 var DECISION_RESERVE = 10; // while registration is open, the sends leave this many of the day's emails for new registrations
-var REGISTRATION_CLOSES = "2026-10-19T00:00:00+03:00"; // the end of 18 October: no confirmations to keep emails for after
+var REGISTRATION_CLOSES = "2026-10-19T00:00:00+03:00"; // the hackathon's registration closes at the end of 18 October
+var CONFERENCE_CLOSES = "2026-11-06T00:00:00+02:00"; // and the conference's at the end of 5 November
+var ROWS_PER_HOUR = 60; // new registrations in an hour past which the form is refused: a script, not people
+var MAILS_PER_HOUR = 25; // registrations in an hour past which their emails are held (the row still goes in)
 var NOTICE_MIN = 30; // fewer emails left today: the "new registration" notice is left out, the confirmation still goes
 var DECISION_ORDER = ["accepted", "waitlist", "denied"]; // who is emailed first when a day's emails do not reach everyone
 
@@ -449,6 +456,17 @@ function doPost(e) {
         "Please fill in your name and a valid email, and tick both boxes at the end of the form.",
     });
   }
+  // just a name: someone else's words in the name (a link, an address) would go out in our confirmation email
+  var badName = nameProblem_(data.first_name) || nameProblem_(data.last_name);
+  if (badName) return json_({ ok: false, error: badName });
+  var ev = eventKey_(data.attend);
+  if (Date.now() >= Date.parse(ev === "conference" ? CONFERENCE_CLOSES : REGISTRATION_CLOSES))
+    return json_({
+      ok: false,
+      error:
+        "Registration for " + event_(data.attend).name + " closed on " + (ev === "conference" ? "5 November" : "18 October") +
+        ". Write to us at " + REPLY_TO + " if you think we can still fit you in.",
+    });
 
   // the motivation letter (hackathon form): checked here, saved once we know the registration is new
   var letter = null;
@@ -485,6 +503,10 @@ function doPost(e) {
   }
   var letterUrl = "";
   var merge = null; // set when this application updates a row already there
+  var namesake = null; // the row with the same name and another email, which this one stays apart from
+  var held = ""; // why the emails are not sent, when they are not
+  var cache = CacheService.getScriptCache();
+  var hour = Math.floor(Date.now() / 3600000);
 
   var lock = LockService.getScriptLock();
   lock.waitLock(10000);
@@ -494,6 +516,25 @@ function doPost(e) {
     var header = header_(values);
     var rec = record_(data, email);
     var match = findMatch_(values, header, rec, values.length, {});
+    // The same name with another email may be the same person with a new address, or someone else: a namesake,
+    // or someone after another's place, as nothing proves who sent the form. So it changes nothing in that row
+    // (whose email the decision and the dashboard code go to): it goes in as a row of its own, flagged for the
+    // organisers, and the answer is the one anyone new gets.
+    if (match && match.by === "name") {
+      namesake = { row: match.index + 1, email: String(values[match.index][header.indexOf("Email")]) };
+      rec["Merged"] =
+        "⚠ " + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm") +
+        " · the same name as row " + namesake.row + " (" + namesake.email + "), with another email: kept apart." +
+        " If it is the same person, merge the two by hand (or with mergeDuplicates).";
+      match = null;
+    }
+    // a flood of new registrations is a script, not people: refused before anything is saved
+    if (!match) {
+      var rows = Number(cache.get("rows:" + hour) || 0);
+      if (rows >= ROWS_PER_HOUR)
+        return json_({ ok: false, error: "We are getting a lot of registrations right now. Please try again in an hour." });
+      cache.put("rows:" + hour, String(rows + 1), 3700);
+    }
     var older = match ? toRecord_(header, values[match.index]) : null;
     // the same PDF as the one already in the row: no second copy in Drive
     if (letter && older && sameLetter_(older["Motivation letter"], letter))
@@ -522,12 +563,30 @@ function doPost(e) {
       row = match.index + 1;
       writeMerged_(sheet, row, header, older, merge.rec);
     }
+    // the day's 100 emails are not for anyone to spend: one confirmation per address and event every 6 hours
+    // (the longest the cache keeps anything), and the emails of a flood are held
+    var mails = Number(cache.get("mails:" + hour) || 0);
+    if (cache.get("mail-to:" + ev + ":" + email))
+      held = (older && older["Emails"] ? older["Emails"] + "; " : "") + "this update not emailed: an email went to this address less than 6 hours ago";
+    else if (mails >= MAILS_PER_HOUR) held = "emails held: over " + MAILS_PER_HOUR + " registrations this hour";
+    else {
+      cache.put("mail-to:" + ev + ":" + email, "1", 21600);
+      cache.put("mails:" + hour, String(mails + 1), 3700);
+    }
   } finally {
     lock.releaseLock();
   }
 
   // a failed email must not fail the registration, but it has to show: the "Emails" column says what happened
   var sent = [];
+  if (held) {
+    try {
+      sheet.getRange(row, header.indexOf("Emails") + 1).setValue(held);
+    } catch (err) {
+      console.error("could not record the emails: " + err);
+    }
+    return json_({ ok: true, updated: !!merge });
+  }
   try {
     sent.push("confirmation sent via " + sendConfirmation_(email, data, merge));
   } catch (err) {
@@ -542,7 +601,7 @@ function doPost(e) {
   } else if (NOTIFY) {
     try {
       sent.push(
-        "notice sent via " + sendNotice_(email, data, letterUrl, merge, row),
+        "notice sent via " + sendNotice_(email, data, letterUrl, merge, row, namesake),
       );
     } catch (err) {
       console.error("notice failed: " + err);
@@ -2610,9 +2669,13 @@ function sendConfirmation_(email, data, merge) {
   });
 }
 
-function sendNotice_(email, data, letterUrl, merge, row) {
+function sendNotice_(email, data, letterUrl, merge, row, namesake) {
   var lines = [
     clean_(data.first_name) + " " + clean_(data.last_name) + " <" + email + ">",
+    namesake
+      ? "⚠ The same name as row " + namesake.row + " (" + namesake.email + "), with another email: kept apart as row " +
+        row + ". Check whether it is the same person."
+      : "",
     // a second application: matched by name, it may be someone else with the same name
     merge
       ? merge.by === "name"
@@ -2674,6 +2737,16 @@ function send_(msg) {
     MailApp.sendEmail(msg);
     return "MailApp";
   }
+}
+
+// why a first or last name is not just a name ("" when it is): letters of any alphabet, spaces, hyphens,
+// apostrophes, a dot after an initial
+function nameProblem_(v) {
+  var s = String(v || "").trim();
+  if (s.length > 80) return "Please write a shorter name: 80 characters at most.";
+  if (/https?:|www\.|[@<>\/\\:;=_{}\[\]|#$%^*+~`"0-9]|\.[a-z]{2,}/i.test(s))
+    return "Please write just your name, without links, digits or symbols.";
+  return "";
 }
 
 function clean_(v) {

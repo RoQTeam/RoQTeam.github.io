@@ -105,10 +105,12 @@
 		return ev === 'all' || r.event === ev || r.event === 'both';
 	}
 
-	// what the "Emails" column says: nothing (registrations from before the column existed), sent, or FAILED
+	// what the "Emails" column says: nothing (registrations from before the column existed), sent, FAILED, or held
+	// (none sent, in a flood of registrations)
 	function mailOf(text) {
 		if (!text) return '';
-		return /failed/i.test(text) ? 'failed' : 'sent';
+		if (/failed/i.test(text)) return 'failed';
+		return /^emails held/i.test(text) ? 'held' : 'sent';
 	}
 
 	function toRecords(columns, rows) {
@@ -129,8 +131,9 @@
 				email: (v['Email'] || '').toLowerCase(),
 				name: ((v['First name'] || '') + ' ' + (v['Last name'] || '')).trim(),
 				mail: mailOf(v['Emails']),
-				// the email did not go out, or the motivation letter did not reach Drive
-				problem: mailOf(v['Emails']) === 'failed' || /^upload failed/i.test(v['Motivation letter'] || ''),
+				// the email did not go out, the motivation letter did not reach Drive, or the same name came with another
+				// email (kept apart: the same person, or someone else?)
+				problem: mailOf(v['Emails']) === 'failed' || mailOf(v['Emails']) === 'held' || /^upload failed/i.test(v['Motivation letter'] || '') || /^⚠/.test(v['Merged'] || ''),
 				text: fold(row.join(' '))
 			};
 		});
@@ -178,7 +181,7 @@
 			time: regs[0].time,
 			event: both ? 'both' : regs[0].event,
 			org: first('org'),
-			mail: mails.indexOf('failed') !== -1 ? 'failed' : mails.indexOf('sent') !== -1 ? 'sent' : '',
+			mail: mails.indexOf('failed') !== -1 ? 'failed' : mails.indexOf('held') !== -1 ? 'held' : mails.indexOf('sent') !== -1 ? 'sent' : '',
 			problem: regs.some(function (r) { return r.problem; }),
 			text: regs.map(function (r) { return r.text; }).join(' ')
 		};
@@ -714,7 +717,7 @@
 		if (problems) {
 			tile.type = 'button';
 			tile.id = 'problems';
-			tile.title = 'Registrations whose confirmation email or motivation letter failed: click to list only them';
+			tile.title = 'Registrations whose emails failed or were held, whose motivation letter failed, or with the same name as another registration and another email (⚠ in Merged): click to list only them';
 			tile.setAttribute('aria-pressed', String(state.problems));
 			tile.addEventListener('click', function () {
 				state.problems = !state.problems;
@@ -1045,6 +1048,7 @@
 			cell: function (r) {
 				var td = el('td', 'c-mail');
 				if (r.mail === 'failed') td.appendChild(el('span', 'bad', '✕ Failed'));
+				else if (r.mail === 'held') td.appendChild(el('span', 'held', '– Held'));
 				else if (r.mail === 'sent') td.appendChild(el('span', 'ok', '✓ Sent'));
 				else td.appendChild(el('span', 'muted', '—'));
 				if (get(r, 'Emails')) td.title = get(r, 'Emails');
@@ -1282,6 +1286,8 @@
 			else if (col === 'Phone') dd.appendChild(link('tel:' + v.replace(/[^\d+]/g, ''), v));
 			else if (col === 'Motivation letter' && isUrl(v)) dd.appendChild(link(v, 'Open the PDF in Drive'));
 			else if (col === 'Emails' && r.mail === 'failed') { dd.textContent = v; dd.className = 'bad'; }
+			else if (col === 'Emails' && r.mail === 'held') { dd.textContent = v; dd.className = 'held'; }
+			else if (col === 'Merged' && /^⚠/.test(v)) { dd.textContent = v; dd.className = 'held'; }
 			else if (col === 'Team') dd.textContent = TEAM_LABEL[v] || v;
 			else if (isUrl(v)) dd.appendChild(link(v, v));
 			else dd.textContent = col === 'Seconds on page' ? v + ' s' : v;

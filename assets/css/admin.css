@@ -110,6 +110,10 @@ code {
 	color: var(--bad-text);
 }
 
+.held {
+	color: var(--warn-text);
+}
+
 .ok {
 	color: var(--fg-light);
 }

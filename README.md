@@ -21,6 +21,14 @@ Switching it on (about five minutes):
 Changing the script later: edit, save, then Deploy -> Manage deployments -> pencil -> Version: New version -> Deploy. The URL does not change.
 
 Notes: two emails go out per registration: the confirmation, and a notice to registrations@roqteam.ro. Google allows 100 a day, on a personal account as on Google for Nonprofits (1,500 on paid Google Workspace). With fewer than 30 left for the day, the notice is left out, so the confirmations keep going, and the "Emails" column says so.
+
+The web app's address is in every form's page, so the script itself guards what anyone can send it:
+
+- **Deadlines:** nothing after the deadlines (the hackathon: 18 October; the conference: 5 November). Late registrations come by email.
+- **Names:** only names that are names, with no links, addresses, digits or symbols, so nobody can put their own words in a confirmation email.
+- **The same name with another email:** this no longer merges into the row already there. It goes in as a row of its own, marked ⚠ in "Merged" and listed under **Problems** on the admin page. If it is the same person, merge the two rows by hand.
+- **Repeat confirmations:** at most one per address and event every 6 hours.
+- **A flood of registrations:** past 25 registrations in an hour, their emails are held ("emails held" in "Emails", and listed under **Problems**). Past 60 new ones in an hour, the form is refused.
 Someone who applies again for the same event, with the same email or with the same name and another email, updates their row instead of adding one: new answers replace the earlier ones, the tracks add up, every email they used is kept ("Email" and "Other emails"), and the "Merged" column logs what changed. The hackathon and the conference each get their own row, told apart by the Attends column. To merge the duplicates already in the sheet, run `findDuplicates` in the Apps Script editor to see what would be merged, then `mergeDuplicates` (it copies the tab first). The hidden "website" field and
 submissions faster than three seconds are treated as bots and dropped silently.
 
