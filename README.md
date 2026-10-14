@@ -36,13 +36,15 @@ submissions faster than three seconds are treated as bots and dropped silently.
 
 The five organisers (Andy, Cristi, Alex, Filip, Tudor) vote **Yes** or **No** on every hackathon registration, on the admin page. Three of the same vote make the decision: three Yes is accepted, three No is denied. Five is an odd number, so once everyone has voted, one side always has the majority.
 
-- **Your own key.** In the Apps Script editor's function list pick `voterKeys` and press Run: the log shows each person's key. Give each one only theirs, as it votes in their name. A personal key opens everything the admin key opens (the admin page, the team dashboard, the mentor queue). The shared admin key still opens the page and shows the votes, but cannot vote.
-- **Voting.** The table's Vote column has your Yes and No (pressing yours again takes it back), then a tag for each of you: green for yes, red and struck through for no, empty for not yet. Hover over the tags to see the names; the full view lists them. **To vote** above the table shows the registrations you have not voted on yet. In the **Teams** tab, the row above a team votes for all its members at once.
-- **The sheet.** Each vote goes in its own column ("Vote Andy", …), next to "Decision". The vote that makes the third Yes or the third No sets the Decision. Taking a vote back so that neither side has three makes it undecided again. Typing a vote into the sheet by hand changes no Decision: vote on the admin page.
+- **Who you are.** Open the admin page with the shared key (`adminKey`): it asks which of you is reading, and your votes go in your name. The device remembers it as long as it remembers the key; **not Andy?** at the top changes it, and **Just looking** opens the page without voting. Only the five of you have the key, so the page takes your word for it. A personal key (`voterKeys` in the editor's function list) still works: it votes as its own, without asking.
+- **Your letters.** Each registration goes first to three of you, by turns (a team's members to the same three), so each reads about 90 letters of 150 rather than all of them. When those three have voted 2 to 1, it goes to the other two as well. **Your letters**, above the table, says how many wait for you; **Start reading** shows them one at a time, the letter itself beside the facts (university, status, experience, tracks, team), with no need for the Drive folder. **Y** is yes, **N** is no, and it moves on by itself; **S** skips one for later, **←** goes back to change a vote. The 2 to 1s come first, a team's letters one after another, and every 20 letters it suggests a five-minute pause. A vote can carry a short note for the others ("copied from the web").
+- **Before you vote, you do not see how the others voted.** The tags show who has voted, not how, until you have (or it is decided), so that each of you judges a letter alone. Then you see their votes and their notes.
+- **Voting in the table.** The table's Vote column has your Yes and No too (pressing yours again takes it back), then a tag for each of you: green for yes, red and struck through for no, grey for voted (before you have), empty for not yet. Hover over the tags to see the names; the full view lists them, with the notes. **To vote** above the table lists what waits for you, as Your letters does. In the **Teams** tab, the row above a team votes for all its members at once.
+- **The sheet.** Each vote goes in its own column ("Vote Andy", …), next to "Decision", and each note in "Note Andy", …. The vote that makes the third Yes or the third No sets the Decision. Taking a vote back so that neither side has three makes it undecided again. Typing a vote into the sheet by hand changes no Decision: vote on the admin page.
 - **By hand.** For the exceptions (the waiting list, a tie while someone is away), the full view still has **Decide by hand**. That decision stays until a vote next makes or undoes a majority. The table marks it "by hand".
 - **After an email.** A vote that would change the decision of someone already emailed asks first, as a change by hand does.
 
-To change someone's key: Project Settings -> Script properties -> delete their `VOTE_KEY_<NAME>` (for example `VOTE_KEY_ANDY`), then run `voterKeys` again. The old key stops working at once. The names are `VOTERS` in `tools/register-backend.gs`.
+The names are `VOTERS` in `tools/register-backend.gs`. To change a personal key: Project Settings -> Script properties -> delete their `VOTE_KEY_<NAME>` (for example `VOTE_KEY_ANDY`), then run `voterKeys` again; the old key stops working at once.
 
 ## On their own or in a team
 
@@ -73,8 +75,8 @@ The same can be done from the Apps Script editor: `previewDecisions`, `sendDecis
 Switching it on, once:
 
 1. Paste the current `tools/register-backend.gs` into the Apps Script editor and save, then Deploy -> Manage deployments -> pencil -> Version: New version -> Deploy. The URL does not change.
-2. In the editor's function list pick `voterKeys` and press Run: the log shows each organiser's own key (see **Votes**). `adminKey` gives the shared key, which does not vote.
-3. Open roqteam.ro/admin and paste your key. "Remember on this device" keeps it in that browser; otherwise it is forgotten when the tab closes.
+2. In the editor's function list pick `adminKey` and press Run: the log shows the key, for the five of you.
+3. Open roqteam.ro/admin, paste the key and say who you are (see **Votes**). "Remember on this device" keeps the key, and who you are, in that browser; otherwise both are forgotten when the tab closes.
 
 To change the key (someone leaves the team, it was shared too widely): Project Settings -> Script properties -> delete `ADMIN_KEY`, then run `adminKey` again. The old key stops working at once.
 

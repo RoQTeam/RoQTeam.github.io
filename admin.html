@@ -8,9 +8,9 @@
 		<meta name="referrer" content="no-referrer" />
 		<!-- the page holds personal data once unlocked: only its own files run, and it talks only to the Apps Script
 		     (script.google.com answers through a redirect to script.googleusercontent.com) -->
-		<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src https://script.google.com https://script.googleusercontent.com; base-uri 'none'; form-action 'none'" />
+		<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src https://script.google.com https://script.googleusercontent.com; frame-src blob:; base-uri 'none'; form-action 'none'" />
 		<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Raleway:700|Source+Sans+Pro:300,400,600&amp;display=swap" />
-		<link rel="stylesheet" href="assets/css/admin.css?v=20261013" />
+		<link rel="stylesheet" href="assets/css/admin.css?v=20261014" />
 		<link rel="icon" type="image/png" href="images/favicon-2026.png">
 	</head>
 	<body>
@@ -29,7 +29,7 @@
 				<form class="lock-card" id="lock-form" novalidate>
 					<img class="lock-logo" src="images/BreaQ_logo_2026-light.svg" alt="BreaQ 2026" />
 					<h1>Registrations</h1>
-					<p class="muted">For the organisers. Each of you has your own key, which votes in your name: in the Apps Script editor, run <code>voterKeys</code>. The shared key (<code>adminKey</code>) opens the page without voting.</p>
+					<p class="muted">For the organisers. Paste the key (<code>adminKey</code> in the Apps Script editor): the page then asks which of you is reading, and votes in your name.</p>
 					<!-- lets a password manager file the key under a name -->
 					<input type="text" name="username" value="BreaQ admin" autocomplete="username" hidden />
 					<label for="key">Your key</label>
@@ -72,6 +72,18 @@
 
 				<div class="tiles" id="tiles"></div>
 
+				<!-- for an organiser with their own key: the letters waiting for their vote, read one at a time -->
+				<section class="panel review-panel" id="review-panel" aria-labelledby="review-h" hidden>
+					<div class="panel-head">
+						<div>
+							<h2 id="review-h">Your letters</h2>
+							<p class="review-status" id="review-status"></p>
+						</div>
+						<button type="button" class="btn primary" id="review-open">Start reading</button>
+					</div>
+					<p class="muted review-help">Each registration goes first to three of you, by turns, a team’s members to the same three; a 2 to 1 goes to the other two. One letter at a time: Y for yes, N for no, S to skip it for now. You see the others’ votes once you have voted.</p>
+				</section>
+
 				<div class="bar-row">
 					<div class="seg" role="group" aria-label="Event" id="f-event">
 						<button type="button" data-event="all" aria-pressed="true">All</button>
@@ -98,7 +110,7 @@
 						</div>
 						<button type="button" class="btn primary" id="send-open">Send decision emails</button>
 					</div>
-					<p class="muted send-help">Each of you votes Yes or No on every registration: 3 of the same make the decision (Yes: accepted, No: denied), and that only notes it. Nothing goes out until you press Send, which first shows who gets what. Google allows about 100 emails a day: the accepted go first, then the waiting list, then the denied, and the next day’s Send carries on. Registration closes on 18 October at 23:59.</p>
+					<p class="muted send-help">You vote Yes or No in Your letters above (or in the table): 3 of the same make the decision (Yes: accepted, No: denied), and that only notes it. Nothing goes out until you press Send, which first shows who gets what. Google allows about 100 emails a day: the accepted go first, then the waiting list, then the denied, and the next day’s Send carries on. Registration closes on 18 October at 23:59.</p>
 				</section>
 
 				<section class="panel" aria-labelledby="people-h">
@@ -348,10 +360,33 @@
 				</div>
 			</dialog>
 
+			<!-- opened with the shared key: who is reading, so that the votes go in their name -->
+			<dialog class="detail who-dlg" id="who-dlg" aria-labelledby="who-h">
+				<h2 id="who-h">Who are you?</h2>
+				<p class="muted">Your votes go in your name. This device remembers you for as long as it remembers the key.</p>
+				<div class="who-grid" id="who-grid"></div>
+				<button type="button" class="btn ghost small" id="who-none">Just looking</button>
+			</dialog>
+
+			<!-- the reading mode: one letter at a time (admin.js, "reading the letters") -->
+			<dialog class="review" id="review" aria-label="Reading the letters">
+				<div class="rv-top">
+					<span class="rv-count" id="rv-count"></span>
+					<div class="rv-bar" aria-hidden="true"><i id="rv-bar"></i></div>
+					<button type="button" class="btn ghost small" id="rv-close">Close</button>
+				</div>
+				<div class="rv-main" id="rv-main">
+					<div class="rv-letter" id="rv-letter"></div>
+					<div class="rv-card" id="rv-card" tabindex="-1"></div>
+				</div>
+				<div class="rv-msg" id="rv-msg" hidden></div>
+				<p class="rv-toast" id="rv-toast" role="status" hidden></p>
+			</dialog>
+
 			<div class="tip" id="tip" role="tooltip" hidden></div>
 
 		</main>
 
-		<script src="assets/js/admin.js?v=20261014"></script>
+		<script src="assets/js/admin.js?v=20261014b"></script>
 	</body>
 </html>

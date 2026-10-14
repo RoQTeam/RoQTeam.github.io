@@ -1865,3 +1865,383 @@ input[type="checkbox"] {
 		}
 
 }
+
+/* --- reading the letters: the panel above the table, and one letter at a time ----------------------------------- */
+
+.review-panel .panel-head {
+	align-items: center;
+}
+
+.review-status {
+	margin: 4px 0 0;
+	color: var(--fg-light);
+}
+
+.review-help {
+	margin: 12px 0 0;
+	font-size: 0.9em;
+}
+
+/* who has voted, not how: until the reader votes */
+.vote-chip.is-in {
+	background: rgba(255, 255, 255, 0.1);
+	color: var(--fg);
+}
+
+.vote-hidden {
+	margin: 6px 0 0;
+	font-size: 0.85em;
+}
+
+.vote-note {
+	margin: 4px 0 0;
+	font-size: 0.88em;
+	font-style: italic;
+	color: var(--fg-light);
+	overflow-wrap: anywhere;
+}
+
+.review {
+	width: 100vw;
+	height: 100vh;
+	height: 100dvh;
+	max-width: none;
+	max-height: none;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	background: var(--bg);
+	color: var(--fg);
+}
+
+	.review[open] {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.review::backdrop {
+		background: var(--bg);
+	}
+
+.rv-top {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	padding: 8px 16px;
+	border-bottom: solid 1px var(--line);
+}
+
+	.rv-count {
+		font-size: 0.9em;
+		color: var(--fg-light);
+		white-space: nowrap;
+	}
+
+	.rv-bar {
+		flex: 1;
+		height: 4px;
+		border-radius: 2px;
+		background: var(--line);
+		overflow: hidden;
+	}
+
+		.rv-bar i {
+			display: block;
+			width: 0;
+			height: 100%;
+			background: var(--hot);
+			transition: width 0.3s ease;
+		}
+
+.rv-main {
+	flex: 1;
+	min-height: 0;
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 380px;
+}
+
+.rv-letter {
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+	background: #525659;   /* the PDF viewer's grey, so a letter loading does not flash */
+}
+
+	.rv-pdf {
+		flex: 1;
+		width: 100%;
+		min-height: 0;
+		border: 0;
+	}
+
+	.rv-letter-msg {
+		margin: auto;
+		padding: 24px;
+		max-width: 32em;
+		color: rgba(255, 255, 255, 0.8);
+		text-align: center;
+		overflow-wrap: anywhere;
+	}
+
+		.rv-letter-msg.bad {
+			color: var(--bad-text);
+		}
+
+	.rv-letter-links {
+		display: flex;
+		gap: 18px;
+		margin: 0;
+		padding: 6px 14px;
+		background: var(--raised);
+		font-size: 0.85em;
+	}
+
+.rv-card {
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+	min-height: 0;
+	overflow-y: auto;
+	padding: 20px;
+	border-left: solid 1px var(--line);
+	background: var(--raised);
+}
+
+	.rv-card:focus {
+		outline: 0;
+	}
+
+	.rv-card .eyebrow {
+		margin: 0 0 -8px;
+	}
+
+	.rv-name {
+		margin: 0;
+		font-size: 1.2em;
+		letter-spacing: 0.06em;
+		overflow-wrap: anywhere;
+	}
+
+	.rv-facts {
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr);
+		gap: 6px 14px;
+		margin: 0;
+	}
+
+		.rv-facts dt {
+			font-size: 0.88em;
+			color: var(--fg-light);
+		}
+
+		.rv-facts dd {
+			margin: 0;
+			overflow-wrap: anywhere;
+		}
+
+	.rv-others {
+		padding: 10px 12px;
+		border-radius: 6px;
+		background: rgba(255, 255, 255, 0.04);
+	}
+
+		.rv-others p {
+			margin: 0;
+		}
+
+		.rv-other {
+			display: flex;
+			align-items: baseline;
+			gap: 8px;
+		}
+
+			.rv-other + .rv-other {
+				margin-top: 5px;
+			}
+
+		.rv-other-note {
+			font-size: 0.88em;
+			font-style: italic;
+			color: var(--fg-light);
+			overflow-wrap: anywhere;
+		}
+
+	.rv-note-label {
+		margin-bottom: -8px;
+		font-size: 0.88em;
+	}
+
+		.rv-opt {
+			color: var(--fg-light);
+		}
+
+	.rv-note {
+		width: 100%;
+		height: 40px;
+		padding: 0 12px;
+		border: solid 1px var(--line);
+		border-radius: 5px;
+		background: rgba(255, 255, 255, 0.03);
+		color: inherit;
+		font: inherit;
+		outline: 0;
+	}
+
+		.rv-note:focus {
+			border-color: var(--hot);
+		}
+
+	.rv-vote {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 10px;
+	}
+
+		.rv-vote .btn {
+			gap: 10px;
+			height: 54px;
+			font-size: 13px;
+		}
+
+		.rv-vote kbd {
+			padding: 1px 6px;
+			border-radius: 3px;
+			box-shadow: inset 0 0 0 1px currentColor;
+			font-family: inherit;
+			font-size: 10px;
+			opacity: 0.75;
+		}
+
+		.btn.rv-yes {
+			box-shadow: inset 0 0 0 2px var(--good);
+			color: var(--good-text);
+		}
+
+			.btn.rv-yes:hover,
+			.btn.rv-yes[aria-pressed="true"] {
+				background: rgba(95, 196, 138, 0.2);
+			}
+
+		.btn.rv-no {
+			box-shadow: inset 0 0 0 2px var(--bad);
+			color: var(--bad-text);
+		}
+
+			.btn.rv-no:hover,
+			.btn.rv-no[aria-pressed="true"] {
+				background: rgba(255, 107, 102, 0.18);
+			}
+
+	.rv-more {
+		display: flex;
+		justify-content: space-between;
+		gap: 10px;
+	}
+
+	.rv-keys {
+		margin: 0;
+		font-size: 0.8em;
+	}
+
+.rv-msg {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 14px;
+	padding: 24px 16px;
+	text-align: center;
+}
+
+	.rv-msg h2 {
+		margin: 0;
+	}
+
+	.rv-msg p {
+		max-width: 30em;
+		margin: 0;
+	}
+
+	.rv-msg-actions {
+		display: flex;
+		gap: 10px;
+	}
+
+.rv-toast {
+	position: fixed;
+	left: 50%;
+	bottom: 20px;
+	max-width: calc(100vw - 32px);
+	margin: 0;
+	padding: 10px 16px;
+	border-radius: 6px;
+	background: #1f2130;
+	box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
+	font-size: 0.92em;
+	transform: translateX(-50%);
+}
+
+	.rv-toast.bad {
+		color: var(--bad-text);
+	}
+
+/* a phone or a narrow window: the letter on top, the card under it */
+@media (max-width: 900px) {
+
+	.rv-main {
+		grid-template-columns: minmax(0, 1fr);
+		grid-template-rows: minmax(55vh, 1fr) auto;
+		overflow-y: auto;
+	}
+
+	.rv-card {
+		overflow: visible;
+		border-left: 0;
+		border-top: solid 1px var(--line);
+	}
+
+}
+
+/* --- who is reading, with the shared key ---------------------------------------------------------------------- */
+
+.meta-who {
+	padding: 0;
+	border: 0;
+	background: none;
+	color: var(--hot);
+	font: inherit;
+	text-decoration: underline;
+	text-underline-offset: 2px;
+	cursor: pointer;
+}
+
+.who-dlg {
+	width: min(440px, calc(100vw - 32px));
+	text-align: center;
+}
+
+	.who-dlg h2 {
+		margin: 0 0 8px;
+	}
+
+	.who-dlg p {
+		margin: 0 0 18px;
+	}
+
+	.who-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+		gap: 10px;
+		margin-bottom: 16px;
+	}
+
+		.who-btn {
+			height: 54px;
+			font-size: 13px;
+		}
+
+			.who-btn[aria-pressed="true"] {
+				box-shadow: inset 0 0 0 2px var(--hot);
+				color: var(--hot);
+			}

@@ -50,7 +50,9 @@
 		mentors: null,            // { key, page }: the mentors' link
 		feedback: [],             // what the participants answered after the event, without names
 		certificate: '',          // the certificate template's link, '' while there is none
-		voter: '',                // whose key opened the page: one of voters, '' for the shared admin key
+		voter: '',                // who votes: their own key's, or the one picked with the shared key ('' for nobody)
+		shared: false,            // opened with the shared admin key: the voter is whoever says it is them
+		looking: false,           // with the shared key, "Just looking": not voting
 		voters: [],               // the organisers who vote on the hackathon registrations ([]: an older Apps Script)
 		majority: 0,              // this many of the same vote sets the Decision
 		handOpen: false,          // "Decide by hand" open in the full view
@@ -117,10 +119,14 @@
 		return /^emails held/i.test(text) ? 'held' : 'sent';
 	}
 
+	// at: the row's place among the sheet's rows, which stays as new ones come in (the reading mode deals by it)
 	function toRecords(columns, rows) {
-		return rows.filter(function (row) {
-			return row.some(function (v) { return v !== '' && v !== null; });
-		}).map(function (row) {
+		return rows.map(function (row, at) {
+			return { row: row, at: at };
+		}).filter(function (x) {
+			return x.row.some(function (v) { return v !== '' && v !== null; });
+		}).map(function (x) {
+			var row = x.row;
 			var v = {};
 			columns.forEach(function (c, j) {
 				var x = row[j];
@@ -129,6 +135,7 @@
 			var time = v['Timestamp'] ? new Date(v['Timestamp']) : null;
 			return {
 				row: row,
+				at: x.at,
 				v: v,
 				time: time && !isNaN(time) ? time : null,
 				event: eventOf(v['Attends']),
@@ -249,6 +256,45 @@
 		return after !== majorityOf(r) ? after : decisionOf(r);
 	}
 
+	function noteCol(v) { return 'Note ' + v; }
+
+	function noteOf(r, v) { return get(r, noteCol(v)); }
+
+	// Each registration goes first to state.majority of the voters, by turns, so each reads about 3 letters in 5; a
+	// team counts as its first registration, so its members go to the same voters, one after another
+	function groupAt(h) {
+		return h.team ? Math.min.apply(null, h.team.members.map(function (m) { return m.at; })) : h.at;
+	}
+
+	function assignees(h) {
+		var n = state.voters.length;
+		var out = [];
+		for (var i = 0; i < Math.min(state.majority || n, n); i++) out.push(state.voters[(groupAt(h) + i) % n]);
+		return out;
+	}
+
+	function votesIn(h) {
+		return state.voters.filter(function (v) { return voteOf(h, v); }).length;
+	}
+
+	// its first voters are all in and no side has the majority (2 to 1): the others break it
+	function isSplit(h) {
+		return !decisionOf(h) && votesIn(h) >= assignees(h).length;
+	}
+
+	// waiting for the reader: undecided, not voted on by them, and one of theirs or a 2 to 1
+	function needsMe(h) {
+		var me = state.voter;
+		if (!me || decisionOf(h) || voteOf(h, me)) return false;
+		return assignees(h).indexOf(me) !== -1 || isSplit(h);
+	}
+
+	// the others' votes and notes show once the reader has voted (or it is decided), so each judges a letter alone;
+	// the shared admin key, which does not vote, sees them all
+	function revealed(regs) {
+		return !state.voter || regs.every(function (r) { return voteOf(r, state.voter) || decisionOf(r); });
+	}
+
 	// as nameKey_ in the Apps Script: "Ana-Maria Popescu" and "POPESCU ana maria" are one name
 	function nameKey(s) {
 		return fold(s).split(/[^a-z0-9]+/).filter(Boolean).sort().join(' ');
@@ -358,8 +404,11 @@
 		['ASE București', /\base\b|academia de studii economice|economic studies/],
 		['UMF „Carol Davila” București', /carol davila/],
 		['SNSPA', /\bsnspa\b|studii politice|political studies/],
-		['POLITEHNICA București (UNSTPB)', /\b(unstpb|upb|acs|etti|fils|faima|fiir)\b|\bpolitehnica\b|nationala de stiinta si tehnologie|national universitatea of science and technology/],
-		['Universitatea din București (UB)', /\b(ub|unibuc)\b|universitatea (din |of )?bucuresti|bucuresti universitatea/],
+		['POLITEHNICA București (UNSTPB)', /\b(unstpb|upb|acs|etti|fils|faima|fiir)\b|\bpolitehnica\b|nationala de stiinta si tehnologie|national universitatea of science and technology|science and technology\b.*\bbucuresti|stiinta si tehnologie\b.*\bbucuresti/],
+		// its faculties written without the university, unless another city says it is elsewhere ("Automatică și
+		// Calculatoare" is also a faculty in Iași, Cluj and Timișoara)
+		['POLITEHNICA București (UNSTPB)', /^(?!.*\b(cluj|iasi|timisoara|craiova|brasov|galati|constanta|sibiu|suceava|oradea|pitesti|ploiesti)\b).*\b(automatica si calculatoare|automatic control and computer|electronica telecomunicatii|electronics telecommunications|inginerie aerospatiala|aerospace engineering)\b/],
+		['Universitatea din București (UB)', /\b(ub|unibuc)\b|universitatea (din |of )?bucuresti|bucuresti universitatea|geologie si geofizica|geology and geophysics/],
 		['Academia Tehnică Militară „Ferdinand I” (ATM)', /\b(atm|mta)\b|academia tehnica militara|military technical academy/],
 		['Universitatea Babeș-Bolyai (UBB)', /\bubb\b|babes bolyai/],
 		['Universitatea „Alexandru Ioan Cuza” din Iași (UAIC)', /\buaic\b|alexandru ioan cuza/],
@@ -405,12 +454,16 @@
 		return distance(a, b) <= most;
 	}
 
+	// a company, for someone working in industry: all of them count as one
+	var INDUSTRY = 'Industry';
+
 	// sets r.org on every record: the merged name, or '' when the question was not answered
 	function groupOrgs(records) {
 		var keys = {};
 		records.forEach(function (r) {
 			var raw = get(r, 'University or company');
 			r.org = raw ? institution(raw) : '';
+			if (raw && !r.org && get(r, 'Status') === 'Working in industry') r.org = INDUSTRY;
 			r.orgKey = raw && !r.org ? orgKey(raw) : '';
 			if (!r.orgKey) {
 				if (raw && !r.org) r.org = raw;   // nothing but punctuation ("-"): kept as written
@@ -611,6 +664,7 @@
 		state.detail = null;
 		if ($('detail').open) $('detail').close();
 		if ($('send-dlg').open) $('send-dlg').close();
+		forgetLetters();
 		forEach(['tiles', 'days', 'breakdowns'], function (id) { $(id).textContent = ''; });
 		$('people').tBodies[0].textContent = '';
 		$('search').value = '';
@@ -625,6 +679,10 @@
 		state.feedback = [];
 		state.voter = '';
 		state.voters = [];
+		state.shared = false;
+		state.looking = false;
+		forgetVoter();
+		if ($('who-dlg').open) $('who-dlg').close();
 		if (state.decision === 'tovote') state.decision = 'any';
 		teamsUi.editing = null;
 		forEach(['board-list', 'teams-list', 'loose', 'checkin-list', 'cert-result', 'fb-best', 'fb-change'], function (id) { $(id).textContent = ''; });
@@ -647,6 +705,64 @@
 	});
 
 	$('lock-now').addEventListener('click', function () { lock(''); });
+
+	/* --- who is reading, with the shared key ----------------------------------------- */
+
+	// Only the organisers have the shared key: opened with it, the page asks who is reading and votes in their
+	// name (the Apps Script takes "as" from the shared key only). The device keeps the answer as long as the key.
+	var VOTER_STORE = 'breaq-2026-voter';
+	var whoDlg = $('who-dlg');
+
+	function chosenVoter() {
+		try { return window.sessionStorage.getItem(VOTER_STORE) || window.localStorage.getItem(VOTER_STORE) || ''; }
+		catch (e) { return ''; }
+	}
+
+	function chooseVoter(name) {
+		try {
+			window.sessionStorage.setItem(VOTER_STORE, name);
+			if (remembered()) window.localStorage.setItem(VOTER_STORE, name);
+			else window.localStorage.removeItem(VOTER_STORE);
+		} catch (e) {}
+	}
+
+	function forgetVoter() {
+		try { window.sessionStorage.removeItem(VOTER_STORE); window.localStorage.removeItem(VOTER_STORE); } catch (e) {}
+	}
+
+	function askWho() {
+		var grid = $('who-grid');
+		grid.textContent = '';
+		state.voters.forEach(function (v) {
+			var b = el('button', 'btn who-btn', v);
+			b.type = 'button';
+			b.setAttribute('aria-pressed', String(v === state.voter));
+			b.addEventListener('click', function () { setWho(v); });
+			grid.appendChild(b);
+		});
+		if (whoDlg.open) return;
+		if (typeof whoDlg.showModal === 'function') whoDlg.showModal();
+		else whoDlg.setAttribute('open', '');
+	}
+
+	function setWho(v) {
+		if (v) chooseVoter(v);
+		else forgetVoter();
+		state.voter = v;
+		state.looking = !v;
+		if (whoDlg.open) {
+			if (typeof whoDlg.close === 'function') whoDlg.close();
+			else whoDlg.removeAttribute('open');
+		}
+		if (!v && state.decision === 'tovote') state.decision = 'any';
+		renderMeta();
+		renderEvent();
+		renderView();
+		if (dialog.open && state.detail) renderDetail(state.detail);
+	}
+
+	$('who-none').addEventListener('click', function () { setWho(''); });
+	whoDlg.addEventListener('cancel', function (ev) { ev.preventDefault(); setWho(state.voter); });
 
 	/* --- dashboard -------------------------------------------------------- */
 
@@ -692,9 +808,11 @@
 		state.mentors = json.mentors || null;
 		state.feedback = json.feedback || [];
 		state.certificate = json.certificate || '';
-		state.voter = json.voter || '';
 		state.voters = json.voters || [];
 		state.majority = json.majority || 0;
+		// a personal key votes as its own; the shared one as whoever this device says it is (asked below)
+		state.shared = !json.voter && state.voters.length > 0;
+		state.voter = json.voter || (state.shared && state.voters.indexOf(chosenVoter()) !== -1 ? chosenVoter() : '');
 		if (state.decision === 'tovote' && !state.voter) state.decision = 'any';
 		state.at = json.at ? new Date(json.at) : new Date();
 		state.emailsLeft = typeof json.emailsLeft === 'number' ? json.emailsLeft : null;
@@ -704,13 +822,22 @@
 		renderTiles();
 		renderEvent();
 		renderView();
+		if (state.shared && !state.voter && !state.looking) askWho();
 	}
 
 	function renderMeta() {
 		var parts = ['Updated ' + fmtClock.format(state.at)];
 		if (state.emailsLeft !== null) parts.push(plural(state.emailsLeft, 'email', 'emails') + ' left today');
-		if (voting()) parts.push(state.voter ? 'Voting as ' + state.voter : 'Shared key: open with your own to vote');
-		$('meta').textContent = parts.join(' · ');
+		if (voting()) parts.push(state.voter ? 'Voting as ' + state.voter : 'Just looking');
+		var meta = $('meta');
+		meta.textContent = parts.join(' · ');
+		if (state.shared) {
+			var who = el('button', 'meta-who', state.voter ? 'not ' + state.voter + '?' : 'who are you?');
+			who.type = 'button';
+			who.addEventListener('click', askWho);
+			meta.appendChild(document.createTextNode(' · '));
+			meta.appendChild(who);
+		}
 		var sheet = $('sheet-link');
 		sheet.hidden = !isUrl(state.sheet);
 		if (!sheet.hidden) sheet.href = state.sheet;
@@ -724,6 +851,7 @@
 		renderBreakdowns(state.people);    // what people answered: each person once
 		renderTable();
 		renderSendPanel();
+		renderReviewPanel();
 	}
 
 	/* --- tiles ------------------------------------------------------------ */
@@ -1125,7 +1253,7 @@
 		var h = hackReg(p);
 		if (!h) return false;
 		if (state.kind !== 'all' && state.kind !== whoKind(h)) return false;
-		if (state.decision === 'tovote') return !!state.voter && !voteOf(h, state.voter);
+		if (state.decision === 'tovote') return needsMe(h);
 		return state.decision === 'any' || decisionOf(h) === (state.decision === 'none' ? '' : state.decision);
 	}
 
@@ -1217,7 +1345,7 @@
 			counts[kind]++;
 			if (state.kind !== 'all' && state.kind !== kind) return;
 			counts[decisionOf(h) || 'none']++;
-			if (state.voter && !voteOf(h, state.voter)) counts.tovote++;
+			if (needsMe(h)) counts.tovote++;
 		});
 		forEach($('f-kind').querySelectorAll('button'), function (b) {
 			var k = b.getAttribute('data-kind');
@@ -1324,12 +1452,18 @@
 	function renderDetailVotes(box, h, who) {
 		box.appendChild(el('span', 'detail-decision-label', state.voter ? 'Your vote' : 'Votes'));
 		if (state.voter) box.appendChild(voteControl([h], who));
+		var open = revealed([h]);
 		var list = el('div', 'vote-list');
 		state.voters.forEach(function (v) {
 			var x = voteOf(h, v);
-			list.appendChild(el('span', 'vote-chip' + (x ? ' is-' + x : ''), v + ' ' + (x === 'yes' ? '✓' : x === 'no' ? '✕' : '–')));
+			if (!open && v !== state.voter) list.appendChild(el('span', 'vote-chip' + (x ? ' is-in' : ''), v + ' ' + (x ? '·' : '–')));
+			else list.appendChild(el('span', 'vote-chip' + (x ? ' is-' + x : ''), v + ' ' + (x === 'yes' ? '✓' : x === 'no' ? '✕' : '–')));
 		});
 		box.appendChild(list);
+		if (!open) box.appendChild(el('p', 'vote-hidden muted', 'Vote first: then you see how the others voted, and their notes.'));
+		else state.voters.forEach(function (v) {
+			if (noteOf(h, v)) box.appendChild(el('p', 'vote-note', v + ': “' + noteOf(h, v) + '”'));
+		});
 		box.appendChild(voteResult([h]));
 		var hand = el('details', 'by-hand');
 		hand.open = state.handOpen;
@@ -1365,7 +1499,7 @@
 		state.columns.forEach(function (col) {
 			var v = get(r, col);
 			if (!v || col === 'First name' || col === 'Last name') return;
-			if (voting() && state.voters.some(function (x) { return voteCol(x) === col; })) return;   // the votes are at the top
+			if (voting() && state.voters.some(function (x) { return voteCol(x) === col || noteCol(x) === col; })) return;   // the votes are at the top
 			var dd = el('dd');
 			if (col === 'Timestamp' && r.time) dd.textContent = fmtLong.format(r.time);
 			else if ((col === 'Coming answered' || col === 'Checked in') && !isNaN(new Date(v))) dd.textContent = fmtLong.format(new Date(v));
@@ -1520,12 +1654,21 @@
 	function voteChips(regs) {
 		var box = el('div', 'votes');
 		var said = [];
+		var open = revealed(regs);
 		state.voters.forEach(function (v) {
 			var xs = regs.map(function (r) { return voteOf(r, v); });
+			// before the reader votes: who has voted, not how
+			if (!open && v !== state.voter) {
+				var any = xs.some(Boolean);
+				box.appendChild(el('span', 'vote-chip' + (any ? ' is-in' : ''), v.slice(0, 2)));
+				said.push(v + ': ' + (any ? 'voted' : 'not yet'));
+				return;
+			}
 			var x = xs.every(function (y) { return y === xs[0]; }) ? xs[0] : 'mixed';
 			box.appendChild(el('span', 'vote-chip' + (x ? ' is-' + x : ''), v.slice(0, 2)));
 			said.push(v + ': ' + (x === 'yes' ? 'yes' : x === 'no' ? 'no' : x === 'mixed' ? 'not the same for everyone' : 'not yet'));
 		});
+		if (!open) said.push('vote to see how');
 		box.title = said.join(' · ');
 		box.setAttribute('aria-label', said.join(', '));
 		return box;
@@ -1540,7 +1683,7 @@
 		if (current !== null) {
 			var n = regs.length === 1 ? voteCount(regs[0]) : null;
 			var text = DECISION_LABEL[current];
-			if (n && !current) text += ' · ' + n.yes + ' yes, ' + n.no + ' no';
+			if (n && !current) text += revealed(regs) ? ' · ' + n.yes + ' yes, ' + n.no + ' no' : ' · ' + plural(n.yes + n.no, 'vote', 'votes') + ' in';
 			if (n && current && current !== majorityOf(regs[0])) text += ' · by hand';
 			line.appendChild(el('span', 'dec-state is-' + (current || 'none'), text));
 		}
@@ -1557,7 +1700,9 @@
 
 	// shows the vote, and the decision it makes, at once and saves it; the Apps Script answers everyone's votes as
 	// they are now, which the page then shows. Put back as it was if the save fails.
-	function setVote(regs, x) {
+	// opts (the reading mode): { note, done(ok, set, problem) }, set being what the Apps Script answered for regs[0]
+	function setVote(regs, x, opts) {
+		opts = opts || {};
 		var col = voteCol(state.voter);
 		var next = regs.map(function (r) { return decisionAfter(r, x); });
 		// a vote that changes the decision of someone already emailed another: ask, as for a decision by hand
@@ -1572,16 +1717,20 @@
 				(d ? 'Your vote makes it ' + DECISION_LABEL[d] + ': the next send emails that.'
 					: 'Your vote leaves no majority: Undecided again, and no email goes out about that, so tell them yourself.') +
 				' Vote anyway?';
-			if (!window.confirm(q)) return;
+			if (!window.confirm(q)) { if (opts.done) opts.done(false, null, ''); return; }
 		}
-		var before = regs.map(function (r) { return { vote: get(r, col), decision: get(r, 'Decision') }; });
+		var before = regs.map(function (r) { return { vote: get(r, col), note: get(r, noteCol(state.voter)), decision: get(r, 'Decision') }; });
 		regs.forEach(function (r, i) {
 			setCell(r, col, x);
+			if (opts.note !== undefined) setCell(r, noteCol(state.voter), opts.note);
 			setLocal(r, next[i]);
 			state.pending[r.email] = true;
 		});
 		refreshDecisions();
-		post({ action: 'vote', key: state.key, emails: regs.map(function (r) { return r.email; }), vote: x }, 60000, function (json, err) {
+		var body = { action: 'vote', key: state.key, emails: regs.map(function (r) { return r.email; }), vote: x };
+		if (opts.note !== undefined) body.note = opts.note;
+		if (state.shared) body.as = state.voter;
+		post(body, 60000, function (json, err) {
 			regs.forEach(function (r) { delete state.pending[r.email]; });
 			if (json && json.denied) { lock(json.error); return; }
 			if (json && json.ok && json.action === 'vote') {
@@ -1597,15 +1746,21 @@
 						return;
 					}
 					Object.keys(s.votes || {}).forEach(function (v) { setCell(r, voteCol(v), s.votes[v]); });
+					Object.keys(s.notes || {}).forEach(function (v) { setCell(r, noteCol(v), s.notes[v]); });
 					setLocal(r, s.decision);
 				});
-				dashError(missing.length ? 'Not saved, as the sheet has no hackathon registration for ' + missing.join(', ') + ' any more. Refresh the page.' : '');
+				var problem = missing.length ? 'Not saved, as the sheet has no hackathon registration for ' + missing.join(', ') + ' any more. Refresh the page.' : '';
+				dashError(problem);
+				if (opts.done) opts.done(!problem, got[regs[0].email] || null, problem);
 			} else {
 				regs.forEach(function (r, i) {
 					setCell(r, col, before[i].vote);
+					if (opts.note !== undefined) setCell(r, noteCol(state.voter), before[i].note);
 					setLocal(r, before[i].decision);
 				});
-				dashError('The vote was not saved. ' + actionProblem(json, err, 'vote'));
+				var why = 'The vote was not saved. ' + actionProblem(json, err, 'vote');
+				dashError(why);
+				if (opts.done) opts.done(false, null, why);
 			}
 			refreshDecisions();
 		});
@@ -1619,6 +1774,7 @@
 		var keep = g ? { key: g.getAttribute('data-key'), d: a.getAttribute('data-d'), scope: a.closest('dialog') || $('people') } : null;
 		renderTable();
 		renderSendPanel();
+		renderReviewPanel();
 		if (dialog.open && state.detail) renderDetail(state.detail);
 		if (!keep) return;
 		forEach(keep.scope.querySelectorAll('.dec'), function (box) {
@@ -1627,6 +1783,352 @@
 			if (b) b.focus();
 		});
 	}
+
+	/* --- reading the letters --------------------------------------------------------- */
+
+	// One registration at a time, its letter beside the facts: Y and N vote and move on, S skips (it comes back at
+	// the end), ← goes back. The queue is what needsMe says: the 2 to 1s first, then the reader's own, a team's
+	// members one after another, and the ones skipped after all of them. Every BREAK_EVERY votes, a pause. The letters come through the Apps Script (the
+	// "letter" action) as PDFs shown in the page, the next two fetched while the reader reads.
+
+	var BREAK_EVERY = 20;
+	var KEEP_LETTERS = 8;   // letters kept in memory, the oldest let go
+
+	var rv = {
+		current: null,    // the registration on screen
+		trail: [],        // the emails voted on or skipped this time, for Back
+		skipped: {},      // emails skipped this time: at the end of the queue
+		done: 0,          // votes this time, for the pauses
+		resting: false,
+		letters: {},      // email -> { loading, url, none, error }
+		order: []         // the emails of the letters kept, oldest first
+	};
+	var review = $('review');
+
+	function hackRecords() {
+		return state.records.filter(function (r) { return r.event === 'hackathon' || r.event === 'both'; });
+	}
+
+	function reviewQueue() {
+		return hackRecords().filter(needsMe).sort(function (a, b) {
+			return Number(!!rv.skipped[a.email]) - Number(!!rv.skipped[b.email]) ||
+				Number(isSplit(b)) - Number(isSplit(a)) ||
+				groupAt(a) - groupAt(b) || a.at - b.at;
+		});
+	}
+
+	// above the table, for a voter: how many letters wait for them
+	function renderReviewPanel() {
+		var panel = $('review-panel');
+		panel.hidden = !state.voter || state.event === 'conference';
+		if (panel.hidden) return;
+		var q = reviewQueue();
+		var splits = q.filter(isSplit).length;
+		var voted = hackRecords().filter(function (h) { return voteOf(h, state.voter); }).length;
+		$('review-status').textContent = (q.length
+			? plural(q.length, 'letter waits', 'letters wait') + ' for you' + (splits ? ', ' + splits + ' of them a 2 to 1 to break' : '')
+			: 'No letter waits for you now') + ' · you have voted on ' + voted;
+		$('review-open').disabled = !q.length;
+	}
+
+	$('review-open').addEventListener('click', function () {
+		rv.trail = [];
+		rv.resting = false;
+		nextLetter();
+		if (typeof review.showModal === 'function') review.showModal();
+		else review.setAttribute('open', '');
+	});
+
+	function closeReview() {
+		if (review.open) {
+			if (typeof review.close === 'function') review.close();
+			else review.removeAttribute('open');
+		}
+		rv.current = null;
+		refreshDecisions();
+	}
+
+	$('rv-close').addEventListener('click', closeReview);
+	review.addEventListener('cancel', function (ev) { ev.preventDefault(); closeReview(); });
+
+	// the letters kept go at Lock, with everything else
+	function forgetLetters() {
+		rv.order.forEach(function (email) { var L = rv.letters[email]; if (L && L.url) URL.revokeObjectURL(L.url); });
+		rv.letters = {};
+		rv.order = [];
+		rv.skipped = {};
+		rv.done = 0;
+		if (review.open) closeReview();
+	}
+
+	function nextLetter() {
+		rv.current = reviewQueue()[0] || null;
+		renderReview();
+	}
+
+	function loadLetter(h) {
+		var L = rv.letters[h.email];
+		if (L) return L;
+		L = rv.letters[h.email] = { loading: true };
+		var drive = get(h, 'Motivation letter');
+		if (!isUrl(drive)) {
+			L.loading = false;
+			L.none = drive ? 'The letter did not reach Drive: ' + drive : 'There is no letter in this registration.';
+			return L;
+		}
+		rv.order.push(h.email);
+		while (rv.order.length > KEEP_LETTERS) {
+			var old = rv.order.shift();
+			if (rv.letters[old] && rv.letters[old].url) URL.revokeObjectURL(rv.letters[old].url);
+			delete rv.letters[old];
+		}
+		post({ action: 'letter', key: state.key, email: h.email }, 90000, function (json, err) {
+			if (rv.letters[h.email] !== L) return;   // let go meanwhile
+			L.loading = false;
+			if (json && json.denied) { lock(json.error); return; }
+			if (json && json.ok && json.data) {
+				var bin = window.atob(json.data);
+				var bytes = new Uint8Array(bin.length);
+				for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+				L.url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+			} else if (json && json.ok) L.none = json.none || 'There is no letter in this registration.';
+			else L.error = actionProblem(json, err, 'send the letters');
+			if (review.open && rv.current === h) renderLetter(h);
+		});
+		return L;
+	}
+
+	function renderReview() {
+		var q = reviewQueue();
+		var total = rv.done + q.length;
+		$('rv-count').textContent = rv.done ? rv.done + ' voted this time · ' + plural(q.length, 'left', 'left') : plural(q.length, 'letter', 'letters') + ' for you';
+		$('rv-bar').style.width = (total ? Math.round(100 * rv.done / total) : 100) + '%';
+		$('rv-main').hidden = rv.resting || !rv.current;
+		$('rv-msg').hidden = !$('rv-main').hidden;
+		if (rv.resting) return renderPause();
+		if (!rv.current) return renderDone();
+		renderLetter(rv.current);
+		renderCard(rv.current);
+		// the next two come while this one is read
+		q.filter(function (h) { return h !== rv.current; }).slice(0, 2).forEach(loadLetter);
+	}
+
+	$('rv-letter').addEventListener('mouseleave', function () {
+		var frame = $('rv-letter').querySelector('iframe');
+		if (frame && document.activeElement === frame) $('rv-card').focus();
+	});
+
+	function renderLetter(h) {
+		var box = $('rv-letter');
+		box.textContent = '';
+		var L = loadLetter(h);
+		if (L.url) {
+			var frame = el('iframe', 'rv-pdf');
+			frame.title = 'Motivation letter of ' + (h.name || 'this person');
+			frame.src = L.url + '#navpanes=0&view=FitH';
+			box.appendChild(frame);
+		} else {
+			box.appendChild(el('p', 'rv-letter-msg' + (L.error ? ' bad' : ''), L.loading ? 'Loading the letter…' : L.none || L.error));
+		}
+		var links = el('p', 'rv-letter-links');
+		if (L.url) {
+			var tab = el('a', null, 'Open in a new tab');
+			tab.href = L.url;
+			tab.target = '_blank';
+			links.appendChild(tab);
+		}
+		if (isUrl(get(h, 'Motivation letter'))) links.appendChild(link(get(h, 'Motivation letter'), 'Open in Drive'));
+		if (links.childNodes.length) box.appendChild(links);
+	}
+
+	function fact(dl, label, value) {
+		if (!value) return;
+		dl.appendChild(el('dt', null, label));
+		dl.appendChild(el('dd', null, value));
+	}
+
+	function teamText(h) {
+		if (!h.team) return TEAM_LABEL[get(h, 'Team')] || '';
+		var mates = h.team.members.filter(function (m) { return m !== h; }).map(function (m) { return m.name; })
+			.concat(h.team.missing.map(function (n) { return n + ' (not registered)'; }));
+		return 'With ' + mates.join(', ');
+	}
+
+	function renderCard(h) {
+		var card = $('rv-card');
+		card.textContent = '';
+		var mine = voteOf(h, state.voter);
+		card.appendChild(el('p', 'eyebrow', mine ? 'You voted ' + mine : isSplit(h) ? 'A 2 to 1: yours breaks it' : 'One of yours'));
+		card.appendChild(el('h2', 'rv-name', h.name || '(no name)'));
+		var dl = el('dl', 'rv-facts');
+		// the merged name, and what they wrote when it says more than a spelling of it ("Facultatea de Geologie")
+		var raw = get(h, 'University or company');
+		var bare = function (t) { return fold(t).replace(/[^a-z0-9]/g, ''); };
+		fact(dl, 'University', h.org && bare(h.org).indexOf(bare(raw)) === -1 ? h.org + ' (as “' + raw + '”)' : h.org || raw);
+		fact(dl, 'Status', get(h, 'Status'));
+		fact(dl, 'Experience', get(h, 'Experience'));
+		fact(dl, 'Tracks', get(h, 'Tracks'));
+		fact(dl, 'Team', teamText(h));
+		fact(dl, 'Motivation', get(h, 'Motivation'));
+		card.appendChild(dl);
+
+		// the others: who has voted, and how once the reader has
+		var others = state.voters.filter(function (v) { return v !== state.voter; });
+		var box = el('div', 'rv-others');
+		if (!revealed([h])) {
+			var n = others.filter(function (v) { return voteOf(h, v); }).length;
+			box.appendChild(el('p', 'muted', n ? plural(n, 'other has', 'others have') + ' voted: you see how once you vote.' : 'Nobody else has voted on it yet.'));
+		} else {
+			others.forEach(function (v) {
+				var x = voteOf(h, v);
+				var line = el('p', 'rv-other');
+				line.appendChild(el('span', 'vote-chip' + (x ? ' is-' + x : ''), v + ' ' + (x === 'yes' ? '✓' : x === 'no' ? '✕' : '–')));
+				if (noteOf(h, v)) line.appendChild(el('span', 'rv-other-note', '“' + noteOf(h, v) + '”'));
+				box.appendChild(line);
+			});
+		}
+		card.appendChild(box);
+
+		var label = el('label', 'rv-note-label', 'A note for the others');
+		label.htmlFor = 'rv-note';
+		label.appendChild(el('span', 'rv-opt', ' · optional'));
+		card.appendChild(label);
+		var note = el('input', 'rv-note');
+		note.type = 'text';
+		note.id = 'rv-note';
+		note.maxLength = 200;
+		note.placeholder = 'What tipped it, in a few words';
+		note.value = noteOf(h, state.voter);
+		card.appendChild(note);
+
+		var row = el('div', 'rv-vote');
+		[['yes', 'Yes', 'Y'], ['no', 'No', 'N']].forEach(function (b) {
+			var btn = el('button', 'btn rv-' + b[0]);
+			btn.type = 'button';
+			btn.setAttribute('aria-pressed', String(mine === b[0]));
+			btn.appendChild(document.createTextNode(b[1]));
+			btn.appendChild(el('kbd', null, b[2]));
+			btn.addEventListener('click', function () { reviewVote(b[0]); });
+			row.appendChild(btn);
+		});
+		card.appendChild(row);
+		var more = el('div', 'rv-more');
+		var back = el('button', 'btn small ghost', '← Back');
+		back.type = 'button';
+		back.disabled = !rv.trail.length;
+		back.addEventListener('click', reviewBack);
+		var skip = el('button', 'btn small ghost', mine ? 'Next →' : 'Skip for now →');
+		skip.type = 'button';
+		skip.addEventListener('click', reviewSkip);
+		more.appendChild(back);
+		more.appendChild(skip);
+		card.appendChild(more);
+		card.appendChild(el('p', 'rv-keys muted', 'Y yes · N no · S or → ' + (mine ? 'next' : 'skip') + ' · ← back · Esc close'));
+	}
+
+	function reviewVote(x) {
+		var h = rv.current;
+		if (!h || state.pending[h.email]) return;
+		var note = $('rv-note') ? $('rv-note').value.trim() : '';
+		var again = !!voteOf(h, state.voter);   // a vote changed after Back
+		setVote([h], x, {
+			note: note,
+			done: function (ok, set, problem) {
+				if (!ok) { if (problem) toast(problem, true); return; }
+				var said = state.voters.filter(function (v) { return v !== state.voter && set && set.votes[v]; })
+					.map(function (v) { return v + ' ' + set.votes[v]; });
+				toast((x === 'yes' ? 'Yes' : 'No') + ' on ' + (h.name || 'this one') +
+					(said.length ? ' · ' + said.join(', ') : '') +
+					(set && set.decision ? ' · ' + DECISION_LABEL[set.decision] : ''));
+			}
+		});
+		if (voteOf(h, state.voter) !== x) return;   // asked first, and not confirmed
+		if (rv.trail[rv.trail.length - 1] !== h.email) rv.trail.push(h.email);
+		delete rv.skipped[h.email];
+		if (!again) {
+			rv.done++;
+			if (rv.done % BREAK_EVERY === 0) rv.resting = true;
+		}
+		nextLetter();
+	}
+
+	// skipped: back at the end of the queue; one already voted on (after Back): on to the next
+	function reviewSkip() {
+		var h = rv.current;
+		if (!h) return;
+		if (!voteOf(h, state.voter)) rv.skipped[h.email] = true;
+		if (rv.trail[rv.trail.length - 1] !== h.email) rv.trail.push(h.email);
+		nextLetter();
+	}
+
+	// the one before: voted on or skipped, to see the others' votes or change one's own
+	function reviewBack() {
+		var email = rv.trail.pop();
+		if (!email) return;
+		var h = hackRecords().filter(function (r) { return r.email === email; })[0];
+		rv.resting = false;
+		rv.current = h || null;
+		if (!h) return nextLetter();
+		renderReview();
+	}
+
+	function renderPause() {
+		var box = $('rv-msg');
+		box.textContent = '';
+		box.appendChild(el('h2', null, plural(rv.done, 'letter', 'letters') + ' read. Take five minutes.'));
+		box.appendChild(el('p', 'muted', 'Stand up, drink some water, look at something far away. The next letters wait for you.'));
+		var go = el('button', 'btn primary', 'Go on');
+		go.type = 'button';
+		go.addEventListener('click', function () { rv.resting = false; nextLetter(); });
+		var stop = el('button', 'btn ghost', 'Stop for now');
+		stop.type = 'button';
+		stop.addEventListener('click', function () { rv.resting = false; closeReview(); });
+		var row = el('div', 'rv-msg-actions');
+		row.appendChild(go);
+		row.appendChild(stop);
+		box.appendChild(row);
+		go.focus();
+	}
+
+	function renderDone() {
+		var box = $('rv-msg');
+		box.textContent = '';
+		box.appendChild(el('h2', null, rv.done ? 'That was all of yours. Thank you!' : 'Nothing waits for you now.'));
+		box.appendChild(el('p', 'muted', 'A 2 to 1 among the others comes here once their votes are in, and so do new registrations: Refresh the page later to see them.'));
+		var close = el('button', 'btn primary', 'Close');
+		close.type = 'button';
+		close.addEventListener('click', closeReview);
+		box.appendChild(close);
+		close.focus();
+	}
+
+	var toastTimer = null;
+	function toast(text, bad) {
+		var t = $('rv-toast');
+		t.textContent = text;
+		t.className = 'rv-toast' + (bad ? ' bad' : '');
+		t.hidden = false;
+		window.clearTimeout(toastTimer);
+		toastTimer = window.setTimeout(function () { t.hidden = true; }, bad ? 8000 : 4000);
+	}
+
+	// the keys, wherever the focus is in the page, except while typing the note (Enter or Esc leaves it). A click
+	// in the letter gives the keys to the PDF viewer: the mouse leaving it takes them back.
+	document.addEventListener('keydown', function (ev) {
+		if (!review.open || ev.ctrlKey || ev.metaKey || ev.altKey) return;
+		if (ev.target && ev.target.id === 'rv-note') {
+			if (ev.key === 'Enter' || ev.key === 'Escape') { ev.preventDefault(); $('rv-card').focus(); }
+			return;
+		}
+		if (rv.resting || !rv.current) return;
+		var k = ev.key.toLowerCase();
+		if (k === 'y') reviewVote('yes');
+		else if (k === 'n') reviewVote('no');
+		else if (k === 's' || ev.key === 'ArrowRight') reviewSkip();
+		else if (ev.key === 'ArrowLeft') reviewBack();
+		else return;
+		ev.preventDefault();
+	});
 
 	/* --- decision emails ---------------------------------------------------------- */
 

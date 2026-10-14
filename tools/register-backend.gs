@@ -55,14 +55,17 @@
  * the log what would be merged, then "mergeDuplicates" to merge them. It first copies the tab as a backup,
  * sends no emails and deletes the rows it merged into an earlier one.
  *
- * Votes (hackathon only): each of the VOTERS votes yes or no on every registration, on the admin page, opened with
- * their own key: pick "voterKeys" in the editor's function list and press Run, and give each one theirs. A
- * personal key opens everything the admin key opens; only it votes, as that person, in their "Vote <name>"
- * column. MAJORITY of the same vote sets the Decision: yes is accepted, no is denied. Taking a vote back so that
+ * Votes (hackathon only): each of the VOTERS votes yes or no on every registration, on the admin page. Opened with
+ * the shared admin key, the page asks who you are and votes as the one picked (sharedAs_): only the five have the
+ * key. A personal key (pick "voterKeys" in the editor's function list and press Run) votes as its own, without
+ * asking. Each vote goes in that person's "Vote <name>" column. MAJORITY of the same vote sets the Decision: yes is accepted, no is denied. Taking a vote back so that
  * neither side has the majority any more makes it undecided again. A Decision set by hand (the waiting list, a
  * tie while someone is away) stays until a vote next makes or undoes a majority. A vote typed in the sheet by
  * hand changes no Decision: vote on the admin page. To change someone's key: Project Settings -> Script
  * properties -> delete their VOTE_KEY_<NAME>, then run voterKeys again.
+ * The admin page's reading mode shows one letter at a time (the "letter" action sends the PDF itself, so nobody
+ * needs the Drive folder shared), each registration first to three of the voters by turns, and a vote there can
+ * carry a short note for the others ("Note <name>", next to the votes).
  *
  * Decision emails (hackathon only): the votes, or the admin page's Accept, Waitlist and Deny buttons, fill the "Decision"
  * column (accepted, waitlist, denied; empty is undecided), and deciding sends nothing. The emails go out when
@@ -135,6 +138,10 @@ var VOTES = ["yes", "no"];
 var VOTE_COLUMNS = VOTERS.map(function (v) {
   return "Vote " + v; // yes, no, or empty while they have not voted
 });
+var NOTE_COLUMNS = VOTERS.map(function (v) {
+  return "Note " + v; // a line the voter may add to their vote, for the others ("copied from the web")
+});
+var NOTE_MAX = 200;
 
 var COLUMNS = [
   "Timestamp",
@@ -171,8 +178,8 @@ var COLUMNS = [
   "Checked in",
   "Certificate",
 ];
-// each organiser's vote, just before the Decision the votes add up to
-COLUMNS.splice.apply(COLUMNS, [COLUMNS.indexOf("Decision"), 0].concat(VOTE_COLUMNS));
+// each organiser's note and vote, just before the Decision the votes add up to
+COLUMNS.splice.apply(COLUMNS, [COLUMNS.indexOf("Decision"), 0].concat(NOTE_COLUMNS, VOTE_COLUMNS));
 
 // not the person's answers: a second application that differs only in these changes nothing
 var NOT_ANSWERS = [
@@ -188,7 +195,7 @@ var NOT_ANSWERS = [
   "Coming answered",
   "Checked in",
   "Certificate",
-].concat(VOTE_COLUMNS);
+].concat(VOTE_COLUMNS, NOTE_COLUMNS);
 
 // what the organisers can pick in the "Decision" column; each has its email in decisionEmail_
 var DECISIONS = ["accepted", "waitlist", "denied"];
@@ -480,6 +487,7 @@ function doPost(e) {
   var ADMIN_ACTIONS = [
     "list",
     "vote",
+    "letter",
     "decide",
     "decisions",
     "board-admin",
@@ -494,11 +502,12 @@ function doPost(e) {
   ];
   if (ADMIN_ACTIONS.indexOf(data.action) !== -1) {
     // an exception here would make Apps Script answer with an HTML error page: send the admin page the reason instead
-    var reading = data.action === "list" || data.action === "board-admin";
+    var reading = data.action === "list" || data.action === "board-admin" || data.action === "letter";
     try {
       var denied = checkKey_(data.key);
       if (denied) return json_(denied);
       if (data.action === "vote") return json_(vote_(data));
+      if (data.action === "letter") return json_(letter_(data));
       if (data.action === "decide") return json_(decide_(data));
       if (data.action === "decisions") return json_(decisions_(!!data.send));
       if (data.action === "board-admin") return json_(boardAdmin_());
@@ -1502,11 +1511,11 @@ function hackingTeamsEmail_(p) {
           ? "On the form you are down as taking part on your own."
           : "";
   return {
-    subject: "BreaQ Hackathon: Quantum Hacking can be done in teams",
-    heading: "Quantum Hacking goes in teams too, " + p.name + ".",
+    subject: "BreaQ Hackathon: a small change to Quantum Hacking",
+    heading: "A small change to Quantum Hacking, " + p.name + ".",
     paras: [
-      "You registered for the BreaQ Hackathon with the Quantum Hacking track. We have decided that Quantum Hacking can be done in teams as well, of up to 3 people, you included.",
-      "So you choose: take part on your own, or in a team. For a team, either come with people you already know, or we put you in one with other participants.",
+      "You registered for the BreaQ Hackathon with the Quantum Hacking track. This email is not about your application: we are still reading them all, and our decision reaches you in a separate email. We are only writing because we have changed the challenge’s format a little.",
+      "Quantum Hacking can now be done in teams as well, of up to 3 people, you included. So you choose: take part on your own, or in a team, either with people you already know or with other participants we put you with.",
       now,
       "Tell us which by " + HACKING_BY + ", with the button below: it takes a minute.",
       "Coming with teammates? Each of them registers too, on " +
@@ -1516,7 +1525,7 @@ function hackingTeamsEmail_(p) {
         ". Write their names as they write them on their own registrations, so that we read your applications together.",
     ].filter(String),
     button: { label: "On my own or in a team", href: TEAM_PAGE + "#code=" + dashboardCode_(p.email) },
-    sign: "See you soon,",
+    sign: "Thank you,",
   };
 }
 
@@ -1767,6 +1776,14 @@ function checkKey_(key) {
   return { ok: false, denied: true, error: "That key is not right." };
 }
 
+// the shared admin key votes as the organiser who says it is them (data.as, one of VOTERS): only the five have
+// it, and they trust each other. A personal key always votes as its own.
+function sharedAs_(data) {
+  var admin = PropertiesService.getScriptProperties().getProperty("ADMIN_KEY");
+  var as = String(data.as || "").trim();
+  return admin && String(data.key || "") === admin && VOTERS.indexOf(as) !== -1 ? as : "";
+}
+
 function voterKeysMade_() {
   var props = PropertiesService.getScriptProperties().getProperties();
   return VOTERS.some(function (v) {
@@ -1821,12 +1838,12 @@ function decide_(data) {
 // until then. Sends nothing. Answers each registration's votes and Decision as they are now, with everyone's
 // votes, for the page to show.
 function vote_(data) {
-  var voter = voterOf_(data.key);
+  var voter = voterOf_(data.key) || sharedAs_(data);
   if (!voter)
     return {
       ok: false,
       action: "vote",
-      error: "Votes are personal: open the admin page with your own key (voterKeys in the Apps Script editor), not the shared one.",
+      error: "Say who you are first: the admin page asks when it is opened with the shared key.",
     };
   var vote = String(data.vote || "")
     .trim()
@@ -1843,6 +1860,7 @@ function vote_(data) {
     var values = sheet.getDataRange().getValues();
     var header = header_(values);
     var mine = header.indexOf("Vote " + voter);
+    var note = header.indexOf("Note " + voter);
     var dec = header.indexOf("Decision");
     var set = [];
     var missing = [];
@@ -1854,6 +1872,12 @@ function vote_(data) {
         var before = majority_(r);
         values[i][mine] = r["Vote " + voter] = vote;
         sheet.getRange(i + 1, mine + 1).setValue(vote);
+        // the note comes with a vote from the reading mode; a vote from the table leaves it as it is
+        if (data.note !== undefined && note !== -1) {
+          var text = clean_(data.note).replace(/\s+/g, " ").slice(0, NOTE_MAX);
+          values[i][note] = r["Note " + voter] = text;
+          sheet.getRange(i + 1, note + 1).setValue(cellFor_("Note " + voter, text));
+        }
         var after = majority_(r);
         if (after !== before) {
           values[i][dec] = r["Decision"] = after;
@@ -1861,10 +1885,12 @@ function vote_(data) {
           decided = true;
         }
         var votes = {};
+        var notes = {};
         VOTERS.forEach(function (v) {
           votes[v] = voteOf_(r, v);
+          notes[v] = String(r["Note " + v] || "").trim();
         });
-        set.push({ email: email, votes: votes, decision: String(r["Decision"]).trim().toLowerCase() });
+        set.push({ email: email, votes: votes, notes: notes, decision: String(r["Decision"]).trim().toLowerCase() });
         return;
       }
       missing.push(email);
@@ -1874,6 +1900,37 @@ function vote_(data) {
   } finally {
     lock.releaseLock();
   }
+}
+
+// the admin page's reading mode: one hackathon registration's motivation letter, the PDF itself in base64, so
+// that the organisers read it in the page without access to the Drive folder. { email } -> { ok, email, name,
+// data } or, without a letter in Drive, { ok, email, none: why }
+function letter_(data) {
+  var email = String(data.email || "").trim().toLowerCase();
+  var values = sheet_().getDataRange().getValues();
+  var header = header_(values);
+  for (var i = 1; i < values.length; i++) {
+    var r = toRecord_(header, values[i]);
+    if (eventKey_(r["Attends"]) !== "hackathon" || emailsOf_(r).indexOf(email) === -1) continue;
+    var url = String(r["Motivation letter"]).trim();
+    var id = /\/d\/([\w-]{20,})/.exec(url) || /[?&]id=([\w-]{20,})/.exec(url);
+    if (!id)
+      return {
+        ok: true,
+        action: "letter",
+        email: email,
+        none: url ? "The letter did not reach Drive (" + url + ")." : "There is no letter in this registration.",
+      };
+    var file = DriveApp.getFileById(id[1]);
+    return {
+      ok: true,
+      action: "letter",
+      email: email,
+      name: file.getName(),
+      data: Utilities.base64Encode(file.getBlob().getBytes()),
+    };
+  }
+  return { ok: false, action: "letter", error: "The sheet has no hackathon registration for " + email + " any more. Refresh the page." };
 }
 
 function voteOf_(r, voter) {
