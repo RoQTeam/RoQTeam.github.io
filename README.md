@@ -32,11 +32,23 @@ The web app's address is in every form's page, so the script itself guards what 
 Someone who applies again for the same event, with the same email or with the same name and another email, updates their row instead of adding one: new answers replace the earlier ones, the tracks add up, every email they used is kept ("Email" and "Other emails"), and the "Merged" column logs what changed. The hackathon and the conference each get their own row, told apart by the Attends column. To merge the duplicates already in the sheet, run `findDuplicates` in the Apps Script editor to see what would be merged, then `mergeDuplicates` (it copies the tab first). The hidden "website" field and
 submissions faster than three seconds are treated as bots and dropped silently.
 
+## Votes
+
+The five organisers (Andy, Cristi, Alex, Filip, Tudor) vote **Yes** or **No** on every hackathon registration, on the admin page. Three of the same vote make the decision: three Yes is accepted, three No is denied. Five is an odd number, so once everyone has voted, one side always has the majority.
+
+- **Your own key.** In the Apps Script editor's function list pick `voterKeys` and press Run: the log shows each person's key. Give each one only theirs, as it votes in their name. A personal key opens everything the admin key opens (the admin page, the team dashboard, the mentor queue). The shared admin key still opens the page and shows the votes, but cannot vote.
+- **Voting.** The table's Vote column has your Yes and No (pressing yours again takes it back), then a tag for each of you: green for yes, red and struck through for no, empty for not yet. Hover over the tags to see the names; the full view lists them. **To vote** above the table shows the registrations you have not voted on yet. In the **Teams** tab, the row above a team votes for all its members at once.
+- **The sheet.** Each vote goes in its own column ("Vote Andy", …), next to "Decision". The vote that makes the third Yes or the third No sets the Decision. Taking a vote back so that neither side has three makes it undecided again. Typing a vote into the sheet by hand changes no Decision: vote on the admin page.
+- **By hand.** For the exceptions (the waiting list, a tie while someone is away), the full view still has **Decide by hand**. That decision stays until a vote next makes or undoes a majority. The table marks it "by hand".
+- **After an email.** A vote that would change the decision of someone already emailed asks first, as a change by hand does.
+
+To change someone's key: Project Settings -> Script properties -> delete their `VOTE_KEY_<NAME>` (for example `VOTE_KEY_ANDY`), then run `voterKeys` again. The old key stops working at once. The names are `VOTERS` in `tools/register-backend.gs`.
+
 ## Decision emails
 
 Hackathon applicants hear back from the same script, when the organisers choose:
 
-- On the admin page, **Accept**, **Waitlist** or **Deny** each person (pressing the chosen one again takes it back to undecided), or a whole team at once in the **Teams** tab. This only fills the "Decision" column of the sheet: nothing is sent.
+- The votes fill the "Decision" column of the sheet, and so do **Accept**, **Waitlist** and **Deny** by hand (in the full view, under **Decide by hand**). Nothing is sent.
 - **Send decision emails** first shows who gets what: how many of each, the teams held back because their registered members are not all decided the same (one accepted and another waitlisted, denied or undecided: no one in that team is emailed until they match), and what to check (a teammate not registered under the name given, a team over 3). Then it sends each person the email for their decision, once, and the "Decision email" column records it. Changing a decision after its email asks first, and the next send emails the new one.
 - It sends the accepted first, then the waiting list, then the denied. If the day's emails run out, those left are the denied, and Send the next day carries on; before sending, it says what goes out today and what waits. While registration is open, it keeps 10 of the day's emails for new registrations; after 18 October it uses them all. With about 150 registrations, the accepted and the waiting list hear on the first day and the rest of the denied on the second.
 
@@ -44,13 +56,13 @@ The same can be done from the Apps Script editor: `previewDecisions`, `sendDecis
 
 ## Admin page
 
-`admin.html` (roqteam.ro/admin) shows the registrations for the organisers: counts, registrations per day, what people answered (status, experience, tracks, T-shirts, universities, dietary needs) and the full list, searchable, with every registration in full, the emails to copy into Bcc and a CSV download. It reads the sheet through the same Apps Script, which answers only to the admin key.
+`admin.html` (roqteam.ro/admin) shows the registrations for the organisers: counts, registrations per day, what people answered (status, experience, tracks, T-shirts, universities, dietary needs) and the full list, searchable, with every registration in full, the emails to copy into Bcc and a CSV download. It reads the sheet through the same Apps Script, which answers only to the admin key or an organiser's own key.
 
 Switching it on, once:
 
 1. Paste the current `tools/register-backend.gs` into the Apps Script editor and save, then Deploy -> Manage deployments -> pencil -> Version: New version -> Deploy. The URL does not change.
-2. In the editor's function list pick `adminKey` and press Run. The log shows the key; share it with the organisers who need it.
-3. Open roqteam.ro/admin and paste the key. "Remember on this device" keeps it in that browser; otherwise it is forgotten when the tab closes.
+2. In the editor's function list pick `voterKeys` and press Run: the log shows each organiser's own key (see **Votes**). `adminKey` gives the shared key, which does not vote.
+3. Open roqteam.ro/admin and paste your key. "Remember on this device" keeps it in that browser; otherwise it is forgotten when the tab closes.
 
 To change the key (someone leaves the team, it was shared too widely): Project Settings -> Script properties -> delete `ADMIN_KEY`, then run `adminKey` again. The old key stops working at once.
 

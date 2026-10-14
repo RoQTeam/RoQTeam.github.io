@@ -39,7 +39,7 @@
  * out or why not. To test sending on its own, pick "checkEmail" in the editor's function list and press Run:
  * the log shows the sending account, the quota left today and the result of the test emails.
  *
- * The admin page: admin.html reads every registration through this script, for whoever has the admin key.
+ * The admin page: admin.html reads every registration through this script, for whoever has the admin key or their own (voterKeys).
  * Pick "adminKey" in the editor's function list and press Run: the log shows the key (made on the first run).
  * To change it: Project Settings -> Script properties -> delete ADMIN_KEY, then run adminKey again; the old
  * key stops working at once, no new deployment needed.
@@ -55,7 +55,16 @@
  * the log what would be merged, then "mergeDuplicates" to merge them. It first copies the tab as a backup,
  * sends no emails and deletes the rows it merged into an earlier one.
  *
- * Decision emails (hackathon only): the admin page's Accept, Waitlist and Deny buttons fill the "Decision"
+ * Votes (hackathon only): each of the VOTERS votes yes or no on every registration, on the admin page, opened with
+ * their own key: pick "voterKeys" in the editor's function list and press Run, and give each one theirs. A
+ * personal key opens everything the admin key opens; only it votes, as that person, in their "Vote <name>"
+ * column. MAJORITY of the same vote sets the Decision: yes is accepted, no is denied. Taking a vote back so that
+ * neither side has the majority any more makes it undecided again. A Decision set by hand (the waiting list, a
+ * tie while someone is away) stays until a vote next makes or undoes a majority. A vote typed in the sheet by
+ * hand changes no Decision: vote on the admin page. To change someone's key: Project Settings -> Script
+ * properties -> delete their VOTE_KEY_<NAME>, then run voterKeys again.
+ *
+ * Decision emails (hackathon only): the votes, or the admin page's Accept, Waitlist and Deny buttons, fill the "Decision"
  * column (accepted, waitlist, denied; empty is undecided), and deciding sends nothing. The emails go out when
  * someone presses "Send decision emails" on the admin page, or from the editor's function list:
  *   - previewDecisions: logs who would get which email, and flags teams with members decided differently, a
@@ -105,6 +114,15 @@ var SITE = "https://roqteam.ro";
 var LETTERS_FOLDER = "BreaQ 2026 motivation letters"; // Drive folder, created on first use (or by setup)
 var LETTER_MAX_BYTES = 5 * 1024 * 1024; // register.js has the same limit
 
+// the organisers who vote yes or no on each hackathon registration, on the admin page, each with their own key
+// (voterKeys). An odd number, so once everyone has voted one side has the majority.
+var VOTERS = ["Andy", "Cristi", "Alex", "Filip", "Tudor"];
+var MAJORITY = Math.floor(VOTERS.length / 2) + 1; // 3 of 5: this many of the same vote sets the Decision
+var VOTES = ["yes", "no"];
+var VOTE_COLUMNS = VOTERS.map(function (v) {
+  return "Vote " + v; // yes, no, or empty while they have not voted
+});
+
 var COLUMNS = [
   "Timestamp",
   "First name",
@@ -140,6 +158,8 @@ var COLUMNS = [
   "Checked in",
   "Certificate",
 ];
+// each organiser's vote, just before the Decision the votes add up to
+COLUMNS.splice.apply(COLUMNS, [COLUMNS.indexOf("Decision"), 0].concat(VOTE_COLUMNS));
 
 // not the person's answers: a second application that differs only in these changes nothing
 var NOT_ANSWERS = [
@@ -155,7 +175,7 @@ var NOT_ANSWERS = [
   "Coming answered",
   "Checked in",
   "Certificate",
-];
+].concat(VOTE_COLUMNS);
 
 // what the organisers can pick in the "Decision" column; each has its email in decisionEmail_
 var DECISIONS = ["accepted", "waitlist", "denied"];
@@ -262,6 +282,38 @@ function adminKey() {
     props.setProperty("ADMIN_KEY", key);
   }
   Logger.log("Admin key: " + key);
+}
+
+// run from the editor: each voter's own key for the admin page, made on the first run and kept in the script
+// properties (VOTE_KEY_ANDY, ...). Give each one only theirs: it votes in their name.
+function voterKeys() {
+  VOTERS.forEach(function (v) {
+    Logger.log(v + ": " + voterKey_(v));
+  });
+  Logger.log("Each opens " + SITE + "/admin with their own key. The shared admin key still opens the page, but does not vote.");
+}
+
+function voterKey_(name) {
+  var props = PropertiesService.getScriptProperties();
+  var prop = "VOTE_KEY_" + name.toUpperCase();
+  var key = props.getProperty(prop);
+  if (!key) {
+    key = Utilities.getUuid().replace(/-/g, "");
+    props.setProperty(prop, key);
+  }
+  return key;
+}
+
+// whose personal key this is: one of VOTERS, or "" (the admin key, a wrong key, none)
+function voterOf_(key) {
+  var k = String(key || "").trim();
+  if (!k) return "";
+  var props = PropertiesService.getScriptProperties().getProperties();
+  for (var i = 0; i < VOTERS.length; i++) {
+    var mine = props["VOTE_KEY_" + VOTERS[i].toUpperCase()];
+    if (mine && k === mine) return VOTERS[i];
+  }
+  return "";
 }
 
 // run from the editor: the dashboard code of every accepted participant (the admin page shows each in its full view)
@@ -384,10 +436,11 @@ function doPost(e) {
     }
   }
 
-  // admin.html: the registrations, a decision, the decision emails, the team dashboard, the teams, the check-in, the
-  // mentors' key and the certificates; all only for the admin key
+  // admin.html: the registrations, a vote, a decision, the decision emails, the team dashboard, the teams, the
+  // check-in, the mentors' key and the certificates; all only for the admin key or a voter's own key
   var ADMIN_ACTIONS = [
     "list",
+    "vote",
     "decide",
     "decisions",
     "board-admin",
@@ -406,6 +459,7 @@ function doPost(e) {
     try {
       var denied = checkKey_(data.key);
       if (denied) return json_(denied);
+      if (data.action === "vote") return json_(vote_(data));
       if (data.action === "decide") return json_(decide_(data));
       if (data.action === "decisions") return json_(decisions_(!!data.send));
       if (data.action === "board-admin") return json_(boardAdmin_());
@@ -418,7 +472,7 @@ function doPost(e) {
       if (data.action === "mentor-key")
         return json_({ ok: true, action: "mentor-key", key: mentorKey_(!!data.renew), page: MENTORS_PAGE });
       if (data.action === "certificates") return json_(certificates_(!!data.send, !!data.sample));
-      return json_(list_());
+      return json_(list_(data.key));
     } catch (err) {
       console.error(data.action + " failed: " + err);
       return json_({
@@ -949,6 +1003,23 @@ function decisionColumn_(sheet, header) {
     );
 }
 
+// the vote columns among cols as dropdowns of VOTES
+function voteColumns_(sheet, header, cols) {
+  var rows = sheet.getMaxRows() - 1;
+  cols.forEach(function (col) {
+    var c = header.indexOf(col) + 1;
+    if (!c || rows < 1 || VOTE_COLUMNS.indexOf(col) === -1) return;
+    sheet
+      .getRange(2, c, rows, 1)
+      .setDataValidation(
+        SpreadsheetApp.newDataValidation()
+          .requireValueInList(VOTES, true)
+          .setAllowInvalid(false)
+          .build(),
+      );
+  });
+}
+
 // what a decision email needs about the person: their first name, the teammates they named (none when they
 // applied on their own) and whether this same email is registered for the conference too
 function person_(values, header, r) {
@@ -1348,7 +1419,7 @@ function digest_(bytes) {
 }
 
 // admin.html: every row of the sheet, the header row first, for whoever sends the admin key
-function list_() {
+function list_(key) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = sheet_(); // with the headers of any column added since the sheet was made
   var values = sheet.getDataRange().getValues();
@@ -1373,27 +1444,37 @@ function list_() {
     feedback: feedbackRows_(),
     certificate: tpl ? tpl.getUrl() : "",
     sheet: ss.getUrl(),
+    // who is reading, by their key ("" for the admin key), and who votes: the page shows the votes and theirs
+    voter: voterOf_(key),
+    voters: VOTERS,
+    majority: MAJORITY,
     emailsLeft: emailsLeft_(),
     at: new Date(),
   };
 }
 
-// the admin key: null when it is right, else the answer to send back
+// the admin key or a voter's own key: null when it is one of them, else the answer to send back
 function checkKey_(key) {
   var expected =
     PropertiesService.getScriptProperties().getProperty("ADMIN_KEY");
-  if (!expected)
+  if (expected && String(key || "") === expected) return null;
+  if (voterOf_(key)) return null;
+  if (!expected && !voterKeysMade_())
     return {
       ok: false,
       denied: true,
       error:
-        "There is no admin key yet: run adminKey once in the Apps Script editor.",
+        "There is no admin key yet: run adminKey (or voterKeys) once in the Apps Script editor.",
     };
-  if (String(key || "") !== expected) {
-    Utilities.sleep(1500); // a wrong key costs time, so guessing does not pay
-    return { ok: false, denied: true, error: "That key is not right." };
-  }
-  return null;
+  Utilities.sleep(1500); // a wrong key costs time, so guessing does not pay
+  return { ok: false, denied: true, error: "That key is not right." };
+}
+
+function voterKeysMade_() {
+  var props = PropertiesService.getScriptProperties().getProperties();
+  return VOTERS.some(function (v) {
+    return !!props["VOTE_KEY_" + v.toUpperCase()];
+  });
 }
 
 // admin.html: the decision for hackathon registrations, each found by one of its emails; "" takes it back.
@@ -1435,6 +1516,86 @@ function decide_(data) {
   } finally {
     lock.releaseLock();
   }
+}
+
+// admin.html: one organiser's vote on hackathon registrations, each found by one of its emails: yes, no, or "" to
+// take it back. Only a voter's own key votes, in their column. A vote that makes a majority or undoes one sets the
+// Decision (accepted, denied, or undecided again); any other leaves it as it is, so a decision made by hand stays
+// until then. Sends nothing. Answers each registration's votes and Decision as they are now, with everyone's
+// votes, for the page to show.
+function vote_(data) {
+  var voter = voterOf_(data.key);
+  if (!voter)
+    return {
+      ok: false,
+      action: "vote",
+      error: "Votes are personal: open the admin page with your own key (voterKeys in the Apps Script editor), not the shared one.",
+    };
+  var vote = String(data.vote || "")
+    .trim()
+    .toLowerCase();
+  if (vote && VOTES.indexOf(vote) === -1)
+    return { ok: false, action: "vote", error: "Not a vote: " + vote };
+  var emails = emailsOf_({ Email: "", "Other emails": [].concat(data.emails || []).join(",") });
+  if (!emails.length)
+    return { ok: false, action: "vote", error: "No registration given." };
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    var sheet = sheet_();
+    var values = sheet.getDataRange().getValues();
+    var header = header_(values);
+    var mine = header.indexOf("Vote " + voter);
+    var dec = header.indexOf("Decision");
+    var set = [];
+    var missing = [];
+    var decided = false;
+    emails.forEach(function (email) {
+      for (var i = 1; i < values.length; i++) {
+        var r = toRecord_(header, values[i]);
+        if (eventKey_(r["Attends"]) !== "hackathon" || emailsOf_(r).indexOf(email) === -1) continue;
+        var before = majority_(r);
+        values[i][mine] = r["Vote " + voter] = vote;
+        sheet.getRange(i + 1, mine + 1).setValue(vote);
+        var after = majority_(r);
+        if (after !== before) {
+          values[i][dec] = r["Decision"] = after;
+          sheet.getRange(i + 1, dec + 1).setValue(after);
+          decided = true;
+        }
+        var votes = {};
+        VOTERS.forEach(function (v) {
+          votes[v] = voteOf_(r, v);
+        });
+        set.push({ email: email, votes: votes, decision: String(r["Decision"]).trim().toLowerCase() });
+        return;
+      }
+      missing.push(email);
+    });
+    if (decided) rosterChanged_(); // the dashboard's access follows the decision at once
+    return { ok: true, action: "vote", voter: voter, set: set, missing: missing };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function voteOf_(r, voter) {
+  var v = String(r["Vote " + voter] || "")
+    .trim()
+    .toLowerCase();
+  return VOTES.indexOf(v) === -1 ? "" : v;
+}
+
+// what the votes add up to: "accepted" with MAJORITY yes, "denied" with MAJORITY no, "" while neither side has it
+function majority_(r) {
+  var yes = 0;
+  var no = 0;
+  VOTERS.forEach(function (v) {
+    var x = voteOf_(r, v);
+    if (x === "yes") yes++;
+    if (x === "no") no++;
+  });
+  return yes >= MAJORITY ? "accepted" : no >= MAJORITY ? "denied" : "";
 }
 
 /* --- the team dashboard ------------------------------------------------- */
@@ -1544,10 +1705,10 @@ function comingOf_(v) {
 }
 
 // whose dashboard this is: { name, email, at (in roster_().people) } for an accepted participant,
-// { organiser: true } for the admin key, else the answer to send back
+// { organiser: true } for the admin key or a voter's own key, else the answer to send back
 function dashboardWho_(code) {
   var admin = PropertiesService.getScriptProperties().getProperty("ADMIN_KEY");
-  if (admin && String(code || "").trim() === admin)
+  if ((admin && String(code || "").trim() === admin) || voterOf_(code))
     return { name: "", organiser: true };
   var key = codeKey_(code);
   var roster = key.length === 8 ? roster_() : null;
@@ -1896,11 +2057,11 @@ function mentorKey_(renew) {
   return key;
 }
 
-// null when the key opens the mentor queue (the mentor key or the admin key), else the answer to send back
+// null when the key opens the mentor queue (the mentor key, the admin key or a voter's), else the answer to send back
 function checkMentor_(key) {
   var props = PropertiesService.getScriptProperties();
   var k = String(key || "").trim();
-  if (k && (k === props.getProperty("MENTOR_KEY") || k === props.getProperty("ADMIN_KEY"))) return null;
+  if (k && (k === props.getProperty("MENTOR_KEY") || k === props.getProperty("ADMIN_KEY") || voterOf_(k))) return null;
   Utilities.sleep(1500);
   return { ok: false, denied: true, error: "That key does not open the mentor queue. The link from the organisers has it." };
 }
@@ -2547,6 +2708,7 @@ function sheet_() {
     sheet.getRange(1, 1, 1, COLUMNS.length).setFontWeight("bold");
     sheet.setFrozenRows(1);
     decisionColumn_(sheet, COLUMNS);
+    voteColumns_(sheet, COLUMNS, VOTE_COLUMNS);
   } else {
     // a sheet made by an older version: add the headers of the newer columns after the last one, past any
     // column the team added by hand (rows are written by header, not by position)
@@ -2563,6 +2725,7 @@ function sheet_() {
         .setFontWeight("bold");
     if (missing.indexOf("Decision") !== -1)
       decisionColumn_(sheet, have.concat(missing));
+    voteColumns_(sheet, have.concat(missing), missing);
   }
   return sheet;
 }

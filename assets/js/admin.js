@@ -40,7 +40,7 @@
 		query: '',
 		problems: false,          // only the registrations with a failed email or letter
 		kind: 'all',              // the Who tab: all, teams, solo (hackathon)
-		decision: 'any',          // the Decision tab: any, none, accepted, waitlist, denied
+		decision: 'any',          // the Decision tab: any, tovote (not voted on by you), none, accepted, waitlist, denied
 		pending: {},              // emails whose decision is being saved
 		detail: null,             // the person open in the full view
 		sort: { key: 'time', dir: -1 },
@@ -50,6 +50,10 @@
 		mentors: null,            // { key, page }: the mentors' link
 		feedback: [],             // what the participants answered after the event, without names
 		certificate: '',          // the certificate template's link, '' while there is none
+		voter: '',                // whose key opened the page: one of voters, '' for the shared admin key
+		voters: [],               // the organisers who vote on the hackathon registrations ([]: an older Apps Script)
+		majority: 0,              // this many of the same vote sets the Decision
+		handOpen: false,          // "Decide by hand" open in the full view
 		people: [],               // the chosen event's registrations, one entry per person
 		shown: []
 	};
@@ -209,6 +213,40 @@
 	function emailedOf(r) {
 		var m = /^([a-z ]+): (sent|FAILED)/.exec(get(r, 'Decision email'));
 		return m ? { decision: m[1], sent: m[2] === 'sent' } : null;
+	}
+
+	/* --- votes (hackathon) ------------------------------------------------------ */
+
+	// each organiser votes yes or no in their "Vote <name>" column, with their own key; state.majority of the same
+	// sets the Decision, as vote_ in tools/register-backend.gs does
+	function voting() { return state.voters.length > 0; }
+
+	function voteCol(v) { return 'Vote ' + v; }
+
+	function voteOf(r, v) {
+		var x = String(get(r, voteCol(v))).trim().toLowerCase();
+		return x === 'yes' || x === 'no' ? x : '';
+	}
+
+	// yes and no, with mine (when given) in place of the reader's own vote
+	function voteCount(r, mine) {
+		var n = { yes: 0, no: 0 };
+		state.voters.forEach(function (v) {
+			var x = v === state.voter && mine !== undefined ? mine : voteOf(r, v);
+			if (x) n[x]++;
+		});
+		return n;
+	}
+
+	function majorityOf(r, mine) {
+		var n = voteCount(r, mine);
+		return n.yes >= state.majority ? 'accepted' : n.no >= state.majority ? 'denied' : '';
+	}
+
+	// the Decision after the reader votes mine: set by the vote when it makes or undoes a majority, else as it was
+	function decisionAfter(r, mine) {
+		var after = majorityOf(r, mine);
+		return after !== majorityOf(r) ? after : decisionOf(r);
 	}
 
 	// as nameKey_ in the Apps Script: "Ana-Maria Popescu" and "POPESCU ana maria" are one name
@@ -585,6 +623,9 @@
 		state.teams = [];
 		state.mentors = null;
 		state.feedback = [];
+		state.voter = '';
+		state.voters = [];
+		if (state.decision === 'tovote') state.decision = 'any';
 		teamsUi.editing = null;
 		forEach(['board-list', 'teams-list', 'loose', 'checkin-list', 'cert-result', 'fb-best', 'fb-change'], function (id) { $(id).textContent = ''; });
 		$('checkin-search').value = '';
@@ -601,7 +642,7 @@
 		ev.preventDefault();
 		// an empty field after a failed start (no connection, say) retries with the key already kept
 		var key = keyInput.value.trim() || storedKey();
-		if (!key) { lockError('Paste the admin key first.'); keyInput.focus(); return; }
+		if (!key) { lockError('Paste your key first.'); keyInput.focus(); return; }
 		unlock(key, $('remember').checked);
 	});
 
@@ -651,6 +692,10 @@
 		state.mentors = json.mentors || null;
 		state.feedback = json.feedback || [];
 		state.certificate = json.certificate || '';
+		state.voter = json.voter || '';
+		state.voters = json.voters || [];
+		state.majority = json.majority || 0;
+		if (state.decision === 'tovote' && !state.voter) state.decision = 'any';
 		state.at = json.at ? new Date(json.at) : new Date();
 		state.emailsLeft = typeof json.emailsLeft === 'number' ? json.emailsLeft : null;
 		$('lock').hidden = true;
@@ -664,6 +709,7 @@
 	function renderMeta() {
 		var parts = ['Updated ' + fmtClock.format(state.at)];
 		if (state.emailsLeft !== null) parts.push(plural(state.emailsLeft, 'email', 'emails') + ' left today');
+		if (voting()) parts.push(state.voter ? 'Voting as ' + state.voter : 'Shared key: open with your own to vote');
 		$('meta').textContent = parts.join(' · ');
 		var sheet = $('sheet-link');
 		sheet.hidden = !isUrl(state.sheet);
@@ -998,14 +1044,18 @@
 				td.appendChild(b);
 				return td;
 			} },
-		// the hackathon decision: undecided first when sorted
-		{ key: 'decision', label: 'Decision', always: true,
+		// the hackathon decision, or the votes that make it: undecided first when sorted, and among them those the
+		// reader has not voted on
+		{ key: 'decision', label: function () { return voting() ? 'Vote' : 'Decision'; }, always: true,
 			when: function () { return state.event !== 'conference'; },
-			sort: function (r) { var h = hackReg(r); return h ? DECISIONS.indexOf(decisionOf(h)) + 1 : 9; },
+			sort: function (r) {
+				var h = hackReg(r);
+				return h ? (DECISIONS.indexOf(decisionOf(h)) + 1) * 2 + (state.voter && voteOf(h, state.voter) ? 1 : 0) : 99;
+			},
 			cell: function (r) {
 				var td = el('td', 'c-decision');
 				var h = hackReg(r);
-				if (h) td.appendChild(decisionControl([h], r.name || 'this person'));
+				if (h) td.appendChild(voting() ? voteCell([h], r.name || 'this person') : decisionControl([h], r.name || 'this person'));
 				return td;
 			} },
 		{ key: 'email', label: 'Email', always: true, sort: function (r) { return r.email; },
@@ -1068,6 +1118,7 @@
 		if (!h) return false;
 		if (state.kind === 'teams' && !h.team) return false;
 		if (state.kind === 'solo' && h.team) return false;
+		if (state.decision === 'tovote') return !!state.voter && !voteOf(h, state.voter);
 		return state.decision === 'any' || decisionOf(h) === (state.decision === 'none' ? '' : state.decision);
 	}
 
@@ -1109,7 +1160,7 @@
 		var headRow = el('tr');
 		cols.forEach(function (c) {
 			var th = el('th', c.cls || null);
-			var b = el('button', 'sort-btn', c.label);
+			var b = el('button', 'sort-btn', typeof c.label === 'function' ? c.label() : c.label);
 			b.type = 'button';
 			b.setAttribute('data-sort', c.key);
 			if (state.sort.key === c.key) th.setAttribute('aria-sort', state.sort.dir > 0 ? 'ascending' : 'descending');
@@ -1151,13 +1202,15 @@
 	function renderTabs() {
 		$('filters').hidden = state.event === 'conference';
 		if (state.event === 'conference') return;
-		var counts = { all: state.people.length, teams: 0, solo: 0, none: 0, accepted: 0, waitlist: 0, denied: 0 };
+		var counts = { all: state.people.length, teams: 0, solo: 0, tovote: 0, none: 0, accepted: 0, waitlist: 0, denied: 0 };
 		state.people.forEach(function (p) {
 			var h = hackReg(p);
 			if (!h) return;
 			var kind = h.team ? 'teams' : 'solo';
 			counts[kind]++;
-			if (state.kind === 'all' || state.kind === kind) counts[decisionOf(h) || 'none']++;
+			if (state.kind !== 'all' && state.kind !== kind) return;
+			counts[decisionOf(h) || 'none']++;
+			if (state.voter && !voteOf(h, state.voter)) counts.tovote++;
 		});
 		forEach($('f-kind').querySelectorAll('button'), function (b) {
 			var k = b.getAttribute('data-kind');
@@ -1167,6 +1220,7 @@
 		forEach($('f-decision').querySelectorAll('button'), function (b) {
 			var d = b.getAttribute('data-decision');
 			var n = b.querySelector('.n');
+			b.hidden = d === 'tovote' && !state.voter;
 			b.setAttribute('aria-pressed', String(d === state.decision));
 			if (n) n.textContent = counts[d];
 		});
@@ -1185,7 +1239,7 @@
 			tr.appendChild(td);
 		});
 		var mid = el('td', 'c-decision');
-		mid.appendChild(decisionControl(team.members, 'the whole team'));
+		mid.appendChild(voting() ? voteCell(team.members, 'the whole team') : decisionControl(team.members, 'the whole team'));
 		var rest = el('td');
 		rest.colSpan = cols.length - at - 1;
 		var info = el('div', 'team-info');
@@ -1219,6 +1273,7 @@
 
 	function openDetail(p) {
 		if (!p) return;
+		state.handOpen = false;
 		renderDetail(p);
 		if (typeof dialog.showModal === 'function') dialog.showModal();
 		else dialog.setAttribute('open', '');
@@ -1244,14 +1299,38 @@
 		box.textContent = '';
 		box.hidden = !h;
 		if (!h) return;
-		box.appendChild(el('span', 'detail-decision-label', 'Hackathon decision'));
-		box.appendChild(decisionControl([h], p.name || 'this person'));
+		if (voting()) renderDetailVotes(box, h, p.name || 'this person');
+		else {
+			box.appendChild(el('span', 'detail-decision-label', 'Hackathon decision'));
+			box.appendChild(decisionControl([h], p.name || 'this person'));
+		}
 		if (h.team) {
 			var mates = h.team.members.filter(function (m) { return m !== h; }).map(function (m) { return m.name; })
 				.concat(h.team.missing.map(function (n) { return n + ' (not registered)'; }));
 			if (mates.length) box.appendChild(el('p', 'detail-team', 'Team with ' + mates.join(', ')));
 		}
 		if (decisionOf(h) === 'accepted') box.appendChild(dashboardLine(h));
+	}
+
+	// the full view with votes: the reader's vote, everyone's, what they add up to, and the decision by hand for the
+	// exceptions, folded away
+	function renderDetailVotes(box, h, who) {
+		box.appendChild(el('span', 'detail-decision-label', state.voter ? 'Your vote' : 'Votes'));
+		if (state.voter) box.appendChild(voteControl([h], who));
+		var list = el('div', 'vote-list');
+		state.voters.forEach(function (v) {
+			var x = voteOf(h, v);
+			list.appendChild(el('span', 'vote-chip' + (x ? ' is-' + x : ''), v + ' ' + (x === 'yes' ? '✓' : x === 'no' ? '✕' : '–')));
+		});
+		box.appendChild(list);
+		box.appendChild(voteResult([h]));
+		var hand = el('details', 'by-hand');
+		hand.open = state.handOpen;
+		hand.addEventListener('toggle', function () { state.handOpen = hand.open; });
+		hand.appendChild(el('summary', null, 'Decide by hand'));
+		hand.appendChild(decisionControl([h], who));
+		hand.appendChild(el('p', 'muted', 'For the exceptions: the waiting list, a tie while someone is away. The next vote that makes or undoes a majority sets the decision again.'));
+		box.appendChild(hand);
 	}
 
 	// an accepted participant's team dashboard code, to read out or send again
@@ -1279,6 +1358,7 @@
 		state.columns.forEach(function (col) {
 			var v = get(r, col);
 			if (!v || col === 'First name' || col === 'Last name') return;
+			if (voting() && state.voters.some(function (x) { return voteCol(x) === col; })) return;   // the votes are at the top
 			var dd = el('dd');
 			if (col === 'Timestamp' && r.time) dd.textContent = fmtLong.format(r.time);
 			else if ((col === 'Coming answered' || col === 'Checked in') && !isNaN(new Date(v))) dd.textContent = fmtLong.format(new Date(v));
@@ -1385,6 +1465,140 @@
 			} else {
 				regs.forEach(function (r, i) { setLocal(r, before[i]); });
 				dashError('The decision was not saved. ' + actionProblem(json, err, 'save decisions'));
+			}
+			refreshDecisions();
+		});
+	}
+
+	/* --- votes -------------------------------------------------------------------- */
+
+	// the table's cell, or a team's: the reader's vote (none with the shared key), everyone's, and the result
+	function voteCell(regs, who) {
+		var box = el('div', 'dec-box');
+		if (state.voter) box.appendChild(voteControl(regs, who));
+		box.appendChild(voteChips(regs));
+		box.appendChild(voteResult(regs));
+		return box;
+	}
+
+	// Yes and No for the reader, on one registration or a whole team; pressing the chosen one again takes it back
+	function voteControl(regs, who) {
+		var mine = regs.map(function (r) { return voteOf(r, state.voter); });
+		var current = mine.every(function (x) { return x === mine[0]; }) ? mine[0] : null;   // null: a team voted differently
+		var saving = regs.some(function (r) { return state.pending[r.email]; });
+		var group = el('div', 'dec vote' + (saving ? ' is-saving' : ''));
+		group.setAttribute('role', 'group');
+		group.setAttribute('aria-label', 'Your vote on ' + who);
+		group.setAttribute('data-key', regs.map(function (r) { return r.email; }).join(' '));
+		if (saving) group.setAttribute('aria-busy', 'true');
+		['yes', 'no'].forEach(function (x) {
+			var b = el('button', 'dec-' + x, x === 'yes' ? 'Yes' : 'No');
+			b.type = 'button';
+			b.setAttribute('data-d', x);
+			b.setAttribute('aria-pressed', String(current === x));
+			if (saving) b.setAttribute('aria-disabled', 'true');
+			group.appendChild(b);
+		});
+		group.addEventListener('click', function (ev) {
+			ev.stopPropagation();   // a click here does not open the registration
+			var b = ev.target.closest('button[data-d]');
+			if (!b || saving) return;
+			var x = b.getAttribute('data-d');
+			setVote(regs, current === x ? '' : x);
+		});
+		return group;
+	}
+
+	// one tag per organiser: yes, no, not yet (and, for a team, members voted differently); the names in the title
+	function voteChips(regs) {
+		var box = el('div', 'votes');
+		var said = [];
+		state.voters.forEach(function (v) {
+			var xs = regs.map(function (r) { return voteOf(r, v); });
+			var x = xs.every(function (y) { return y === xs[0]; }) ? xs[0] : 'mixed';
+			box.appendChild(el('span', 'vote-chip' + (x ? ' is-' + x : ''), v.slice(0, 2)));
+			said.push(v + ': ' + (x === 'yes' ? 'yes' : x === 'no' ? 'no' : x === 'mixed' ? 'not the same for everyone' : 'not yet'));
+		});
+		box.title = said.join(' · ');
+		box.setAttribute('aria-label', said.join(', '));
+		return box;
+	}
+
+	// what the votes came to: the Decision, how many voted, "by hand" when it is not what the votes say, and the
+	// note on the email
+	function voteResult(regs) {
+		var ds = regs.map(decisionOf);
+		var current = ds.every(function (d) { return d === ds[0]; }) ? ds[0] : null;
+		var line = el('div', 'vote-result');
+		if (current !== null) {
+			var n = regs.length === 1 ? voteCount(regs[0]) : null;
+			var text = DECISION_LABEL[current];
+			if (n && !current) text += ' · ' + n.yes + ' yes, ' + n.no + ' no';
+			if (n && current && current !== majorityOf(regs[0])) text += ' · by hand';
+			line.appendChild(el('span', 'dec-state is-' + (current || 'none'), text));
+		}
+		var note = decisionNote(regs, current);
+		if (note) line.appendChild(note);
+		return line;
+	}
+
+	function setCell(r, col, v) {
+		r.v[col] = v;
+		var j = state.columns.indexOf(col);
+		if (j !== -1) r.row[j] = v;
+	}
+
+	// shows the vote, and the decision it makes, at once and saves it; the Apps Script answers everyone's votes as
+	// they are now, which the page then shows. Put back as it was if the save fails.
+	function setVote(regs, x) {
+		var col = voteCol(state.voter);
+		var next = regs.map(function (r) { return decisionAfter(r, x); });
+		// a vote that changes the decision of someone already emailed another: ask, as for a decision by hand
+		var told = regs.filter(function (r, i) {
+			var m = emailedOf(r);
+			return m && m.sent && next[i] !== decisionOf(r) && next[i] !== m.decision;
+		});
+		if (told.length) {
+			var r0 = told[0], d = next[regs.indexOf(r0)], was = emailedOf(r0).decision;
+			var q = (regs.length > 1 ? told.length + ' of them were' : (r0.name || 'This person') + ' was') +
+				' already emailed “' + (DECISION_LABEL[was] || was) + '”. ' +
+				(d ? 'Your vote makes it ' + DECISION_LABEL[d] + ': the next send emails that.'
+					: 'Your vote leaves no majority: Undecided again, and no email goes out about that, so tell them yourself.') +
+				' Vote anyway?';
+			if (!window.confirm(q)) return;
+		}
+		var before = regs.map(function (r) { return { vote: get(r, col), decision: get(r, 'Decision') }; });
+		regs.forEach(function (r, i) {
+			setCell(r, col, x);
+			setLocal(r, next[i]);
+			state.pending[r.email] = true;
+		});
+		refreshDecisions();
+		post({ action: 'vote', key: state.key, emails: regs.map(function (r) { return r.email; }), vote: x }, 60000, function (json, err) {
+			regs.forEach(function (r) { delete state.pending[r.email]; });
+			if (json && json.denied) { lock(json.error); return; }
+			if (json && json.ok && json.action === 'vote') {
+				var got = {};
+				(json.set || []).forEach(function (s) { got[s.email] = s; });
+				var missing = [];
+				regs.forEach(function (r, i) {
+					var s = got[r.email];
+					if (!s) {
+						missing.push(r.email);
+						setCell(r, col, before[i].vote);
+						setLocal(r, before[i].decision);
+						return;
+					}
+					Object.keys(s.votes || {}).forEach(function (v) { setCell(r, voteCol(v), s.votes[v]); });
+					setLocal(r, s.decision);
+				});
+				dashError(missing.length ? 'Not saved, as the sheet has no hackathon registration for ' + missing.join(', ') + ' any more. Refresh the page.' : '');
+			} else {
+				regs.forEach(function (r, i) {
+					setCell(r, col, before[i].vote);
+					setLocal(r, before[i].decision);
+				});
+				dashError('The vote was not saved. ' + actionProblem(json, err, 'vote'));
 			}
 			refreshDecisions();
 		});

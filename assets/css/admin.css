@@ -811,7 +811,8 @@ input[type="checkbox"] {
 			color: var(--fg);
 		}
 
-		.dec .dec-accepted[aria-pressed="true"] {
+		.dec .dec-accepted[aria-pressed="true"],
+		.dec .dec-yes[aria-pressed="true"] {
 			background: rgba(95, 196, 138, 0.18);
 			box-shadow: inset 0 0 0 1px var(--good);
 			color: var(--good-text);
@@ -823,7 +824,8 @@ input[type="checkbox"] {
 			color: var(--warn-text);
 		}
 
-		.dec .dec-denied[aria-pressed="true"] {
+		.dec .dec-denied[aria-pressed="true"],
+		.dec .dec-no[aria-pressed="true"] {
 			background: rgba(255, 107, 102, 0.16);
 			box-shadow: inset 0 0 0 1px var(--bad);
 			color: var(--bad-text);
@@ -853,6 +855,103 @@ input[type="checkbox"] {
 
 	.dec-note.warn {
 		color: var(--warn-text);
+	}
+
+/* the votes: a tag per organiser, then what they came to */
+.votes,
+.vote-list {
+	display: inline-flex;
+	flex-wrap: wrap;
+	gap: 3px;
+}
+
+	/* in the table, the five on one line, even on a phone */
+	.votes {
+		flex-wrap: nowrap;
+		gap: 2px;
+	}
+
+.vote-chip {
+	min-width: 22px;
+	padding: 1px 5px;
+	border-radius: 4px;
+	box-shadow: inset 0 0 0 1px var(--line);
+	color: var(--fg-light);
+	font-size: 11px;
+	font-weight: 600;
+	line-height: 16px;
+	text-align: center;
+}
+
+	.vote-chip.is-yes {
+		background: rgba(95, 196, 138, 0.18);
+		box-shadow: inset 0 0 0 1px var(--good);
+		color: var(--good-text);
+	}
+
+	/* not by colour alone: a no is struck through */
+	.votes .vote-chip.is-no {
+		text-decoration: line-through;
+	}
+
+	.vote-chip.is-no {
+		background: rgba(255, 107, 102, 0.16);
+		box-shadow: inset 0 0 0 1px var(--bad);
+		color: var(--bad-text);
+	}
+
+	.vote-chip.is-mixed {
+		box-shadow: inset 0 0 0 1px var(--warn-text);
+		color: var(--warn-text);
+	}
+
+.vote-result {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 2px 8px;
+}
+
+.dec-state {
+	font-size: 0.82em;
+	font-weight: 600;
+	white-space: nowrap;
+}
+
+	.dec-state.is-none {
+		font-weight: 400;
+		color: var(--fg-light);
+	}
+
+	.dec-state.is-accepted {
+		color: var(--good-text);
+	}
+
+	.dec-state.is-waitlist {
+		color: var(--warn-text);
+	}
+
+	.dec-state.is-denied {
+		color: var(--bad-text);
+	}
+
+/* the full view: the decision by hand, folded away under the votes */
+.by-hand {
+	flex-basis: 100%;
+	font-size: 0.9em;
+}
+
+	.by-hand summary {
+		width: max-content;
+		color: var(--fg-light);
+		cursor: pointer;
+	}
+
+	.by-hand .dec {
+		margin-top: 8px;
+	}
+
+	.by-hand p {
+		margin: 6px 0 0;
 	}
 
 /* the Teams tab: a row above each team */

@@ -10,7 +10,7 @@
 		     (script.google.com answers through a redirect to script.googleusercontent.com) -->
 		<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src https://script.google.com https://script.googleusercontent.com; base-uri 'none'; form-action 'none'" />
 		<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Raleway:700|Source+Sans+Pro:300,400,600&amp;display=swap" />
-		<link rel="stylesheet" href="assets/css/admin.css?v=20261010" />
+		<link rel="stylesheet" href="assets/css/admin.css?v=20261013" />
 		<link rel="icon" type="image/png" href="images/favicon-2026.png">
 	</head>
 	<body>
@@ -29,10 +29,10 @@
 				<form class="lock-card" id="lock-form" novalidate>
 					<img class="lock-logo" src="images/BreaQ_logo_2026-light.svg" alt="BreaQ 2026" />
 					<h1>Registrations</h1>
-					<p class="muted">For the organisers. The key is in the Apps Script editor: run <code>adminKey</code>.</p>
+					<p class="muted">For the organisers. Each of you has your own key, which votes in your name: in the Apps Script editor, run <code>voterKeys</code>. The shared key (<code>adminKey</code>) opens the page without voting.</p>
 					<!-- lets a password manager file the key under a name -->
 					<input type="text" name="username" value="BreaQ admin" autocomplete="username" hidden />
-					<label for="key">Admin key</label>
+					<label for="key">Your key</label>
 					<input type="password" id="key" name="key" autocomplete="current-password" spellcheck="false" required />
 					<label class="check"><input type="checkbox" id="remember" /> Remember on this device</label>
 					<p class="err" id="lock-err" role="alert" hidden></p>
@@ -88,7 +88,7 @@
 
 				<div class="breakdowns" id="breakdowns"></div>
 
-				<!-- Decision emails (hackathon): Accept, Waitlist and Deny only note the decision; this button sends what is
+				<!-- Decision emails (hackathon): the votes (or Accept, Waitlist and Deny by hand) only note the decision; this button sends what is
 				     due, after showing who gets what (the "decisions" action of the Apps Script) -->
 				<section class="panel send-panel" id="send-panel" aria-labelledby="send-h">
 					<div class="panel-head">
@@ -98,7 +98,7 @@
 						</div>
 						<button type="button" class="btn primary" id="send-open">Send decision emails</button>
 					</div>
-					<p class="muted send-help">Accept, Waitlist and Deny only note the decision. Nothing goes out until you press Send, which first shows who gets what. Google allows about 100 emails a day: the accepted go first, then the waiting list, then the denied, and the next day’s Send carries on. Registration closes on 18 October at 23:59.</p>
+					<p class="muted send-help">Each of you votes Yes or No on every registration: 3 of the same make the decision (Yes: accepted, No: denied), and that only notes it. Nothing goes out until you press Send, which first shows who gets what. Google allows about 100 emails a day: the accepted go first, then the waiting list, then the denied, and the next day’s Send carries on. Registration closes on 18 October at 23:59.</p>
 				</section>
 
 				<section class="panel" aria-labelledby="people-h">
@@ -119,6 +119,7 @@
 						</div>
 						<div class="seg" role="group" aria-label="Decision" id="f-decision">
 							<button type="button" data-decision="any" aria-pressed="true">Any decision</button>
+							<button type="button" data-decision="tovote" aria-pressed="false" hidden>To vote <span class="n"></span></button>
 							<button type="button" data-decision="none" aria-pressed="false">Undecided <span class="n"></span></button>
 							<button type="button" data-decision="accepted" aria-pressed="false">Accepted <span class="n"></span></button>
 							<button type="button" data-decision="waitlist" aria-pressed="false">Waitlist <span class="n"></span></button>
@@ -350,6 +351,6 @@
 
 		</main>
 
-		<script src="assets/js/admin.js?v=20261010"></script>
+		<script src="assets/js/admin.js?v=20261013"></script>
 	</body>
 </html>
