@@ -167,26 +167,43 @@
 
 	// Text as typed in the admin page: blank lines make paragraphs, line breaks stay, web addresses become links.
 	// Built from text nodes and <a>, never from HTML, so nothing posted can run on the page.
+	// what the organisers write: paragraphs (a blank line between), line breaks, links, and lists (lines that
+	// start with "• " or "- ")
 	function richText(text) {
 		var box = el('div', 'rich');
 		String(text || '').split(/\n{2,}/).forEach(function (para) {
 			if (!para.trim()) return;
-			var p = el('p');
-			para.split('\n').forEach(function (line, i) {
-				if (i) p.appendChild(document.createElement('br'));
-				var rest = line;
-				var m;
-				var re = /https?:\/\/[^\s<>"]*[^\s<>".,:;!?)\]]/i;
-				while ((m = re.exec(rest))) {
-					if (m.index) p.appendChild(document.createTextNode(rest.slice(0, m.index)));
-					p.appendChild(link(m[0], m[0].replace(/^https?:\/\//i, '')));
-					rest = rest.slice(m.index + m[0].length);
+			var p = null, ul = null;
+			para.split('\n').forEach(function (line) {
+				var bullet = /^\s*[•-]\s+/.exec(line);
+				if (bullet) {
+					if (!ul) box.appendChild(ul = el('ul'));
+					p = null;
+					var li = el('li');
+					linked(li, line.slice(bullet[0].length));
+					ul.appendChild(li);
+					return;
 				}
-				if (rest) p.appendChild(document.createTextNode(rest));
+				ul = null;
+				if (p) p.appendChild(document.createElement('br'));
+				else box.appendChild(p = el('p'));
+				linked(p, line);
 			});
-			box.appendChild(p);
 		});
 		return box;
+	}
+
+	// a line of text into node, its web addresses as links
+	function linked(node, line) {
+		var rest = line;
+		var m;
+		var re = /https?:\/\/[^\s<>"]*[^\s<>".,:;!?)\]]/i;
+		while ((m = re.exec(rest))) {
+			if (m.index) node.appendChild(document.createTextNode(rest.slice(0, m.index)));
+			node.appendChild(link(m[0], m[0].replace(/^https?:\/\//i, '')));
+			rest = rest.slice(m.index + m[0].length);
+		}
+		if (rest) node.appendChild(document.createTextNode(rest));
 	}
 
 	/* --- the code and the request -------------------------------------- */
@@ -545,9 +562,31 @@
 
 	/* --- resources, submission, practical ------------------------------------ */
 
-	function itemRow(it) {
-		var row = el('li', 'item');
+	// a long text (a challenge's brief, its rules) folds under its title, so a card stays a list of what is in it
+	function isLong(it) {
+		return !!it.title && (it.text.length > 320 || /\n\s*[•-]\s/.test('\n' + it.text));
+	}
+
+	function itemRow(it, fold, open) {
 		var title = it.title || it.link.replace(/^https?:\/\//i, '');
+		if (fold && isLong(it)) {
+			var li = el('li', 'item is-long');
+			var more = el('details');
+			more.open = !!open;
+			var sum = el('summary');
+			sum.appendChild(el('span', 'item-title', title));
+			more.appendChild(sum);
+			if (it.link) {
+				var go = link(it.link, it.link.replace(/^https?:\/\//i, ''));
+				go.className = 'check-link';
+				go.appendChild(icon('fa-external-link-alt'));
+				more.appendChild(go);
+			}
+			more.appendChild(richText(it.text));
+			li.appendChild(more);
+			return li;
+		}
+		var row = el('li', 'item');
 		if (it.link) {
 			var a = link(it.link, title);
 			a.className = 'item-title';
@@ -560,15 +599,23 @@
 		return row;
 	}
 
-	function itemList(items) {
+	// fold: the long texts fold under their titles, the first one open
+	function itemList(items, fold) {
 		var ul = el('ul', 'items');
-		items.forEach(function (it) { ul.appendChild(itemRow(it)); });
+		var opened = false;
+		items.forEach(function (it) {
+			var open = fold && !opened && isLong(it);
+			if (open) opened = true;
+			ul.appendChild(itemRow(it, fold, open));
+		});
 		return ul;
 	}
 
+	// a challenge with a brief (long texts), and the participant's own, take the whole width, first
 	function renderResources() {
 		var box = $('res');
 		var all = section('resource');
+		var own = state.me && state.me.team ? state.me.team.challenge : '';
 		box.textContent = '';
 		var common = all.filter(function (it) { return CHALLENGES.indexOf(it.challenge) === -1; });
 		if (common.length) {
@@ -577,15 +624,17 @@
 			c.appendChild(itemList(common));
 			box.appendChild(c);
 		}
-		var grid = el('div', 'res-grid');
-		CHALLENGES.forEach(function (name) {
+		var cards = CHALLENGES.map(function (name, i) {
 			var mine = all.filter(function (it) { return it.challenge === name; });
-			var card = el('div', 'res-card');
+			var wide = name === own || mine.some(isLong);
+			var card = el('div', 'res-card' + (wide ? ' wide' : ''));
 			card.appendChild(el('h3', null, name));
-			if (mine.length) card.appendChild(itemList(mine));
+			if (mine.length) card.appendChild(itemList(mine, true));
 			else card.appendChild(el('p', 'empty', 'The starter kit and the links arrive here before coding starts.'));
-			grid.appendChild(card);
+			return { card: card, at: (name === own ? 0 : wide ? 1 : 2) * 10 + i };
 		});
+		var grid = el('div', 'res-grid');
+		cards.sort(function (a, b) { return a.at - b.at; }).forEach(function (c) { grid.appendChild(c.card); });
 		box.appendChild(grid);
 	}
 

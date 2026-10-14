@@ -570,6 +570,25 @@ input[type="checkbox"] {
 		margin-bottom: 0;
 	}
 
+.rich ul {
+	margin: 0 0 0.6em;
+	padding-left: 1.2em;
+	list-style: disc;
+}
+
+	.rich ul:last-child {
+		margin-bottom: 0;
+	}
+
+	.rich li {
+		margin: 0.2em 0;
+		overflow-wrap: anywhere;
+	}
+
+		.rich li::marker {
+			color: var(--hot);
+		}
+
 /* lists of links: resources, submission, practical */
 .items {
 	margin: 0;
@@ -604,6 +623,49 @@ input[type="checkbox"] {
 		margin-top: 3px;
 		font-size: 0.92em;
 		color: var(--fg-light);
+	}
+
+	/* a long text, folded under its title */
+	.item.is-long summary {
+		display: flex;
+		align-items: baseline;
+		gap: 0.6em;
+		cursor: pointer;
+		list-style: none;
+	}
+
+		.item.is-long summary::-webkit-details-marker {
+			display: none;
+		}
+
+		.item.is-long summary::before {
+			content: '';
+			flex: none;
+			width: 0.45em;
+			height: 0.45em;
+			border-right: solid 2px var(--hot);
+			border-bottom: solid 2px var(--hot);
+			transform: translateY(-0.15em) rotate(-45deg);
+			transition: transform 0.15s ease;
+		}
+
+		.item.is-long details[open] > summary::before {
+			transform: translateY(-0.3em) rotate(45deg);
+		}
+
+		.item.is-long summary:hover .item-title {
+			color: var(--hot);
+		}
+
+	.item.is-long details > .check-link,
+	.item.is-long details > .rich {
+		margin-left: 1.05em;
+	}
+
+	.item.is-long details > .rich {
+		margin-top: 8px;
+		max-width: 46em;
+		line-height: 1.55;
 	}
 
 .deadline {
@@ -644,6 +706,11 @@ input[type="checkbox"] {
 		border-radius: 6px;
 		background: rgba(255, 255, 255, 0.02);
 	}
+
+		/* a challenge with a brief, or the participant's own */
+		.res-card.wide {
+			grid-column: 1 / -1;
+		}
 
 /* the schedule, compact */
 .sched-panel h3 {
