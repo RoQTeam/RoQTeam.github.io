@@ -882,8 +882,8 @@
 
 	/* --- breakdowns ------------------------------------------------------ */
 
-	// the hackathon form's team question, as stored in the "Team" column
-	var TEAM_LABEL = { solo: 'On my own', team: 'With a team' };
+	// the hackathon form's team question, as stored in the "Team" column (match: the organisers put them in a team)
+	var TEAM_LABEL = { solo: 'On my own', team: 'With a team', match: 'Put me in a team' };
 
 	function teamOf(r) {
 		var t = get(r, 'Team');
@@ -897,9 +897,10 @@
 		{ col: 'Experience', title: 'Experience', order: ['None yet, curious', 'Beginner: a course or some tutorials', 'Intermediate: built circuits or small projects', 'Advanced: research or work in the field'], short: true },
 		{ col: 'Tracks', title: 'Tracks', order: ['Quantum Foundations', 'Quantum AI', 'Quantum Hacking', 'Not sure yet'], multi: true },
 		{ col: 'T-shirt', title: 'T-shirts', order: ['XS', 'S', 'M', 'L', 'XL', 'XXL'] },
-		// asked only with the Quantum AI track (the first form asked everyone, so earlier answers are left out)
-		{ col: 'Team', title: 'Quantum AI', labels: TEAM_LABEL, order: [TEAM_LABEL.solo, TEAM_LABEL.team],
-			only: function (r) { return /quantum ai/i.test(get(r, 'Tracks')); } },
+		// asked only with the Quantum AI or Quantum Hacking track (the first form asked everyone, so earlier answers
+		// with neither are left out)
+		{ col: 'Team', title: 'Alone or in a team', labels: TEAM_LABEL, order: [TEAM_LABEL.solo, TEAM_LABEL.team, TEAM_LABEL.match],
+			only: function (r) { return /quantum (ai|hacking)/i.test(get(r, 'Tracks')); } },
 		{ col: 'University or company', title: 'University or company', top: 8, merged: true },
 		{ col: 'Heard from', title: 'Heard about BreaQ from' }
 	];
@@ -1110,14 +1111,20 @@
 
 	function teamsView() { return state.kind === 'teams' && state.event !== 'conference'; }
 
+	// the Who tab a hackathon registration is under: in a team (named, or naming someone), to be put in one, or
+	// on their own
+	function whoKind(h) {
+		if (h.team) return 'teams';
+		return get(h, 'Team') === 'match' ? 'match' : 'solo';
+	}
+
 	// the Who and Decision tabs are about the hackathon: any other choice than All and Any leaves out people
 	// who are only at the conference
 	function inTabs(p) {
 		if (state.event === 'conference' || (state.kind === 'all' && state.decision === 'any')) return true;
 		var h = hackReg(p);
 		if (!h) return false;
-		if (state.kind === 'teams' && !h.team) return false;
-		if (state.kind === 'solo' && h.team) return false;
+		if (state.kind !== 'all' && state.kind !== whoKind(h)) return false;
 		if (state.decision === 'tovote') return !!state.voter && !voteOf(h, state.voter);
 		return state.decision === 'any' || decisionOf(h) === (state.decision === 'none' ? '' : state.decision);
 	}
@@ -1202,11 +1209,11 @@
 	function renderTabs() {
 		$('filters').hidden = state.event === 'conference';
 		if (state.event === 'conference') return;
-		var counts = { all: state.people.length, teams: 0, solo: 0, tovote: 0, none: 0, accepted: 0, waitlist: 0, denied: 0 };
+		var counts = { all: state.people.length, teams: 0, solo: 0, match: 0, tovote: 0, none: 0, accepted: 0, waitlist: 0, denied: 0 };
 		state.people.forEach(function (p) {
 			var h = hackReg(p);
 			if (!h) return;
-			var kind = h.team ? 'teams' : 'solo';
+			var kind = whoKind(h);
 			counts[kind]++;
 			if (state.kind !== 'all' && state.kind !== kind) return;
 			counts[decisionOf(h) || 'none']++;

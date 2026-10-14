@@ -167,13 +167,16 @@
 													</div>
 													<small>Quantum Foundations is designed for beginners. <a href="breaq-hackathon.html#challenges" target="_blank" rel="noopener">What each challenge is about</a></small>
 												</div>
-												<!-- Quantum AI can be done alone or in a team: register.js shows this while that track is ticked -->
-												<div class="field" data-track="Quantum AI" hidden>
-													<span class="lbl">Quantum AI: on your own or in a team?</span>
+												<!-- Quantum AI and Quantum Hacking can be done alone or in a team: register.js shows this while
+												     either track is ticked (data-track, the tracks with | between them) -->
+												<div class="field" data-track="Quantum AI|Quantum Hacking" hidden>
+													<span class="lbl">Quantum AI and Quantum Hacking: on your own or in a team?</span>
 													<div class="choices choices--row">
 														<span><input type="radio" id="team-solo" name="team" value="solo" checked /><label for="team-solo">On my own</label></span>
 														<span><input type="radio" id="team-have" name="team" value="team" /><label for="team-have">With a team I already have</label></span>
+														<span><input type="radio" id="team-match" name="team" value="match" /><label for="team-match">Put me in a team</label></span>
 													</div>
+													<small>Put in a team: we match you with other participants.</small>
 												</div>
 												<div class="field" data-team hidden>
 													<label for="team_name">Your teammates</label>
@@ -266,6 +269,6 @@
 			<script src="assets/js/main.js"></script>
 			<script src="assets/js/script.js"></script>
 			<script src="assets/js/breaq.js?v=20261012"></script>
-			<script src="assets/js/register.js?v=20261007b"></script>
+			<script src="assets/js/register.js?v=20261014"></script>
 	</body>
 </html>

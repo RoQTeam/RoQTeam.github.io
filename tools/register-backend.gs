@@ -79,6 +79,19 @@
  * The wording is in decisionEmail_. Someone whose registered teammates got the same decision gets the team
  * version naming them. After changing the wording, deploy a new version for the admin page's button.
  *
+ * On their own or in a team: the "Team" column is solo, team (with the names in "Team name and members") or
+ * match (the organisers put them in a team). The form asks with Quantum AI or Quantum Hacking ticked. Quantum
+ * Hacking became a team challenge after people had registered for it, so one email asks each of them, from the
+ * editor's function list:
+ *   - previewHackingTeams: logs who would get it. Sends nothing.
+ *   - sendHackingTeams: emails every hackathon registration with the Quantum Hacking track, once (HACKING_SENT in
+ *     the "Emails" column), the denied left out. It stops when the day's emails run out, as sendDecisions does:
+ *     run it again the next day for the rest.
+ *   - sendHackingTeamsSample: sends you the email, to read first.
+ * The email links to team-choice.html with the person's code (the dashboard's, which opens the dashboard only once
+ * they are accepted): there they choose, and the answer goes in "Team" and "Team name and members", with what it
+ * replaced logged in "Merged". The wording is in hackingTeamsEmail_.
+ *
  * The team dashboard (teams.html, roqteam.ro/teams): what the organisers post for the hackathon's teams, the
  * announcements, each challenge's resources, how to submit and the practical details, one row each in the tab
  * BOARD_SHEET. The admin page writes it (its "Team dashboard" view); rows can also be typed in the tab by hand.
@@ -208,6 +221,16 @@ var CHALLENGES = ["Quantum Foundations", "Quantum AI", "Quantum Hacking"];
 var TEAMS_PAGE = SITE + "/teams";
 var MENTORS_PAGE = SITE + "/mentors";
 var CONFIRM_BY = "Wednesday 21 October"; // the acceptance email asks to answer "are you coming?" by then
+
+// the hackathon's "Team" column: on their own, with the teammates they name ("Team name and members"), or put in
+// a team by the organisers. register.html asks it with Quantum AI or Quantum Hacking ticked; team-choice.html
+// (roqteam.ro/team-choice) lets a registered participant change it, with their personal code
+var TEAM_ANSWERS = ["solo", "team", "match"];
+var TEAM_PAGE = SITE + "/team-choice";
+// the Quantum Hacking email (sendHackingTeams): asks for an answer, and the teammates' registrations, by then;
+// HACKING_SENT in the "Emails" column marks who has it
+var HACKING_BY = "Friday 16 October";
+var HACKING_SENT = "Quantum Hacking teams email sent";
 
 // the hackathon's teams, one row each; who is in which is the "Hackathon team" column of the registrations
 var TEAMS_SHEET = "Teams";
@@ -432,6 +455,22 @@ function doPost(e) {
         action: data.action,
         temporary: data.action === "mentor-queue",
         error: "Google could not " + (data.action === "mentor-queue" ? "read" : "update") + " the queue just now (" + err + ").",
+      });
+    }
+  }
+
+  // team-choice.html: a hackathon participant reads, or changes, how they take part (on their own, with a team,
+  // matched), with the personal code in the email that asked them
+  if (data.action === "team-choice") {
+    try {
+      return json_(teamChoice_(data));
+    } catch (err) {
+      console.error("team-choice failed: " + err);
+      return json_({
+        ok: false,
+        action: "team-choice",
+        temporary: data.team === undefined, // the page tries a reading again by itself, never an answer
+        error: "That did not go through (" + err + "). Try again in a minute.",
       });
     }
   }
@@ -1223,6 +1262,264 @@ function renderEmail_(name, t) {
   return { subject: t.subject, text: text, html: html };
 }
 
+/* --- on their own or in a team ------------------------------------------- */
+
+// team-choice.html: { code } reads how the person takes part, { code, team, mates } changes it. The code is the
+// dashboard's (dashboardCode_), which here opens any hackathon registration, decided or not.
+function teamChoice_(data) {
+  var fail = function (msg) {
+    return { ok: false, action: "team-choice", error: msg };
+  };
+  var answer = data.team === undefined || data.team === null ? null : String(data.team);
+  if (answer !== null && TEAM_ANSWERS.indexOf(answer) === -1)
+    return fail("Choose one: on your own, with a team, or put in a team.");
+  var names = answer === "team" ? teammates_(clean_(data.mates).slice(0, 200)) : [];
+  if (answer === "team" && !names.length) return fail("Write your teammates’ names.");
+  for (var n = 0; n < names.length; n++)
+    if (nameProblem_(names[n]))
+      return fail("Write just your teammates’ names, without links, digits or symbols.");
+  var key = codeKey_(data.code);
+  var lock = answer === null ? null : LockService.getScriptLock();
+  if (lock) lock.waitLock(10000);
+  try {
+    var sheet = sheet_();
+    var values = sheet.getDataRange().getValues();
+    var header = header_(values);
+    var row = -1;
+    var r = null;
+    for (var i = 1; key.length === 8 && i < values.length; i++) {
+      var t = toRecord_(header, values[i]);
+      if (eventKey_(t["Attends"]) !== "hackathon" || !String(t["Email"]).trim()) continue;
+      if (codeKey_(dashboardCode_(t["Email"])) === key) {
+        row = i + 1;
+        r = t;
+        break;
+      }
+    }
+    if (row === -1) {
+      Utilities.sleep(1500); // a wrong code costs time, so guessing does not pay
+      return {
+        ok: false,
+        action: "team-choice",
+        denied: true,
+        error:
+          "This link does not open a hackathon registration. Use the link in the email we sent you, or reply to that email.",
+      };
+    }
+    // their own name among the teammates (people write the whole team) is not a teammate
+    var own = nameKey_(r["First name"], r["Last name"]);
+    names = names.filter(function (m) {
+      return nameKey_(m, "") !== own;
+    });
+    if (answer === "team" && !names.length) return fail("Write your teammates’ names: the others in your team.");
+    if (names.length > 2)
+      return fail("A team has at most 3 people, you included: name two teammates at most.");
+    var mates = names.join(", ");
+    var was = String(r["Team"]).trim();
+    var wasMates = String(r["Team name and members"]).trim();
+    if (answer !== null && (was !== answer || wasMates !== mates)) {
+      var before = [];
+      if (was) before.push("Team: " + was);
+      if (wasMates) before.push("Team name and members: " + wasMates);
+      var entry =
+        Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm") +
+        " · answered on the team page" +
+        (before.length ? " · before: " + before.join("; ") : "");
+      sheet.getRange(row, header.indexOf("Team") + 1).setValue(cellFor_("Team", answer));
+      sheet
+        .getRange(row, header.indexOf("Team name and members") + 1)
+        .setValue(cellFor_("Team name and members", mates));
+      if (header.indexOf("Merged") !== -1)
+        sheet
+          .getRange(row, header.indexOf("Merged") + 1)
+          .setValue([r["Merged"], entry].filter(Boolean).join("\n"));
+      was = answer;
+      wasMates = mates;
+    }
+    return {
+      ok: true,
+      action: "team-choice",
+      saved: answer !== null,
+      me: {
+        name: String(r["First name"]).trim(),
+        team: was,
+        mates: wasMates,
+        tracks: listOf_(r["Tracks"]).filter(String),
+        by: HACKING_BY,
+      },
+    };
+  } finally {
+    if (lock) lock.releaseLock();
+  }
+}
+
+// run from the editor: who would get the Quantum Hacking teams email, with what the form says now. Sends nothing.
+function previewHackingTeams() {
+  hackingTeams_(false);
+}
+
+// run from the editor: emails each hackathon registration with the Quantum Hacking track, once
+function sendHackingTeams() {
+  hackingTeams_(true);
+}
+
+// run from the editor: the email to the account running it, as someone on their own and as someone with a team
+function sendHackingTeamsSample() {
+  var me = Session.getEffectiveUser().getEmail();
+  [
+    { name: "Ana", email: me, team: "solo", mates: "" },
+    { name: "Ana", email: me, team: "team", mates: "Mihai Ionescu, Ioana Marin" },
+  ].forEach(function (p) {
+    var mail = renderEmail_(p.name, hackingTeamsEmail_(p));
+    send_({
+      to: me,
+      subject: "[sample] " + mail.subject,
+      body: mail.text,
+      htmlBody: mail.html,
+      name: SENDER_NAME,
+      replyTo: REPLY_TO,
+    });
+  });
+  Logger.log("Sent 2 sample emails to " + me);
+}
+
+// previewHackingTeams and sendHackingTeams: the hackathon registrations with the Quantum Hacking track, but the
+// denied, that have not had the email yet (HACKING_SENT in "Emails"); stops as decisions_ does, at the day's
+// emails and well before Apps Script's 6 minutes. Returns { sent, failed, before, left, stopped } for the tests.
+function hackingTeams_(send) {
+  var lock = send ? LockService.getDocumentLock() : null;
+  if (lock && !lock.tryLock(2000)) {
+    Logger.log("Someone else is sending emails from this script right now. Try again in a minute.");
+    return null;
+  }
+  try {
+    var started = Date.now();
+    var sheet = sheet_();
+    var values = sheet.getDataRange().getValues();
+    var header = header_(values);
+    var col = header.indexOf("Emails") + 1;
+    var stamp = function () {
+      return Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm");
+    };
+    var due = [];
+    var before = 0;
+    var denied = 0;
+    for (var i = 1; i < values.length; i++) {
+      var r = toRecord_(header, values[i]);
+      if (eventKey_(r["Attends"]) !== "hackathon") continue;
+      if (listOf_(r["Tracks"]).indexOf("Quantum Hacking") === -1) continue;
+      if (String(r["Decision"]).trim().toLowerCase() === "denied") {
+        denied++;
+        continue;
+      }
+      if (String(r["Emails"]).indexOf(HACKING_SENT) !== -1) {
+        before++;
+        continue;
+      }
+      due.push({ row: i + 1, r: r, name: String(r["First name"] + " " + r["Last name"]).trim() });
+    }
+    var reserve = reserve_();
+    var sent = 0;
+    var failed = 0;
+    var stopped = "";
+    due.forEach(function (d) {
+      var p = {
+        name: String(d.r["First name"]).trim(),
+        email: String(d.r["Email"]).trim(),
+        team: String(d.r["Team"]).trim(),
+        mates: String(d.r["Team name and members"]).trim(),
+      };
+      var now =
+        p.team === "team"
+          ? "with " + (p.mates || "a team")
+          : p.team === "match"
+            ? "to be put in a team"
+            : p.team === "solo"
+              ? "on their own"
+              : "not asked yet";
+      if (!send) {
+        Logger.log("Row " + d.row + " · " + d.name + " <" + p.email + "> · now: " + now + " · to send");
+        return;
+      }
+      if (stopped) return;
+      var left = emailsLeft_();
+      if (left !== null && left <= reserve) stopped = "quota";
+      else if (Date.now() - started > 4.5 * 60 * 1000) stopped = "time";
+      if (stopped) return;
+      var mail = renderEmail_(p.name, hackingTeamsEmail_(p));
+      var note;
+      try {
+        var via = send_({
+          to: p.email,
+          subject: mail.subject,
+          body: mail.text,
+          htmlBody: mail.html,
+          name: SENDER_NAME,
+          replyTo: REPLY_TO,
+        });
+        note = HACKING_SENT + " " + stamp() + " via " + via;
+        sent++;
+      } catch (err) {
+        note = "Quantum Hacking teams email FAILED " + stamp() + ": " + err;
+        failed++;
+      }
+      var had = String(d.r["Emails"]).trim();
+      sheet.getRange(d.row, col).setValue(cellFor_("Emails", (had ? had + "; " : "") + note));
+      Logger.log("Row " + d.row + " · " + d.name + " <" + p.email + "> · now: " + now + " · " + note);
+    });
+    var waiting = due.length - sent - failed;
+    var rest = ", " + before + " sent before" + (denied ? ", " + denied + " denied left out" : "");
+    Logger.log(
+      send
+        ? sent + " sent, " + failed + " failed" + rest +
+            (stopped === "quota"
+              ? (reserve
+                  ? ". Stopped with " + reserve + " emails left for today, kept for new registrations"
+                  : ". Stopped: today's emails are used up") +
+                ": run sendHackingTeams again tomorrow for the other " + waiting + "."
+              : stopped === "time"
+                ? ". Stopped before Apps Script's time limit: run sendHackingTeams again for the other " + waiting + "."
+                : failed
+                  ? ". Run sendHackingTeams again to retry the failed ones."
+                  : "")
+        : due.length + " to send" + rest + ". Run sendHackingTeams to send them.",
+    );
+    return { sent: sent, failed: failed, before: before, denied: denied, left: send ? waiting : due.length, stopped: stopped };
+  } finally {
+    if (lock) lock.releaseLock();
+  }
+}
+
+// The Quantum Hacking email. p: { name, email (the button carries that email's code), team, mates: what the form
+// says now }. Change the wording here; sendHackingTeamsSample shows the result.
+function hackingTeamsEmail_(p) {
+  var now =
+    p.team === "team" && p.mates
+      ? "On the form you named your teammates: " + p.mates + ". If that still holds, there is nothing to do."
+      : p.team === "match"
+        ? "On the form you asked us to put you in a team, and we will: there is nothing to do."
+        : p.team === "solo"
+          ? "On the form you are down as taking part on your own."
+          : "";
+  return {
+    subject: "BreaQ Hackathon: Quantum Hacking can be done in teams",
+    heading: "Quantum Hacking goes in teams too, " + p.name + ".",
+    paras: [
+      "You registered for the BreaQ Hackathon with the Quantum Hacking track. We have decided that Quantum Hacking can be done in teams as well, of up to 3 people, you included.",
+      "So you choose: take part on your own, or in a team. For a team, either come with people you already know, or we put you in one with other participants.",
+      now,
+      "Tell us which by " + HACKING_BY + ", with the button below: it takes a minute.",
+      "Coming with teammates? Each of them registers too, on " +
+        SITE +
+        "/register, with their own motivation letter, by " +
+        HACKING_BY +
+        ". Write their names as they write them on their own registrations, so that we read your applications together.",
+    ].filter(String),
+    button: { label: "On my own or in a team", href: TEAM_PAGE + "#code=" + dashboardCode_(p.email) },
+    sign: "See you soon,",
+  };
+}
+
 // a registration as the sheet's columns, each value as the person sent it (cellFor_ makes it safe for the sheet)
 function record_(data, email) {
   return {
@@ -1237,7 +1534,7 @@ function record_(data, email) {
     "T-shirt": clean_(data.tshirt),
     Attends: clean_(data.attend),
     Tracks: clean_((data.tracks || []).join(", ")),
-    Team: clean_(data.team),
+    Team: TEAM_ANSWERS.indexOf(clean_(data.team)) !== -1 ? clean_(data.team) : "",
     "Team name and members": clean_(data.team_name),
     Motivation: clean_(data.motivation),
     Dietary: clean_(data.dietary),
@@ -2860,12 +3157,14 @@ function sendNotice_(email, data, letterUrl, merge, row, namesake) {
       (data.tracks && data.tracks.length
         ? " · Tracks: " + data.tracks.join(", ")
         : ""),
-    // the Quantum AI question: "solo" or "team", with the teammates
+    // the team question (Quantum AI, Quantum Hacking): "solo", "team" with the teammates, or "match"
     data.team === "team"
-      ? "Quantum AI with a team: " + clean_(data.team_name)
-      : data.team
-        ? "Quantum AI: on their own"
-        : "",
+      ? "With a team: " + clean_(data.team_name)
+      : data.team === "match"
+        ? "Wants to be put in a team"
+        : data.team
+          ? "On their own"
+          : "",
     data.motivation ? "Motivation: " + clean_(data.motivation) : "",
     data.dietary ? "Dietary: " + clean_(data.dietary) : "",
     letterUrl ? "Motivation letter: " + letterUrl : "",

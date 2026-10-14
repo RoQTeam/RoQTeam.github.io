@@ -1413,6 +1413,84 @@ input.plain {
 
 }
 
+/* --- on your own or in a team (team-choice.html) ------------------------------- */
+
+.sr-only {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip: rect(0 0 0 0);
+	white-space: nowrap;
+}
+
+.tc-card {
+	max-width: 460px;
+}
+
+	.tc-step {
+		display: flex;
+		flex-direction: column;
+		gap: 14px;
+	}
+
+	.tc-opts {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		margin: 0;
+		padding: 0;
+		border: 0;
+	}
+
+		.tc-opt {
+			display: flex;
+			align-items: flex-start;
+			gap: 12px;
+			padding: 12px 14px;
+			border: solid 2px var(--line);
+			border-radius: 6px;
+			cursor: pointer;
+			transition: border-color 0.2s ease, background-color 0.2s ease;
+		}
+
+			.tc-opt:hover {
+				border-color: rgba(255, 255, 255, 0.28);
+			}
+
+			.tc-opt.is-on {
+				border-color: var(--hot);
+				background: rgba(255, 140, 0, 0.06);
+			}
+
+			.tc-opt input {
+				flex: none;
+				margin: 0.3em 0 0;
+				accent-color: var(--hot);
+			}
+
+			.tc-opt b {
+				display: block;
+				font-weight: 600;
+			}
+
+			.tc-opt small {
+				display: block;
+				font-size: 0.88em;
+				color: var(--fg-light);
+			}
+
+	.tc-done {
+		display: flex;
+		align-items: baseline;
+		gap: 10px;
+		font-weight: 600;
+	}
+
+		.tc-done .icon {
+			color: var(--hot);
+		}
+
 @media (prefers-reduced-motion: reduce) {
 
 	.ann.is-fresh {

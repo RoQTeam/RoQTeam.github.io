@@ -44,6 +44,18 @@ The five organisers (Andy, Cristi, Alex, Filip, Tudor) vote **Yes** or **No** on
 
 To change someone's key: Project Settings -> Script properties -> delete their `VOTE_KEY_<NAME>` (for example `VOTE_KEY_ANDY`), then run `voterKeys` again. The old key stops working at once. The names are `VOTERS` in `tools/register-backend.gs`.
 
+## On their own or in a team
+
+With Quantum AI or Quantum Hacking ticked, the hackathon form asks: **On my own**, **With a team I already have** (with the teammates' names) or **Put me in a team** (the organisers match them with others). The answer goes in the "Team" column (`solo`, `team`, `match`), and the admin page's **To match** tab lists who asked to be put in a team.
+
+Quantum Hacking became a team challenge after people had registered for it, so one email asks each of them how they want to take part. In the Apps Script editor's function list:
+
+- `previewHackingTeams` logs who would get it, with what their form says now. Sends nothing.
+- `sendHackingTeamsSample` sends you the email (on your own, then with a team), to read first.
+- `sendHackingTeams` emails every hackathon registration with the Quantum Hacking track, once each, except the denied. The "Emails" column records it. It stops before the day's emails run out (keeping 10 for new registrations until 18 October): run it again the next day for the rest.
+
+The email's button opens `team-choice.html` (roqteam.ro/team-choice) with the person's own code, the same as their dashboard code (which opens the dashboard only once they are accepted). There they choose. The answer replaces "Team" and "Team name and members", and "Merged" logs what it replaced. The email asks for the answer, and the teammates' registrations, by Friday 16 October (`HACKING_BY` in the script). Paste the current `tools/register-backend.gs` and deploy a new version before sending, so the page can save the answers.
+
 ## Decision emails
 
 Hackathon applicants hear back from the same script, when the organisers choose:

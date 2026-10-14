@@ -1,0 +1,77 @@
+<!DOCTYPE HTML>
+<html lang="en">
+	<head>
+		<title>On your own or in a team · BreaQ Hackathon</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="robots" content="noindex, nofollow" />
+		<meta name="referrer" content="no-referrer" />
+		<!-- only its own files run, and it talks only to the Apps Script
+		     (script.google.com answers through a redirect to script.googleusercontent.com) -->
+		<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src https://script.google.com https://script.googleusercontent.com; base-uri 'none'; form-action 'none'" />
+		<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Raleway:700|Source+Sans+Pro:300,400,600&amp;display=swap" />
+		<link rel="stylesheet" href="assets/css/fontawesome-all.min.css" />
+		<link rel="stylesheet" href="assets/css/teams.css?v=20261014b" />
+		<link rel="icon" type="image/png" href="images/favicon-2026.png">
+	</head>
+	<body>
+
+		<!--
+			On your own or in a team, for a registered participant of the BreaQ Hackathon: the email that asks them
+			(sendHackingTeams in tools/register-backend.gs) links here with their personal code (#code=…). The page
+			reads what their registration says and saves their answer in the "Team" and "Team name and members"
+			columns, through the same Apps Script as the forms (the "team-choice" action). data-endpoint is the same
+			web app URL as on register.html, admin.html and teams.html.
+		-->
+		<main class="tm" id="tc"
+			data-endpoint="https://script.google.com/macros/s/AKfycbwLAgxidNtxQiuxIsLQPgdlOuFQRu_1cNSOj1Gs1kQ_O-Vq38CV9XRbViZb1qNrm_xW/exec">
+
+			<section class="lock">
+				<div class="lock-card tc-card">
+					<img class="lock-logo" src="images/BreaQ_logo_2026-light.svg" alt="BreaQ 2026" />
+					<p class="eyebrow">BreaQ Hackathon · 24–25 October</p>
+					<h1>On your own or in a team?</h1>
+
+					<p class="muted" id="loading">Reading your registration…</p>
+
+					<!-- a link without the code: it is in the email -->
+					<form class="tc-step" id="code-form" novalidate hidden>
+						<p class="muted">Open this page with the button in the email we sent you, or type the personal code it gives.</p>
+						<label for="code">Your code</label>
+						<input type="text" id="code" name="code" placeholder="ABCD-EFGH" autocomplete="off" autocapitalize="characters" spellcheck="false" required />
+						<button type="submit" class="btn primary">Open</button>
+					</form>
+
+					<form class="tc-step" id="choice-form" novalidate hidden>
+						<p id="hello"></p>
+						<fieldset class="tc-opts">
+							<legend class="sr-only">How you take part</legend>
+							<label class="tc-opt"><input type="radio" name="team" value="solo" /><span><b>On my own</b><small>You work on the challenge alone.</small></span></label>
+							<label class="tc-opt"><input type="radio" name="team" value="team" /><span><b>With a team I already have</b><small>Up to 3 people, you included. Each of them registers too.</small></span></label>
+							<label class="tc-opt"><input type="radio" name="team" value="match" /><span><b>Put me in a team</b><small>We match you with other participants.</small></span></label>
+						</fieldset>
+						<div class="field" id="mates-field" hidden>
+							<label class="field-label" for="mates">Your teammates</label>
+							<input type="text" id="mates" name="mates" maxlength="200" placeholder="Ana Popescu, Mihai Ionescu" autocomplete="off" />
+							<span class="field-hint" id="mates-hint"></span>
+						</div>
+						<button type="submit" class="btn primary" id="save">Save</button>
+					</form>
+
+					<div class="tc-step" id="done" hidden>
+						<p class="tc-done"><span class="icon solid fa-check-circle" aria-hidden="true"></span><span id="done-text"></span></p>
+						<p class="muted" id="done-next"></p>
+						<button type="button" class="btn" id="change">Change my answer</button>
+					</div>
+
+					<p class="err" id="err" role="alert" hidden></p>
+
+					<p class="muted small">Questions? Reply to the email we sent you. Everything about the hackathon is on <a href="breaq-hackathon.html">its page</a>.</p>
+				</div>
+			</section>
+
+		</main>
+
+		<script src="assets/js/team-choice.js?v=20261014"></script>
+	</body>
+</html>

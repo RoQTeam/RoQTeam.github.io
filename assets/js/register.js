@@ -27,13 +27,15 @@
 
 	/* --- conditional fields --------------------------------------- */
 
-	// a question that belongs to one track (data-track, the team question for Quantum AI) shows while that
-	// track is ticked; the teammates field shows when the answer is "with a team"
+	// a question that belongs to some tracks (data-track, "|" between them: the team question for Quantum AI and
+	// Quantum Hacking) shows while one of them is ticked; the teammates field shows when the answer is "with a team"
 	function syncConditionals() {
 		var asked = true;
 		forEach(form.querySelectorAll('[data-track]'), function (el) {
-			var box = form.querySelector('input[name="tracks"][value="' + el.getAttribute('data-track') + '"]');
-			el.hidden = !box || !box.checked;
+			el.hidden = !el.getAttribute('data-track').split('|').some(function (track) {
+				var box = form.querySelector('input[name="tracks"][value="' + track + '"]');
+				return box && box.checked;
+			});
 			if (el.querySelector('input[name="team"]')) asked = !el.hidden;
 		});
 		var team = form.querySelector('input[name="team"]:checked');
@@ -160,7 +162,7 @@
 		if (!validate()) return;
 		setError('');
 		var data = collect();
-		// answers to questions that are not showing (the team, once Quantum AI is unticked) do not go out
+		// answers to questions that are not showing (the team, once Quantum AI and Quantum Hacking are unticked) do not go out
 		forEach(form.querySelectorAll('.field[hidden] [name]'), function (el) { delete data[el.name]; });
 		data.website = form.querySelector('[name="website"]').value;   // honeypot: bots fill it, people never see it
 		data.seconds_on_page = Math.round((Date.now() - openedAt) / 1000);
