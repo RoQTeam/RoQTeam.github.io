@@ -23,6 +23,7 @@ os.makedirs(OUT, exist_ok=True)
 JOBS = [
     # name,        source,                  mode,   max px
     ('fsas',       'images/Fsas.png',       'key',  900),
+    ('kinderpedia', 'images/kinderpedia.png', 'keep', 900),  # the simple wordmark for dark backgrounds, as their logo rules ask
     ('cybalgoris', 'images/cybalgoris.png', 'keep', 900),
     ('nxp',        'images/nxp.png',        'keep', 900),
     ('sap',        'images/sap.png',        'keep', 900),

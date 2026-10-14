@@ -64,7 +64,7 @@ Only the accepted participants get in. Each has a personal code, which their acc
 
 The organisers post from the admin page: **Team dashboard** at the top, then write, edit, pin or delete. Everything is kept in the "Team dashboard" tab of the same sheet, so rows can also be fixed there by hand.
 
-Switching it on: paste the current `tools/register-backend.gs` into the Apps Script editor and deploy a new version (as for the admin page), before the decision emails go out, so the acceptance emails carry the link and each person's code. The schedule on the dashboard is in `assets/js/teams.js` (SCHEDULE): keep it the same as the one on `breaq-hackathon.html`.
+Switching it on: paste the current `tools/register-backend.gs` into the Apps Script editor and deploy a new version (as for the admin page), before the decision emails go out, so the acceptance emails carry the link and each person's code. The schedule on the dashboard is in `assets/js/teams.js` (SCHEDULE). It is the draft schedule, not yet on `breaq-hackathon.html`: check it before the event, and keep the two the same once the schedule goes on the hackathon page.
 
 Each participant also sees what is theirs:
 

@@ -12,7 +12,7 @@
 	  the feedback form from the awards on ("feedback")
 	- notifications (assets/js/notify.js), when asked for: new announcements, a mentor on the way, what starts in
 	  5 minutes, 15 minutes before coding stops; only while the tab is hidden
-	- the live strip and the schedule come from SCHEDULE below: keep it the same as breaq-hackathon.html#schedule
+	- the live strip and the schedule come from SCHEDULE below: a draft until the organisers announce the schedule
 	- every time is shown in Bucharest time, whatever the device's time zone
 */
 
@@ -37,7 +37,7 @@
 	var SUB_EMPTY = 'How and where to hand in your work is posted here before Sunday.';
 	var TZ = 'Europe/Bucharest';
 
-	// The hackathon, as on breaq-hackathon.html#schedule. Full timestamps with their offset: summer time ends in the
+	// The hackathon, as planned (not on breaq-hackathon.html yet). Full timestamps with their offset: summer time ends in the
 	// night (04:00 → 03:00 on Sunday), so the night's coding block is five hours.
 	var SCHEDULE = [
 		['2026-10-24T09:00:00+03:00', '2026-10-24T10:00:00+03:00', 'Official opening', 'key'],
