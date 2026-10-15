@@ -4240,6 +4240,26 @@
 				object-fit: cover;
 			}
 
+		/* a partner event's own banner (SecITC on breaq-conference.html), the whole picture its link */
+		.twin-banner {
+			display: block;
+			margin: 0 0 1.5em 0;
+			border: 1px solid var(--bq-line);
+			border-radius: 4px;
+			overflow: hidden;
+			transition: border-color 0.25s ease;
+		}
+
+			.twin-banner:hover {
+				border-color: rgba(255, 255, 255, 0.35);
+			}
+
+			.twin-banner img {
+				display: block;
+				width: 100%;
+				height: auto;
+			}
+
 	.twin, .twin * {
 		text-align: left;
 	}
