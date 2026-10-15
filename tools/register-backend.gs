@@ -93,7 +93,16 @@
  *   - sendHackingTeamsSample: sends you the email, to read first.
  * The email links to team-choice.html with the person's code (the dashboard's, which opens the dashboard only once
  * they are accepted): there they choose, and the answer goes in "Team" and "Team name and members", with what it
- * replaced logged in "Merged". The wording is in hackingTeamsEmail_.
+ * replaced logged in "Merged" and when in "Team answered" (each time, the same answer again included, so the
+ * admin page can tell who answered). The wording is in hackingTeamsEmail_.
+ * Teammates who have not registered: someone who came with a team, but whose named teammates have no hackathon
+ * registration under those names yet, gets a reminder, from the editor's function list:
+ *   - previewTeammatesReminder: logs who would get it and which teammates are missing. Sends nothing.
+ *   - sendTeammatesReminder: emails each of them, once (MATES_SENT in the "Emails" column), the denied left out,
+ *     and stops at the day's emails as sendHackingTeams does.
+ *   - sendTeammatesReminderSample: sends you the email, to read first.
+ * Its button opens the same team page, to correct a name written differently or change the answer. The wording is
+ * in teammatesReminderEmail_.
  *
  * The team dashboard (teams.html, roqteam.ro/teams): what the organisers post for the hackathon's teams, the
  * announcements, each challenge's resources, how to submit and the practical details, one row each in the tab
@@ -170,6 +179,8 @@ var COLUMNS = [
   "Merged",
   "Decision",
   "Decision email",
+  // when they last answered on the team page (team-choice.html), each time, the same answer as before included
+  "Team answered",
   // the hackathon itself, for the accepted: the team the organisers put them in, their answer to "are you coming?"
   // on the team dashboard, the check-in at the door and the certificate emailed after
   "Hackathon team",
@@ -190,6 +201,7 @@ var NOT_ANSWERS = [
   "Merged",
   "Decision",
   "Decision email",
+  "Team answered",
   "Hackathon team",
   "Coming",
   "Coming answered",
@@ -235,9 +247,11 @@ var CONFIRM_BY = "Wednesday 21 October"; // the acceptance email asks to answer 
 var TEAM_ANSWERS = ["solo", "team", "match"];
 var TEAM_PAGE = SITE + "/team-choice";
 // the Quantum Hacking email (sendHackingTeams): asks for an answer, and the teammates' registrations, by then;
-// HACKING_SENT in the "Emails" column marks who has it
-var HACKING_BY = "Friday 16 October";
+// HACKING_SENT in the "Emails" column marks who has it. The teammates reminder (sendTeammatesReminder) gives the
+// same date, and MATES_SENT marks who has that one
+var HACKING_BY = "Saturday 17 October";
 var HACKING_SENT = "Quantum Hacking teams email sent";
+var MATES_SENT = "Teammates reminder sent";
 
 // the hackathon's teams, one row each; who is in which is the "Hackathon team" column of the registrations
 var TEAMS_SHEET = "Teams";
@@ -1345,6 +1359,7 @@ function teamChoice_(data) {
       was = answer;
       wasMates = mates;
     }
+    if (answer !== null) sheet.getRange(row, header.indexOf("Team answered") + 1).setValue(new Date());
     return {
       ok: true,
       action: "team-choice",
@@ -1525,6 +1540,203 @@ function hackingTeamsEmail_(p) {
         ". Write their names as they write them on their own registrations, so that we read your applications together.",
     ].filter(String),
     button: { label: "On my own or in a team", href: TEAM_PAGE + "#code=" + dashboardCode_(p.email) },
+    sign: "Thank you,",
+  };
+}
+
+// run from the editor: who would get the teammates reminder, and which of their teammates are missing. Sends nothing.
+function previewTeammatesReminder() {
+  teammatesReminder_(false);
+}
+
+// run from the editor: reminds each hackathon registration with a teammate not registered yet, once
+function sendTeammatesReminder() {
+  teammatesReminder_(true);
+}
+
+// run from the editor: the email to the account running it, one teammate missing and then two, one of them
+// registered for the conference only
+function sendTeammatesReminderSample() {
+  var me = Session.getEffectiveUser().getEmail();
+  [
+    { name: "Ana", email: me, mates: ["Mihai Ionescu"], missing: ["Mihai Ionescu"], conference: [] },
+    {
+      name: "Ana",
+      email: me,
+      mates: ["Mihai Ionescu", "Ioana Marin"],
+      missing: ["Mihai Ionescu", "Ioana Marin"],
+      conference: ["Ioana Marin"],
+    },
+  ].forEach(function (p) {
+    var mail = renderEmail_(p.name, teammatesReminderEmail_(p));
+    send_({
+      to: me,
+      subject: "[sample] " + mail.subject,
+      body: mail.text,
+      htmlBody: mail.html,
+      name: SENDER_NAME,
+      replyTo: REPLY_TO,
+    });
+  });
+  Logger.log("Sent 2 sample emails to " + me);
+}
+
+// previewTeammatesReminder and sendTeammatesReminder: the hackathon registrations, but the denied, that came with
+// a team ("Team" is team) and named someone with no hackathon registration under that name, and that have not
+// had the reminder yet (MATES_SENT in "Emails"); stops as hackingTeams_ does. Returns { sent, failed, before,
+// denied, left, stopped } for the tests.
+function teammatesReminder_(send) {
+  var lock = send ? LockService.getDocumentLock() : null;
+  if (lock && !lock.tryLock(2000)) {
+    Logger.log("Someone else is sending emails from this script right now. Try again in a minute.");
+    return null;
+  }
+  try {
+    var started = Date.now();
+    var sheet = sheet_();
+    var values = sheet.getDataRange().getValues();
+    var header = header_(values);
+    var col = header.indexOf("Emails") + 1;
+    var stamp = function () {
+      return Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm");
+    };
+    // the names on the conference's registrations: a teammate there only may have used the wrong form
+    var conference = {};
+    for (var c = 1; c < values.length; c++) {
+      var t = toRecord_(header, values[c]);
+      if (eventKey_(t["Attends"]) === "conference") conference[nameKey_(t["First name"], t["Last name"])] = true;
+    }
+    var due = [];
+    var before = 0;
+    var denied = 0;
+    for (var i = 1; i < values.length; i++) {
+      var r = toRecord_(header, values[i]);
+      if (eventKey_(r["Attends"]) !== "hackathon" || String(r["Team"]).trim() !== "team") continue;
+      var p = person_(values, header, r);
+      var missing = teamOf_(values, header, p.mates)
+        .filter(function (m) {
+          return m.decision === null;
+        })
+        .map(function (m) {
+          return m.name;
+        });
+      if (!missing.length) continue;
+      if (String(r["Decision"]).trim().toLowerCase() === "denied") {
+        denied++;
+        continue;
+      }
+      if (String(r["Emails"]).indexOf(MATES_SENT) !== -1) {
+        before++;
+        continue;
+      }
+      p.missing = missing;
+      p.conference = missing.filter(function (m) {
+        return conference[nameKey_(m, "")];
+      });
+      due.push({ row: i + 1, r: r, p: p, name: String(r["First name"] + " " + r["Last name"]).trim() });
+    }
+    var reserve = reserve_();
+    var sent = 0;
+    var failed = 0;
+    var stopped = "";
+    due.forEach(function (d) {
+      var p = d.p;
+      var what =
+        "missing: " +
+        p.missing
+          .map(function (m) {
+            return m + (p.conference.indexOf(m) !== -1 ? " (conference only)" : "");
+          })
+          .join(", ");
+      if (!send) {
+        Logger.log("Row " + d.row + " · " + d.name + " <" + p.email + "> · " + what + " · to send");
+        return;
+      }
+      if (stopped) return;
+      var left = emailsLeft_();
+      if (left !== null && left <= reserve) stopped = "quota";
+      else if (Date.now() - started > 4.5 * 60 * 1000) stopped = "time";
+      if (stopped) return;
+      var mail = renderEmail_(p.name, teammatesReminderEmail_(p));
+      var note;
+      try {
+        var via = send_({
+          to: p.email,
+          subject: mail.subject,
+          body: mail.text,
+          htmlBody: mail.html,
+          name: SENDER_NAME,
+          replyTo: REPLY_TO,
+        });
+        note = MATES_SENT + " " + stamp() + " via " + via;
+        sent++;
+      } catch (err) {
+        note = "Teammates reminder FAILED " + stamp() + ": " + err;
+        failed++;
+      }
+      var had = String(d.r["Emails"]).trim();
+      sheet.getRange(d.row, col).setValue(cellFor_("Emails", (had ? had + "; " : "") + note));
+      Logger.log("Row " + d.row + " · " + d.name + " <" + p.email + "> · " + what + " · " + note);
+    });
+    var waiting = due.length - sent - failed;
+    var rest = ", " + before + " reminded before" + (denied ? ", " + denied + " denied left out" : "");
+    Logger.log(
+      send
+        ? sent + " sent, " + failed + " failed" + rest +
+            (stopped === "quota"
+              ? (reserve
+                  ? ". Stopped with " + reserve + " emails left for today, kept for new registrations"
+                  : ". Stopped: today's emails are used up") +
+                ": run sendTeammatesReminder again tomorrow for the other " + waiting + "."
+              : stopped === "time"
+                ? ". Stopped before Apps Script's time limit: run sendTeammatesReminder again for the other " + waiting + "."
+                : failed
+                  ? ". Run sendTeammatesReminder again to retry the failed ones."
+                  : "")
+        : due.length + " to send" + rest + ". Run sendTeammatesReminder to send them.",
+    );
+    return { sent: sent, failed: failed, before: before, denied: denied, left: send ? waiting : due.length, stopped: stopped };
+  } finally {
+    if (lock) lock.releaseLock();
+  }
+}
+
+// The teammates reminder. p: { name, email (the button carries that email's code), mates (every teammate they
+// named), missing (those with no hackathon registration under that name), conference (of the missing, those
+// registered for the conference) }. Change the wording here; sendTeammatesReminderSample shows the result.
+function teammatesReminderEmail_(p) {
+  var one = p.missing.length === 1;
+  var here = p.mates.filter(function (m) {
+    return p.missing.indexOf(m) === -1;
+  });
+  return {
+    subject: "BreaQ Hackathon: your team" + (one ? "mate has" : "mates have") + " not registered yet",
+    heading: "Your team is not complete yet, " + p.name + ".",
+    paras: [
+      "On your BreaQ Hackathon registration you named your " +
+        (p.mates.length === 1 ? "teammate: " : "teammates: ") +
+        and_(p.mates) +
+        ". " +
+        (here.length ? and_(here) + (here.length === 1 ? " has" : " have") + " registered, but we" : "We") +
+        " have no registration from " +
+        and_(p.missing) +
+        " yet.",
+      "Each teammate registers on their own, on " +
+        SITE +
+        "/register, with their own motivation letter, by " +
+        HACKING_BY +
+        ", and writes your name among their teammates, so that we read your applications together.",
+      p.conference.length
+        ? and_(p.conference) +
+          (p.conference.length === 1 ? " is" : " are") +
+          " registered for the conference only: the hackathon has its own form, the one above."
+        : "",
+      "Did " +
+        (one ? "they" : "some of them") +
+        " register under a name written differently, or have your plans changed? Use the button below: you can correct their names there, or choose to take part on your own or to be put in a team with other participants.",
+      "This email is not about your application: we are still reading them all, and our decision reaches you in a separate email.",
+    ].filter(String),
+    button: { label: "Check my team", href: TEAM_PAGE + "#code=" + dashboardCode_(p.email) },
     sign: "Thank you,",
   };
 }

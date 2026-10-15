@@ -1239,6 +1239,13 @@
 		{ key: 'checked', label: 'Checked in', hack: true,
 			options: [['yes', 'Yes'], ['no', 'Not yet']],
 			test: function (h, v) { return !!get(h, 'Checked in') === (v === 'yes'); } },
+		{ key: 'tpage', label: 'Team page', hack: true,
+			options: [['yes', 'Answered'], ['no', 'Emailed, not answered yet']],
+			test: function (h, v) {
+				// before "Team answered" existed, only a change left a trace, in Merged
+				if (get(h, 'Team answered') || /answered on the team page/.test(get(h, 'Merged'))) return v === 'yes';
+				return v === 'no' && /Quantum Hacking teams email sent|Teammates reminder sent/.test(get(h, 'Emails'));
+			} },
 		{ key: 'hteam', label: 'Put in a team', hack: true,
 			options: [['yes', 'Yes'], ['no', 'Not yet']],
 			test: function (h, v) { return !!get(h, 'Hackathon team') === (v === 'yes'); } },
@@ -1451,7 +1458,11 @@
 		{ key: 'tshirt', label: 'T-shirt', col: 'T-shirt', cls: 'hide-sm' },
 		{ key: 'team', label: 'Team', col: 'Team', cls: 'hide-md',
 			sort: function (r) { return fold(teamOf(r)); },
-			cell: function (r) { return cellText(teamOf(r), 'hide-md c-team'); } },
+			cell: function (r) {
+				var td = cellText(teamOf(r), 'hide-md c-team'), h = hackReg(r), at = h && get(h, 'Team answered');
+				if (at && !isNaN(new Date(at))) td.title = 'Answered on the team page ' + fmtShort.format(new Date(at));
+				return td;
+			} },
 		// the hackathon itself, once there is something in these: the team they are in, their "are you coming?"
 		{ key: 'hteam', label: 'In team', col: 'Hackathon team', cls: 'hide-md' },
 		{ key: 'coming', label: 'Coming', col: 'Coming', cls: 'hide-sm',
@@ -1745,7 +1756,7 @@
 			if (voting() && state.voters.some(function (x) { return voteCol(x) === col || noteCol(x) === col; })) return;   // the votes are at the top
 			var dd = el('dd');
 			if (col === 'Timestamp' && r.time) dd.textContent = fmtLong.format(r.time);
-			else if ((col === 'Coming answered' || col === 'Checked in') && !isNaN(new Date(v))) dd.textContent = fmtLong.format(new Date(v));
+			else if ((col === 'Coming answered' || col === 'Checked in' || col === 'Team answered') && !isNaN(new Date(v))) dd.textContent = fmtLong.format(new Date(v));
 			else if (col === 'Email' && /^[^\s@?&#]+@[^\s@?&#]+$/.test(v)) dd.appendChild(link('mailto:' + v, v));
 			else if (col === 'Phone') dd.appendChild(link('tel:' + v.replace(/[^\d+]/g, ''), v));
 			else if (col === 'Motivation letter' && isUrl(v)) dd.appendChild(link(v, 'Open the PDF in Drive'));
