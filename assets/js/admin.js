@@ -41,6 +41,10 @@
 		problems: false,          // only the registrations with a failed email or letter
 		kind: 'all',              // the Who tab: all, teams, solo (hackathon)
 		decision: 'any',          // the Decision tab: any, tovote (not voted on by you), none, accepted, waitlist, denied
+		facets: {},               // the bars clicked: breakdown id -> [{ k, label }], any of them (and every breakdown)
+		extra: {},                // More filters: key -> the option picked
+		from: '',                 // registered on or after this day (yyyy-mm-dd), and on or before "to"
+		to: '',
 		pending: {},              // emails whose decision is being saved
 		detail: null,             // the person open in the full view
 		sort: { key: 'time', dir: -1 },
@@ -49,6 +53,8 @@
 		teams: [],                // the sheet's "Teams" tab: [{ name, challenge, table, pitch, room, award }]
 		mentors: null,            // { key, page }: the mentors' link
 		feedback: [],             // what the participants answered after the event, without names
+		activity: null,           // the team dashboard in numbers: posts, mentor requests, the median wait
+		numbersOf: 'applied',     // Edition in numbers: whose talent pool (applied, accepted, came, conference, everyone)
 		certificate: '',          // the certificate template's link, '' while there is none
 		voter: '',                // who votes: their own key's, or the one picked with the shared key ('' for nobody)
 		shared: false,            // opened with the shared admin key: the voter is whoever says it is them
@@ -192,6 +198,7 @@
 			time: regs[0].time,
 			event: both ? 'both' : regs[0].event,
 			org: first('org'),
+			city: first('city'),
 			mail: mails.indexOf('failed') !== -1 ? 'failed' : mails.indexOf('held') !== -1 ? 'held' : mails.indexOf('sent') !== -1 ? 'sent' : '',
 			problem: regs.some(function (r) { return r.problem; }),
 			text: regs.map(function (r) { return r.text; }).join(' ')
@@ -396,36 +403,40 @@
 		return fold(s).replace(/[^a-z0-9]+/g, ' ').trim().split(' ').map(word).join(' ');
 	}
 
-	// in order: the specific before the general (Politehnica Timișoara before Politehnica, ASE before "Bucharest University")
+	// in order: the specific before the general (Politehnica Timișoara before Politehnica, ASE before "Bucharest University");
+	// each with the city it is in, for the City breakdown and Edition in numbers
 	var INSTITUTIONS = [
-		['Universitatea Politehnica Timișoara (UPT)', /\bupt\b|\bpolitehnica\b.*\btimisoara\b|\btimisoara\b.*\bpolitehnica\b/],
-		['Universitatea Tehnică „Gheorghe Asachi” din Iași (TUIASI)', /\btuiasi\b|gheorghe asachi|\bpolitehnica\b.*\biasi\b|\biasi\b.*\bpolitehnica\b/],
-		['Universitatea Tehnică din Cluj-Napoca (UTCN)', /\butcn\b|universitatea tehnica (din )?cluj|technical universitatea (of )?cluj|\bpolitehnica\b.*\bcluj\b/],
-		['ASE București', /\base\b|academia de studii economice|economic studies/],
-		['UMF „Carol Davila” București', /carol davila/],
-		['SNSPA', /\bsnspa\b|studii politice|political studies/],
-		['POLITEHNICA București (UNSTPB)', /\b(unstpb|upb|acs|etti|fils|faima|fiir)\b|\bpolitehnica\b|nationala de stiinta si tehnologie|national universitatea of science and technology|science and technology\b.*\bbucuresti|stiinta si tehnologie\b.*\bbucuresti/],
+		['Universitatea Politehnica Timișoara (UPT)', /\bupt\b|\bpolitehnica\b.*\btimisoara\b|\btimisoara\b.*\bpolitehnica\b/, 'Timișoara'],
+		['Universitatea Tehnică „Gheorghe Asachi” din Iași (TUIASI)', /\btuiasi\b|gheorghe asachi|\bpolitehnica\b.*\biasi\b|\biasi\b.*\bpolitehnica\b/, 'Iași'],
+		['Universitatea Tehnică din Cluj-Napoca (UTCN)', /\butcn\b|universitatea tehnica (din )?cluj|technical universitatea (of )?cluj|\bpolitehnica\b.*\bcluj\b/, 'Cluj-Napoca'],
+		['ASE București', /\base\b|academia de studii economice|economic studies/, 'București'],
+		['UMF „Carol Davila” București', /carol davila/, 'București'],
+		['SNSPA', /\bsnspa\b|studii politice|political studies/, 'București'],
+		['POLITEHNICA București (UNSTPB)', /\b(unstpb|upb|acs|etti|fils|faima|fiir)\b|\bpolitehnica\b|nationala de stiinta si tehnologie|national universitatea of science and technology|science and technology\b.*\bbucuresti|stiinta si tehnologie\b.*\bbucuresti/, 'București'],
 		// its faculties written without the university, unless another city says it is elsewhere ("Automatică și
 		// Calculatoare" is also a faculty in Iași, Cluj and Timișoara)
-		['POLITEHNICA București (UNSTPB)', /^(?!.*\b(cluj|iasi|timisoara|craiova|brasov|galati|constanta|sibiu|suceava|oradea|pitesti|ploiesti)\b).*\b(automatica si calculatoare|automatic control and computer|electronica telecomunicatii|electronics telecommunications|inginerie aerospatiala|aerospace engineering)\b/],
-		['Universitatea din București (UB)', /\b(ub|unibuc)\b|universitatea (din |of )?bucuresti|bucuresti universitatea|geologie si geofizica|geology and geophysics/],
-		['Academia Tehnică Militară „Ferdinand I” (ATM)', /\b(atm|mta)\b|academia tehnica militara|military technical academy/],
-		['Universitatea Babeș-Bolyai (UBB)', /\bubb\b|babes bolyai/],
-		['Universitatea „Alexandru Ioan Cuza” din Iași (UAIC)', /\buaic\b|alexandru ioan cuza/],
-		['Universitatea de Vest din Timișoara (UVT)', /\buvt\b|universitatea de vest|west universitatea/],
-		['Universitatea din Craiova', /\bucv\b|universitatea (din |of )?craiova|craiova universitatea/],
-		['Universitatea Transilvania din Brașov', /\bunitbv\b|universitatea transilvania|transilvania universitatea/],
-		['Universitatea Ovidius din Constanța', /\bovidius\b/],
-		['Universitatea Tehnică de Construcții București (UTCB)', /\butcb\b|constructii bucuresti|civil engineering bucuresti/],
-		['Universitatea „Lucian Blaga” din Sibiu', /\bulbs\b|lucian blaga/],
-		['Universitatea „Ștefan cel Mare” din Suceava', /\busv\b|stefan cel mare/],
-		['Universitatea „Dunărea de Jos” din Galați', /dunarea de jos/],
-		['Universitatea Româno-Americană', /romano americana|romanian american/],
-		['Universitatea Titu Maiorescu', /titu maiorescu/],
-		['IFIN-HH', /\bifin\b|horia hulubei/],
-		['ELI-NP', /\beli ?np\b|extreme light/],
-		['INFLPR', /\binflpr\b|fizica laserilor|lasers plasma and radiation/]
+		['POLITEHNICA București (UNSTPB)', /^(?!.*\b(cluj|iasi|timisoara|craiova|brasov|galati|constanta|sibiu|suceava|oradea|pitesti|ploiesti)\b).*\b(automatica si calculatoare|automatic control and computer|electronica telecomunicatii|electronics telecommunications|inginerie aerospatiala|aerospace engineering)\b/, 'București'],
+		['Universitatea din București (UB)', /\b(ub|unibuc)\b|universitatea (din |of )?bucuresti|bucuresti universitatea|geologie si geofizica|geology and geophysics/, 'București'],
+		['Academia Tehnică Militară „Ferdinand I” (ATM)', /\b(atm|mta)\b|academia tehnica militara|military technical academy/, 'București'],
+		['Universitatea Babeș-Bolyai (UBB)', /\bubb\b|babes bolyai/, 'Cluj-Napoca'],
+		['Universitatea „Alexandru Ioan Cuza” din Iași (UAIC)', /\buaic\b|alexandru ioan cuza/, 'Iași'],
+		['Universitatea de Vest din Timișoara (UVT)', /\buvt\b|universitatea de vest|west universitatea/, 'Timișoara'],
+		['Universitatea din Craiova', /\bucv\b|universitatea (din |of )?craiova|craiova universitatea/, 'Craiova'],
+		['Universitatea Transilvania din Brașov', /\bunitbv\b|universitatea transilvania|transilvania universitatea/, 'Brașov'],
+		['Universitatea Ovidius din Constanța', /\bovidius\b/, 'Constanța'],
+		['Universitatea Tehnică de Construcții București (UTCB)', /\butcb\b|constructii bucuresti|civil engineering bucuresti/, 'București'],
+		['Universitatea „Lucian Blaga” din Sibiu', /\bulbs\b|lucian blaga/, 'Sibiu'],
+		['Universitatea „Ștefan cel Mare” din Suceava', /\busv\b|stefan cel mare/, 'Suceava'],
+		['Universitatea „Dunărea de Jos” din Galați', /dunarea de jos/, 'Galați'],
+		['Universitatea Româno-Americană', /romano americana|romanian american/, 'București'],
+		['Universitatea Titu Maiorescu', /titu maiorescu/, 'București'],
+		['IFIN-HH', /\bifin\b|horia hulubei/, 'Măgurele'],
+		['ELI-NP', /\beli ?np\b|extreme light/, 'Măgurele'],
+		['INFLPR', /\binflpr\b|fizica laserilor|lasers plasma and radiation/, 'Măgurele']
 	];
+
+	var CITY = {};
+	INSTITUTIONS.forEach(function (i) { CITY[i[0]] = i[2]; });
 
 	// a high school named after someone ("Colegiul Național Alexandru Ioan Cuza") is not that person's university
 	var SCHOOL = /\b(liceul|liceu|colegiul|colegiu|high ?school|lyceum)\b|\bscoala\b(?! nationala de studii)/;
@@ -497,6 +508,7 @@
 		records.forEach(function (r) {
 			if (r.orgKey) r.org = name[into[r.orgKey]];
 			if (r.org) r.text += ' ' + fold(r.org);   // a search for "politehnica" finds "UNTSPB" too
+			r.city = CITY[r.org] || '';
 		});
 	}
 
@@ -670,6 +682,9 @@
 		$('search').value = '';
 		state.query = '';
 		state.problems = false;
+		state.facets = {};
+		state.extra = {};
+		state.from = state.to = '';
 		board.loaded = false;
 		board.items = [];
 		board.busy = {};
@@ -807,6 +822,7 @@
 		state.teams = json.teams || [];
 		state.mentors = json.mentors || null;
 		state.feedback = json.feedback || [];
+		state.activity = json.activity || null;
 		state.certificate = json.certificate || '';
 		state.voters = json.voters || [];
 		state.majority = json.majority || 0;
@@ -847,11 +863,23 @@
 	function renderEvent() {
 		var rs = state.records.filter(function (r) { return inEvent(r, state.event); });
 		state.people = people(rs);
-		renderDays(rs);                    // registrations per day: each registration
-		renderBreakdowns(state.people);    // what people answered: each person once
-		renderTable();
+		renderMore();
+		renderFiltered();
 		renderSendPanel();
 		renderReviewPanel();
+	}
+
+	// what follows the filters: registrations per day (each registration), what people answered (each person once),
+	// the table and the filters on
+	function renderFiltered() {
+		var regs = [];
+		state.people.forEach(function (p) {
+			if (passes(p)) p.regs.forEach(function (r) { if (inEvent(r, state.event)) regs.push(r); });
+		});
+		renderDays(regs);
+		renderBreakdowns();
+		renderTable();
+		renderChips();
 	}
 
 	/* --- tiles ------------------------------------------------------------ */
@@ -897,7 +925,7 @@
 				state.problems = !state.problems;
 				tile.setAttribute('aria-pressed', String(state.problems));
 				if (state.problems && state.event !== 'all') setEvent('all');
-				else renderTable();
+				else renderFiltered();
 				if (state.problems) $('people-h').scrollIntoView({ behavior: 'smooth', block: 'start' });
 			});
 		} else {
@@ -922,16 +950,16 @@
 
 	// the Who and Decision tabs above the table
 	forEach($('f-kind').querySelectorAll('button'), function (b) {
-		b.addEventListener('click', function () { state.kind = b.getAttribute('data-kind'); renderTable(); });
+		b.addEventListener('click', function () { state.kind = b.getAttribute('data-kind'); renderFiltered(); });
 	});
 
 	forEach($('f-decision').querySelectorAll('button'), function (b) {
-		b.addEventListener('click', function () { state.decision = b.getAttribute('data-decision'); renderTable(); });
+		b.addEventListener('click', function () { state.decision = b.getAttribute('data-decision'); renderFiltered(); });
 	});
 
 	$('search').addEventListener('input', function () {
 		state.query = fold(this.value).trim();
-		renderTable();
+		renderFiltered();
 	});
 
 	/* --- registrations per day ------------------------------------------ */
@@ -1020,30 +1048,46 @@
 	}
 
 	// the forms' own order for the answers they offer; free text sorts by count
+	// id: the breakdown's filter; value: what to count when it is not a column
 	var BREAKDOWNS = [
-		{ col: 'Status', title: 'You are', order: ['High-school student', 'Bachelor student', 'Master student', 'PhD student', 'Researcher', 'Working in industry', 'Other'] },
-		{ col: 'Experience', title: 'Experience', order: ['None yet, curious', 'Beginner: a course or some tutorials', 'Intermediate: built circuits or small projects', 'Advanced: research or work in the field'], short: true },
-		{ col: 'Tracks', title: 'Tracks', order: ['Quantum Foundations', 'Quantum AI', 'Quantum Hacking', 'Not sure yet'], multi: true },
-		{ col: 'T-shirt', title: 'T-shirts', order: ['XS', 'S', 'M', 'L', 'XL', 'XXL'] },
+		{ id: 'status', col: 'Status', title: 'You are', order: ['High-school student', 'Bachelor student', 'Master student', 'PhD student', 'Researcher', 'Working in industry', 'Other'] },
+		{ id: 'exp', col: 'Experience', title: 'Experience', order: ['None yet, curious', 'Beginner: a course or some tutorials', 'Intermediate: built circuits or small projects', 'Advanced: research or work in the field'], short: true },
+		{ id: 'tracks', col: 'Tracks', title: 'Tracks', order: ['Quantum Foundations', 'Quantum AI', 'Quantum Hacking', 'Not sure yet'], multi: true },
+		{ id: 'tshirt', col: 'T-shirt', title: 'T-shirts', order: ['XS', 'S', 'M', 'L', 'XL', 'XXL'] },
 		// asked only with the Quantum AI or Quantum Hacking track (the first form asked everyone, so earlier answers
 		// with neither are left out)
-		{ col: 'Team', title: 'Alone or in a team', labels: TEAM_LABEL, order: [TEAM_LABEL.solo, TEAM_LABEL.team, TEAM_LABEL.match],
+		{ id: 'team', col: 'Team', title: 'Alone or in a team', labels: TEAM_LABEL, order: [TEAM_LABEL.solo, TEAM_LABEL.team, TEAM_LABEL.match],
 			only: function (r) { return /quantum (ai|hacking)/i.test(get(r, 'Tracks')); } },
-		{ col: 'University or company', title: 'University or company', top: 8, merged: true },
-		{ col: 'Heard from', title: 'Heard about BreaQ from' }
+		{ id: 'org', col: 'University or company', title: 'University or company', top: 8, merged: true },
+		// the city of a known university (INSTITUTIONS); the others are not counted
+		{ id: 'city', title: 'City', value: function (r) { return r.city; }, top: 8 },
+		{ id: 'heard', col: 'Heard from', title: 'Heard about BreaQ from' }
 	];
+
+	function rawOf(r, b) { return b.value ? b.value(r) : get(r, b.col); }
+
+	// the keys a person counts under in a breakdown, as tally makes them
+	function bdKey(label) { return fold(label).replace(/\s+/g, ' '); }
+
+	function facetValues(r, b) {
+		var raw = rawOf(r, b);
+		if (!raw || (b.only && !b.only(r))) return [];
+		return (b.multi ? raw.split(/\s*,\s*/) : [raw]).filter(Boolean).map(function (val) {
+			return bdKey(b.merged ? r.org : (b.labels && b.labels[val]) || val);
+		});
+	}
 
 	// items: { label, n, spellings: { as written: n } }; for a merged column the label is the merged name (groupOrgs)
 	function tally(rs, b) {
 		var groups = {};
 		rs.forEach(function (r) {
-			var raw = get(r, b.col);
+			var raw = rawOf(r, b);
 			if (!raw || (b.only && !b.only(r))) return;
 			(b.multi ? raw.split(/\s*,\s*/) : [raw]).forEach(function (val) {
 				if (!val) return;
 				var label = b.merged ? r.org : (b.labels && b.labels[val]) || val;
-				var k = fold(label).replace(/\s+/g, ' ');
-				var g = groups[k] || (groups[k] = { label: label, n: 0, spellings: {} });
+				var k = bdKey(label);
+				var g = groups[k] || (groups[k] = { key: k, label: label, n: 0, spellings: {} });
 				g.n++;
 				g.spellings[val] = (g.spellings[val] || 0) + 1;
 			});
@@ -1091,29 +1135,48 @@
 		return box;
 	}
 
-	function renderBreakdowns(rs) {
+	// each breakdown counts the people every other filter leaves (so its own bars stay to pick from); a bar is a
+	// filter: click it to keep only those people, click more to add to them, click again to drop it
+	function renderBreakdowns() {
 		var box = $('breakdowns');
 		box.textContent = '';
 
 		BREAKDOWNS.forEach(function (b) {
+			var rs = state.people.filter(function (p) { return passes(p, b); });
 			var items = tally(rs, b);
-			if (!items.length) return;
-			var answered = rs.filter(function (r) { return get(r, b.col) && (!b.only || b.only(r)); }).length;
-			var max = Math.max.apply(null, items.map(function (it) { return it.n; }));
+			var on = state.facets[b.id] || [];
+			if (!items.length && !on.length) return;
+			var answered = rs.filter(function (r) { return rawOf(r, b) && (!b.only || b.only(r)); }).length;
+			var max = Math.max.apply(null, items.map(function (it) { return it.n; }).concat(1));
 
-			var panel = el('section', 'panel bd');
+			var panel = el('section', 'panel bd' + (on.length ? ' is-filtering' : ''));
 			var h = el('h2', null, b.title);
 			h.appendChild(el('span', 'count', answered + ' answered'));
 			panel.appendChild(h);
 			var list = el('ul', 'bars');
 			items.forEach(function (it) {
-				var li = el('li', it.other ? 'is-other' : null);
+				var picks = it.other ? it.members.map(function (m) { return { k: m.key, label: m.label }; }) : [{ k: it.key, label: it.label }];
+				var picked = picks.every(function (x) { return on.some(function (o) { return o.k === x.k; }); });
+				var li = el('li', (it.other ? 'is-other' : '') + (picked ? ' is-on' : on.length ? ' is-dim' : ''));
+				li.tabIndex = 0;
+				li.setAttribute('role', 'button');
+				li.setAttribute('aria-pressed', String(picked));
+				li.title = picked ? 'Click to drop this filter' : 'Click to keep only these people';
+				li.addEventListener('click', function (ev) {
+					if (ev.target.closest('details')) return;   // the spellings under a merged name
+					toggleFacet(b, picks);
+				});
+				li.addEventListener('keydown', function (ev) {
+					if (ev.target !== li || (ev.key !== 'Enter' && ev.key !== ' ')) return;
+					ev.preventDefault();
+					toggleFacet(b, picks);
+				});
 				var label = b.short ? it.label.split(':')[0] : it.label;
 				var name = el('span', 'bar-label', label);
 				if (label !== it.label) name.title = it.label;
 				li.appendChild(name);
 				var value = el('span', 'bar-value', String(it.n));
-				value.appendChild(el('small', null, Math.round(it.n / answered * 100) + '%'));
+				value.appendChild(el('small', null, Math.round(it.n / (answered || 1) * 100) + '%'));
 				li.appendChild(value);
 				var track = el('span', 'bar-track');
 				var fill = el('span', 'bar-fill');
@@ -1132,7 +1195,7 @@
 		});
 
 		// dietary needs: free text the caterer needs word for word, with whose it is
-		var diet = rs.filter(function (r) { return get(r, 'Dietary'); });
+		var diet = state.people.filter(function (p) { return passes(p) && get(p, 'Dietary'); });
 		if (diet.length) {
 			var panel = el('section', 'panel bd');
 			var h = el('h2', null, 'Dietary needs');
@@ -1149,6 +1212,189 @@
 			box.appendChild(panel);
 		}
 	}
+
+	/* --- filters -------------------------------------------------------------- */
+
+	// More filters: what the bars do not show. hack: on the person's hackathon registration (and only in the
+	// hackathon views); when: shown only then
+	var EXTRAS = [
+		{ key: 'myvote', label: 'Your vote', hack: true, when: function () { return !!state.voter; },
+			options: [['none', 'Not voted yet'], ['yes', 'Yes'], ['no', 'No']],
+			test: function (h, v) { var x = voteOf(h, state.voter); return v === 'none' ? !x : x === v; } },
+		{ key: 'votes', label: 'Votes', hack: true, when: voting,
+			options: [['none', 'Nobody voted yet'], ['some', 'Some votes, undecided'], ['split', 'A 2 to 1'], ['notes', 'With notes you can see']],
+			test: function (h, v) {
+				var n = votesIn(h);
+				if (v === 'none') return !n;
+				if (v === 'some') return n > 0 && !decisionOf(h);
+				if (v === 'split') return isSplit(h);
+				return revealed([h]) && state.voters.some(function (x) { return noteOf(h, x); });
+			} },
+		{ key: 'letter', label: 'Motivation letter', hack: true,
+			options: [['yes', 'In Drive'], ['no', 'Missing or failed']],
+			test: function (h, v) { return isUrl(get(h, 'Motivation letter')) === (v === 'yes'); } },
+		{ key: 'coming', label: 'Coming', hack: true,
+			options: [['yes', 'Yes'], ['no', 'Cannot come'], ['open', 'Accepted, not answered']],
+			test: function (h, v) { var c = comingOf(h); return v === 'open' ? decisionOf(h) === 'accepted' && !c : c === v; } },
+		{ key: 'checked', label: 'Checked in', hack: true,
+			options: [['yes', 'Yes'], ['no', 'Not yet']],
+			test: function (h, v) { return !!get(h, 'Checked in') === (v === 'yes'); } },
+		{ key: 'hteam', label: 'Put in a team', hack: true,
+			options: [['yes', 'Yes'], ['no', 'Not yet']],
+			test: function (h, v) { return !!get(h, 'Hackathon team') === (v === 'yes'); } },
+		{ key: 'applied', label: 'Applied',
+			options: [['twice', 'More than once'], ['once', 'Once']],
+			test: function (p, v) {
+				var again = p.regs.some(function (r) { return /applied again/.test(get(r, 'Merged')); });
+				return again === (v === 'twice');
+			} },
+		{ key: 'mail', label: 'Confirmation email',
+			options: [['sent', 'Sent'], ['failed', 'Failed'], ['held', 'Held']],
+			test: function (p, v) { return p.mail === v; } }
+	];
+
+	function filtersOn() {
+		return Object.keys(state.facets).length > 0 || EXTRAS.some(extraOn) || !!(state.from || state.to);
+	}
+
+	function extraOn(x) {
+		return !!state.extra[x.key] && (!x.when || x.when()) && !(x.hack && state.event === 'conference');
+	}
+
+	function firstTime(p) {
+		var ts = p.regs.filter(function (r) { return r.time; }).map(function (r) { return r.time.getTime(); });
+		return ts.length ? new Date(Math.min.apply(null, ts)) : null;
+	}
+
+	// everything that filters the table, the chart and the bars; skip: a breakdown whose own bars do not count
+	function passes(p, skip) {
+		if (state.query && p.text.indexOf(state.query) === -1) return false;
+		if (state.problems && !p.problem) return false;
+		if (!inTabs(p)) return false;
+		var h;
+		for (var i = 0; i < EXTRAS.length; i++) {
+			var x = EXTRAS[i];
+			if (!extraOn(x)) continue;
+			if (!x.hack) { if (!x.test(p, state.extra[x.key])) return false; continue; }
+			h = h || hackReg(p);
+			if (!h || !x.test(h, state.extra[x.key])) return false;
+		}
+		if (state.from || state.to) {
+			var t = firstTime(p);
+			if (!t || (state.from && dayKey(t) < state.from) || (state.to && dayKey(t) > state.to)) return false;
+		}
+		return BREAKDOWNS.every(function (b) {
+			var on = state.facets[b.id];
+			if (b === skip || !on || !on.length) return true;
+			var mine = facetValues(p, b);
+			return on.some(function (o) { return mine.indexOf(o.k) !== -1; });
+		});
+	}
+
+	// a bar (or "N others"): on when not all of it was on, else off
+	function toggleFacet(b, picks) {
+		var on = state.facets[b.id] || [];
+		var all = picks.every(function (x) { return on.some(function (o) { return o.k === x.k; }); });
+		on = all
+			? on.filter(function (o) { return !picks.some(function (x) { return x.k === o.k; }); })
+			: on.concat(picks.filter(function (x) { return !on.some(function (o) { return o.k === x.k; }); }));
+		if (on.length) state.facets[b.id] = on;
+		else delete state.facets[b.id];
+		renderFiltered();
+	}
+
+	function clearFilters() {
+		state.facets = {};
+		state.extra = {};
+		state.from = state.to = '';
+		renderMore();
+		renderFiltered();
+	}
+
+	// the filters on, each one click away from off; how many people they leave
+	function renderChips() {
+		var box = $('chips');
+		box.textContent = '';
+		var chips = [];
+		BREAKDOWNS.forEach(function (b) {
+			(state.facets[b.id] || []).forEach(function (o) {
+				chips.push([b.title + ': ' + o.label, function () { toggleFacet(b, [o]); }]);
+			});
+		});
+		var extras = 0;
+		EXTRAS.forEach(function (x) {
+			if (!extraOn(x)) return;
+			extras++;
+			var opt = x.options.filter(function (o) { return o[0] === state.extra[x.key]; })[0];
+			chips.push([x.label + ': ' + (opt ? opt[1] : state.extra[x.key]), function () { delete state.extra[x.key]; renderMore(); renderFiltered(); }]);
+		});
+		if (state.from) { extras++; chips.push(['Registered from ' + fmtAxis.format(new Date(state.from + 'T12:00:00')), function () { state.from = ''; renderMore(); renderFiltered(); }]); }
+		if (state.to) { extras++; chips.push(['Registered until ' + fmtAxis.format(new Date(state.to + 'T12:00:00')), function () { state.to = ''; renderMore(); renderFiltered(); }]); }
+		chips.forEach(function (c) {
+			var b = el('button', 'chip', c[0]);
+			b.type = 'button';
+			b.appendChild(el('span', 'chip-x', '✕'));
+			b.setAttribute('aria-label', 'Remove the filter ' + c[0]);
+			b.addEventListener('click', c[1]);
+			box.appendChild(b);
+		});
+		if (chips.length > 1) {
+			var all = el('button', 'chip-clear', 'Clear all');
+			all.type = 'button';
+			all.addEventListener('click', clearFilters);
+			box.appendChild(all);
+		}
+		var left = state.people.filter(function (p) { return passes(p); }).length;
+		$('filter-count').textContent = chips.length ? plural(left, 'person', 'people') + ' of ' + state.people.length : '';
+		$('more-filters').textContent = 'More filters' + (extras ? ' · ' + extras : '');
+	}
+
+	// the More filters panel: the dates, then a choice for each filter that applies here
+	function renderMore() {
+		var box = $('more-panel');
+		box.textContent = '';
+		var grid = el('div', 'more-grid');
+		[['from', 'Registered from'], ['to', 'Registered until']].forEach(function (d) {
+			var f = el('label', 'more-field');
+			f.appendChild(el('span', 'more-label', d[1]));
+			var input = el('input');
+			input.type = 'date';
+			input.value = state[d[0]];
+			input.addEventListener('change', function () { state[d[0]] = input.value; renderFiltered(); });
+			f.appendChild(input);
+			grid.appendChild(f);
+		});
+		EXTRAS.forEach(function (x) {
+			if ((x.when && !x.when()) || (x.hack && state.event === 'conference')) return;
+			var f = el('label', 'more-field');
+			f.appendChild(el('span', 'more-label', x.label));
+			var sel = el('select');
+			[['', 'Any']].concat(x.options).forEach(function (o) {
+				var opt = el('option', null, o[1]);
+				opt.value = o[0];
+				sel.appendChild(opt);
+			});
+			sel.value = state.extra[x.key] || '';
+			sel.addEventListener('change', function () {
+				if (sel.value) state.extra[x.key] = sel.value;
+				else delete state.extra[x.key];
+				renderFiltered();
+			});
+			f.appendChild(sel);
+			grid.appendChild(f);
+		});
+		box.appendChild(grid);
+		var clear = el('button', 'btn small ghost', 'Clear every filter');
+		clear.type = 'button';
+		clear.addEventListener('click', clearFilters);
+		box.appendChild(clear);
+	}
+
+	$('more-filters').addEventListener('click', function () {
+		var panel = $('more-panel');
+		panel.hidden = !panel.hidden;
+		this.setAttribute('aria-expanded', String(!panel.hidden));
+	});
 
 	/* --- the table -------------------------------------------------------- */
 
@@ -1258,10 +1504,7 @@
 	}
 
 	function visible() {
-		var q = state.query;
-		var rs = state.people.filter(function (p) {
-			return (!q || p.text.indexOf(q) !== -1) && (!state.problems || p.problem) && inTabs(p);
-		});
+		var rs = state.people.filter(function (p) { return passes(p); });
 		var c = COLUMNS.filter(function (col) { return col.key === state.sort.key; })[0];
 		var by = c.sort || function (r) { return fold(get(r, c.col)); };
 		var dir = state.sort.dir;
@@ -1783,6 +2026,337 @@
 			if (b) b.focus();
 		});
 	}
+
+	/* --- edition in numbers ------------------------------------------------------------- */
+
+	// For the sponsorship brochure: counts only, never a name. Each chart is an SVG drawn here, so it downloads as an
+	// SVG a designer can restyle, or as a PNG; every number shown also goes in one CSV.
+
+	// BreaQ 2025, for the "vs 2025" lines: fill these in from last year's records (null: the line is left out)
+	var LAST_EDITION = { year: 2025, applications: null, conference: null, participants: null, universities: null };
+
+	var NUM = { bg: '#2e3141', fg: '#ffffff', muted: 'rgba(255,255,255,0.62)', line: 'rgba(255,255,255,0.14)', bar: '#7f8cd6', hot: '#ff8c00', font: "'Source Sans Pro', Helvetica, Arial, sans-serif" };
+	var POOLS = [
+		['applied', 'Applied to the hackathon'],
+		['accepted', 'Accepted'],
+		['came', 'Came (checked in)'],
+		['conference', 'Conference'],
+		['everyone', 'Everyone']
+	];
+	var numRows = [];   // [section, metric, value] for the CSV
+
+	function svgEl(tag, attrs, text) {
+		var n = document.createElementNS('http://www.w3.org/2000/svg', tag);
+		Object.keys(attrs || {}).forEach(function (k) { n.setAttribute(k, attrs[k]); });
+		if (text !== undefined) n.textContent = text;
+		return n;
+	}
+
+	function svgRoot(w, h, label) {
+		var svg = svgEl('svg', { xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 ' + w + ' ' + h, width: w, height: h, role: 'img', 'aria-label': label, 'font-family': NUM.font });
+		svg.appendChild(svgEl('rect', { x: 0, y: 0, width: w, height: h, fill: NUM.bg, rx: 8 }));
+		return svg;
+	}
+
+	function clip(t, n) { t = String(t); return t.length > n ? t.slice(0, n - 1) + '…' : t; }
+
+	function pct(n, of) { return of ? Math.round(n / of * 100) : 0; }
+
+	// horizontal bars: items [{ label, n }], each with its share of total; hot: the bars in orange (a funnel)
+	function barsSvg(title, items, total, hot) {
+		var w = 600, top = 52, row = 34, h = top + items.length * row + 16;
+		var svg = svgRoot(w, h, title + ': ' + items.map(function (it) { return it.label + ' ' + it.n; }).join(', '));
+		svg.appendChild(svgEl('text', { x: 24, y: 34, fill: NUM.fg, 'font-size': 17, 'font-weight': 700 }, title));
+		var max = Math.max.apply(null, items.map(function (it) { return it.n; }).concat(1));
+		var labelW = 210, barX = 24 + labelW, barW = w - barX - 110;
+		items.forEach(function (it, i) {
+			var y = top + i * row;
+			svg.appendChild(svgEl('text', { x: 24, y: y + 19, fill: NUM.fg, 'font-size': 14 }, clip(it.label, 30)));
+			svg.appendChild(svgEl('rect', { x: barX, y: y + 7, width: barW, height: 16, rx: 3, fill: NUM.line }));
+			svg.appendChild(svgEl('rect', { x: barX, y: y + 7, width: Math.max(2, barW * it.n / max), height: 16, rx: 3, fill: hot ? NUM.hot : NUM.bar }));
+			var v = svgEl('text', { x: w - 24, y: y + 20, fill: NUM.fg, 'font-size': 14, 'font-weight': 600, 'text-anchor': 'end' }, String(it.n));
+			if (total) v.appendChild(svgEl('tspan', { fill: NUM.muted, 'font-weight': 400, dx: 6 }, pct(it.n, total) + '%'));
+			svg.appendChild(v);
+		});
+		return svg;
+	}
+
+	// registrations so far, day by day: one line per series [{ label, color, days: { yyyy-mm-dd: n } }]
+	function cumulativeSvg(title, series) {
+		var w = 600, h = 260, l = 24, r = 24, t = 70, b = 36;
+		var keys = [];
+		series.forEach(function (s) { keys = keys.concat(Object.keys(s.days)); });
+		keys.sort();
+		var svg = svgRoot(w, h, title);
+		svg.appendChild(svgEl('text', { x: 24, y: 34, fill: NUM.fg, 'font-size': 17, 'font-weight': 700 }, title));
+		if (!keys.length) return svg;
+		var first = new Date(keys[0] + 'T12:00:00'), last = new Date(keys[keys.length - 1] + 'T12:00:00');
+		var days = [];
+		for (var d = new Date(first); d <= last; d.setDate(d.getDate() + 1)) days.push(dayKey(d));
+		var totals = series.map(function (s) {
+			var run = 0;
+			return days.map(function (k) { run += s.days[k] || 0; return run; });
+		});
+		var max = Math.max.apply(null, totals.map(function (t) { return t[t.length - 1]; }).concat(1));
+		var x = function (i) { return l + (days.length > 1 ? i / (days.length - 1) : 0.5) * (w - l - r); };
+		var y = function (v) { return h - b - v / max * (h - t - b); };
+		svg.appendChild(svgEl('line', { x1: l, x2: w - r, y1: h - b, y2: h - b, stroke: NUM.line }));
+		series.forEach(function (s, j) {
+			var pts = totals[j].map(function (v, i) { return x(i).toFixed(1) + ',' + y(v).toFixed(1); });
+			svg.appendChild(svgEl('polyline', { points: pts.join(' '), fill: 'none', stroke: s.color, 'stroke-width': 3, 'stroke-linejoin': 'round' }));
+			var end = totals[j][totals[j].length - 1];
+			svg.appendChild(svgEl('text', { x: w - r, y: y(end) - 8, fill: s.color, 'font-size': 14, 'font-weight': 700, 'text-anchor': 'end' }, s.label + ': ' + end));
+		});
+		svg.appendChild(svgEl('text', { x: l, y: h - 12, fill: NUM.muted, 'font-size': 12 }, fmtAxis.format(first)));
+		svg.appendChild(svgEl('text', { x: w - r, y: h - 12, fill: NUM.muted, 'font-size': 12, 'text-anchor': 'end' }, fmtAxis.format(last)));
+		return svg;
+	}
+
+	function download(name, blob) {
+		var a = el('a');
+		a.href = URL.createObjectURL(blob);
+		a.download = name;
+		document.body.appendChild(a);
+		a.click();
+		a.remove();
+		window.setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
+	}
+
+	function svgText(svg) { return new XMLSerializer().serializeToString(svg); }
+
+	// the SVG drawn twice its size, as a PNG (the page's fonts do not reach an image: the system's sans serif)
+	function savePng(svg, name) {
+		var w = +svg.getAttribute('width'), h = +svg.getAttribute('height');
+		var img = new Image();
+		img.onload = function () {
+			var c = document.createElement('canvas');
+			c.width = w * 2;
+			c.height = h * 2;
+			var g = c.getContext('2d');
+			g.scale(2, 2);
+			g.drawImage(img, 0, 0, w, h);
+			c.toBlob(function (blob) { if (blob) download(name + '.png', blob); }, 'image/png');
+		};
+		img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgText(svg));
+	}
+
+	function slug(t) { return 'breaq-2026-' + fold(t).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); }
+
+	// a chart with its two downloads
+	function chartCard(svg, title) {
+		var card = el('figure', 'num-chart');
+		card.appendChild(svg);
+		var bar = el('figcaption', 'num-chart-actions');
+		[['SVG', function () { download(slug(title) + '.svg', new Blob([svgText(svg)], { type: 'image/svg+xml' })); }],
+			['PNG', function () { savePng(svg, slug(title)); }]].forEach(function (x) {
+			var b = el('button', 'btn small ghost', 'Download ' + x[0]);
+			b.type = 'button';
+			b.addEventListener('click', x[1]);
+			bar.appendChild(b);
+		});
+		card.appendChild(bar);
+		return card;
+	}
+
+	function numSection(box, title, help) {
+		var sec = el('section', 'panel num-section');
+		sec.appendChild(el('h2', null, title));
+		if (help) sec.appendChild(el('p', 'muted num-help', help));
+		box.appendChild(sec);
+		return sec;
+	}
+
+	// a row of big numbers: [label, value, note], each also in the CSV under section
+	function numTiles(sec, section, tiles) {
+		var row = el('div', 'tiles num-tiles');
+		tiles.forEach(function (t) {
+			if (t[1] === null || t[1] === undefined) return;
+			var tile = el('div', 'tile');
+			tile.appendChild(el('span', 'tile-label', t[0]));
+			tile.appendChild(el('span', 'tile-value', typeof t[1] === 'number' ? t[1].toLocaleString('en-GB') : t[1]));
+			if (t[2]) tile.appendChild(el('span', 'tile-note', t[2]));
+			row.appendChild(tile);
+			numRows.push([section, t[0], t[1]]);
+		});
+		sec.appendChild(row);
+	}
+
+	function versus(now, then) {
+		if (!then) return '';
+		var d = Math.round((now - then) / then * 100);
+		return (d >= 0 ? '+' : '') + d + '% vs ' + LAST_EDITION.year + ' (' + then + ')';
+	}
+
+	// a breakdown's bars as a chart, with its rows in the CSV
+	function bdChart(grid, section, b, rs, title) {
+		var items = tally(rs, b);
+		if (!items.length) return;
+		var answered = rs.filter(function (r) { return rawOf(r, b) && (!b.only || b.only(r)); }).length;
+		var shown = items.map(function (it) { return { label: b.short ? it.label.split(':')[0] : it.label, n: it.n }; });
+		shown.forEach(function (it) { numRows.push([section, title + ': ' + it.label, it.n]); });
+		grid.appendChild(chartCard(barsSvg(title, shown, answered), title));
+	}
+
+	// the utm_source of the address someone registered from (roqteam.ro/register?utm_source=instagram)
+	function sourceOf(r) {
+		var m = /[?&](?:utm_source|ref|src)=([^&#]+)/i.exec(get(r, 'Page'));
+		if (!m) return '';
+		try { return decodeURIComponent(m[1].replace(/\+/g, ' ')).trim().toLowerCase(); } catch (e) { return m[1].toLowerCase(); }
+	}
+
+	function renderNumbers() {
+		var box = $('nums');
+		box.textContent = '';
+		numRows = [];
+		var everyone = people(state.records);
+		var hack = everyone.filter(function (p) { return hackReg(p); });
+		var conf = state.records.filter(function (r) { return inEvent(r, 'conference'); }).length;
+		var hackRegs = hack.length;
+		var accepted = hack.filter(function (p) { return decisionOf(hackReg(p)) === 'accepted'; });
+		var decided = hack.filter(function (p) { return decisionOf(hackReg(p)); }).length;
+		var orgs = {}, cities = {};
+		everyone.forEach(function (p) {
+			if (p.org && p.org !== INDUSTRY) orgs[bdKey(p.org)] = true;
+			if (p.city) cities[p.city] = true;
+		});
+		var nOrgs = Object.keys(orgs).length, nCities = Object.keys(cities).length;
+
+		// the edition at a glance
+		var sec = numSection(box, 'At a glance', 'Every number on this page counts people (someone registered for both events counts once where it says people).');
+		numTiles(sec, 'At a glance', [
+			['Hackathon applications', hackRegs, versus(hackRegs, LAST_EDITION.applications)],
+			['Conference registrations', conf, versus(conf, LAST_EDITION.conference)],
+			['People', everyone.length, 'registered for either event'],
+			['Universities and organisations', nOrgs, versus(nOrgs, LAST_EDITION.universities)],
+			['Cities', nCities || null, 'of the universities we recognise'],
+			['Accepted', accepted.length || null, versus(accepted.length, LAST_EDITION.participants)],
+			['Applicants per place', accepted.length && decided === hackRegs ? (hackRegs / accepted.length).toFixed(1) : null, 'once everyone is decided'],
+			['Acceptance rate', accepted.length && decided === hackRegs ? pct(accepted.length, hackRegs) + '%' : null]
+		]);
+
+		// demand over time
+		sec = numSection(box, 'Registrations over time', 'Counted on the day each registration first came in.');
+		var series = [['Hackathon', NUM.hot, function (r) { return inEvent(r, 'hackathon'); }], ['Conference', NUM.bar, function (r) { return inEvent(r, 'conference'); }]].map(function (s) {
+			var days = {};
+			state.records.forEach(function (r) { if (r.time && s[2](r)) { var k = dayKey(r.time); days[k] = (days[k] || 0) + 1; } });
+			return { label: s[0], color: s[1], days: days };
+		}).filter(function (s) { return Object.keys(s.days).length; });
+		var grid = el('div', 'num-charts');
+		grid.appendChild(chartCard(cumulativeSvg('Registrations so far', series), 'Registrations so far'));
+		sec.appendChild(grid);
+		var perDay = {};
+		state.records.forEach(function (r) { if (r.time) { var k = dayKey(r.time); perDay[k] = (perDay[k] || 0) + 1; } });
+		var peak = Object.keys(perDay).sort(function (a, b) { return perDay[b] - perDay[a]; })[0];
+		if (peak) numTiles(sec, 'Registrations over time', [['Busiest day', perDay[peak], fmtDay.format(new Date(peak + 'T12:00:00'))]]);
+
+		// the talent pool, for the group picked
+		sec = numSection(box, 'Who they are', 'Pick the group: the applicants show the demand, the accepted and those who came show who the sponsors meet.');
+		var seg = el('div', 'seg num-pools');
+		POOLS.forEach(function (pl) {
+			var b = el('button', null, pl[1]);
+			b.type = 'button';
+			b.setAttribute('aria-pressed', String(state.numbersOf === pl[0]));
+			b.addEventListener('click', function () { state.numbersOf = pl[0]; renderNumbers(); });
+			seg.appendChild(b);
+		});
+		sec.appendChild(seg);
+		var pool = everyone.filter(function (p) {
+			var h = hackReg(p);
+			if (state.numbersOf === 'applied') return !!h;
+			if (state.numbersOf === 'accepted') return h && decisionOf(h) === 'accepted';
+			if (state.numbersOf === 'came') return h && !!get(h, 'Checked in');
+			if (state.numbersOf === 'conference') return p.regs.some(function (r) { return inEvent(r, 'conference'); });
+			return true;
+		});
+		var poolName = POOLS.filter(function (pl) { return pl[0] === state.numbersOf; })[0][1];
+		var section = 'Who they are (' + poolName + ')';
+		if (!pool.length) sec.appendChild(el('p', 'muted', 'Nobody in this group yet.'));
+		else {
+			var withStatus = pool.filter(function (p) { return get(p, 'Status'); });
+			var senior = withStatus.filter(function (p) { return /master|phd|researcher/i.test(get(p, 'Status')); }).length;
+			var industry = withStatus.filter(function (p) { return /industry/i.test(get(p, 'Status')); }).length;
+			var withExp = pool.filter(function (p) { return get(p, 'Experience'); });
+			var some = withExp.filter(function (p) { return !/^none/i.test(get(p, 'Experience')); }).length;
+			numTiles(sec, section, [
+				['People', pool.length],
+				['Master’s, PhD or research', withStatus.length ? pct(senior, withStatus.length) + '%' : null, senior + ' of ' + withStatus.length],
+				['Working in industry', withStatus.length ? pct(industry, withStatus.length) + '%' : null, industry + ' of ' + withStatus.length],
+				['Some quantum experience', withExp.length ? pct(some, withExp.length) + '%' : null, 'a course or more: ' + some + ' of ' + withExp.length]
+			]);
+			grid = el('div', 'num-charts');
+			BREAKDOWNS.forEach(function (b) {
+				if (b.id === 'tshirt' || b.id === 'heard') return;   // not for a brochure; where they heard of it: below
+				bdChart(grid, section, b, pool, b.title);
+			});
+			sec.appendChild(grid);
+		}
+
+		// the hackathon's funnel
+		sec = numSection(box, 'From application to the end', 'Each step out of everyone who applied to the hackathon.');
+		var steps = [
+			['Applied', hackRegs],
+			['Accepted', accepted.length],
+			['Said they are coming', hack.filter(function (p) { return comingOf(hackReg(p)) === 'yes'; }).length],
+			['Came (checked in)', hack.filter(function (p) { return get(hackReg(p), 'Checked in'); }).length],
+			['Got a certificate', hack.filter(function (p) { return /^sent/i.test(get(hackReg(p), 'Certificate')); }).length],
+			['Gave feedback', state.feedback.length]
+		];
+		steps.forEach(function (st) { numRows.push(['From application to the end', st[0], st[1]]); });
+		grid = el('div', 'num-charts');
+		grid.appendChild(chartCard(barsSvg('From application to the end', steps.map(function (st) { return { label: st[0], n: st[1] }; }), hackRegs, true), 'From application to the end'));
+		sec.appendChild(grid);
+
+		// how it went: the feedback, and the hackathon on the dashboard
+		sec = numSection(box, 'How it went', 'From the feedback form on the team dashboard (no names), and from the dashboard itself.');
+		var fb = state.feedback;
+		var rated = fb.filter(function (f) { return f.overall; });
+		var avg = rated.length ? (rated.reduce(function (s, f) { return s + f.overall; }, 0) / rated.length).toFixed(1) : null;
+		var again = fb.filter(function (f) { return f.again; });
+		var a = state.activity || {};
+		numTiles(sec, 'How it went', [
+			['Feedback answers', fb.length || null],
+			['Overall rating', avg ? avg + ' / 5' : null, rated.length ? 'from ' + rated.length + ' ratings' : ''],
+			['Would come again', again.length ? pct(again.filter(function (f) { return f.again === 'yes'; }).length, again.length) + '%' : null, again.length ? 'yes, of ' + again.length + ' answers' : ''],
+			['Teams', state.teams.length || null],
+			['Announcements', a.announcements || null],
+			['Mentor requests answered', a.requests ? a.answered : null, a.requests ? 'of ' + a.requests + (a.medianWait !== null && a.medianWait !== undefined ? ', a mentor on the way in ' + a.medianWait + ' min (median)' : '') : '']
+		]);
+		if (rated.length) {
+			grid = el('div', 'num-charts');
+			var scores = [5, 4, 3, 2, 1].map(function (n) { return { label: n + ' of 5', n: rated.filter(function (f) { return f.overall === n; }).length }; });
+			scores.forEach(function (it) { numRows.push(['How it went', 'Rated ' + it.label, it.n]); });
+			grid.appendChild(chartCard(barsSvg('How was it overall?', scores, rated.length), 'How was it overall'));
+			sec.appendChild(grid);
+		}
+		var quotes = fb.filter(function (f) { return f.best && f.best.length > 30; }).slice(0, 6);
+		if (quotes.length) {
+			var ul = el('ul', 'num-quotes');
+			quotes.forEach(function (f) { ul.appendChild(el('li', null, '“' + f.best + '”' + (f.challenge ? ' · ' + f.challenge : ''))); });
+			sec.appendChild(el('h3', null, 'What worked best, in their words'));
+			sec.appendChild(ul);
+		}
+		if (!fb.length && !state.teams.length && !a.announcements) sec.appendChild(el('p', 'muted', 'This fills in during and after the hackathon.'));
+
+		// reach: where people heard of it, and the tagged links they came through
+		sec = numSection(box, 'How they found us', 'The tagged links count the registrations that came through an address with ?utm_source= (roqteam.ro/register?utm_source=instagram).');
+		grid = el('div', 'num-charts');
+		bdChart(grid, 'How they found us', BREAKDOWNS.filter(function (b) { return b.id === 'heard'; })[0], everyone, 'Heard about BreaQ from');
+		var src = {};
+		state.records.forEach(function (r) { var k = sourceOf(r); if (k) src[k] = (src[k] || 0) + 1; });
+		var tagged = Object.keys(src).sort(function (x, y) { return src[y] - src[x]; }).map(function (k) { return { label: k, n: src[k] }; });
+		if (tagged.length) {
+			tagged.forEach(function (it) { numRows.push(['How they found us', 'Tagged link: ' + it.label, it.n]); });
+			grid.appendChild(chartCard(barsSvg('Registrations by tagged link', tagged, state.records.length), 'Registrations by tagged link'));
+		}
+		sec.appendChild(grid);
+		if (!tagged.length) sec.appendChild(el('p', 'muted', 'No registration has come through a tagged link yet.'));
+	}
+
+	$('nums-csv').addEventListener('click', function () {
+		var esc = function (v) { v = String(v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+		var text = [['Section', 'Number', 'Value']].concat(numRows).map(function (r) { return r.map(esc).join(','); }).join('\r\n');
+		download('breaq-2026-in-numbers-' + dayKey(new Date()) + '.csv', new Blob(['﻿' + text], { type: 'text/csv;charset=utf-8' }));
+	});
 
 	/* --- reading the letters --------------------------------------------------------- */
 
@@ -2352,7 +2926,7 @@
 		var blob = new Blob(['\ufeff' + lines.join('\r\n') + '\r\n'], { type: 'text/csv;charset=utf-8' });
 		var a = el('a');
 		a.href = URL.createObjectURL(blob);
-		a.download = 'breaq-2026-registrations-' + (state.event === 'all' ? 'all' : state.event) + (state.query || state.problems || inTabsFiltered() ? '-filtered' : '') + '-' + dayKey(new Date()) + '.csv';
+		a.download = 'breaq-2026-registrations-' + (state.event === 'all' ? 'all' : state.event) + (state.query || state.problems || inTabsFiltered() || filtersOn() ? '-filtered' : '') + '-' + dayKey(new Date()) + '.csv';
 		document.body.appendChild(a);
 		a.click();
 		document.body.removeChild(a);
@@ -2383,7 +2957,7 @@
 		busy: {}                   // ids being saved or deleted
 	};
 
-	var VIEWS = ['regs', 'teams', 'checkin', 'board', 'after'];
+	var VIEWS = ['regs', 'teams', 'checkin', 'board', 'after', 'numbers'];
 
 	function setView(view) {
 		state.view = view;
@@ -2402,6 +2976,7 @@
 		else if (state.view === 'checkin') renderCheckin();
 		else if (state.view === 'board') { renderBoardAccess(); renderMentors(); }
 		else if (state.view === 'after') renderAfter();
+		else if (state.view === 'numbers') renderNumbers();
 	}
 
 	forEach($('f-view').querySelectorAll('button'), function (b) {

@@ -1748,6 +1748,7 @@ function list_(key) {
     teams: teamsList_(),
     mentors: { key: mentorKey_(false), page: MENTORS_PAGE },
     feedback: feedbackRows_(),
+    activity: activity_(),
     certificate: tpl ? tpl.getUrl() : "",
     sheet: ss.getUrl(),
     // who is reading, by their key ("" for the admin key), and who votes: the page shows the votes and theirs
@@ -1757,6 +1758,42 @@ function list_(key) {
     emailsLeft: emailsLeft_(),
     at: new Date(),
   };
+}
+
+// the team dashboard in numbers, for the admin page's Edition in numbers: what the organisers posted, and what the
+// mentors answered and how fast (the median minutes from a request to a mentor on the way). Never fails the list.
+function activity_() {
+  var out = { announcements: 0, resources: 0, requests: 0, answered: 0, medianWait: null };
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var board = ss.getSheetByName(BOARD_SHEET);
+    if (board && board.getLastRow() > 1)
+      boardItems_(board.getDataRange().getValues()).forEach(function (it) {
+        if (it.section === "announcement") out.announcements++;
+        if (it.section === "resource") out.resources++;
+      });
+    var queue = ss.getSheetByName(QUEUE_SHEET);
+    if (queue && queue.getLastRow() > 1) {
+      var values = queue.getDataRange().getValues();
+      var header = header_(values);
+      var waits = [];
+      values.slice(1).forEach(function (row) {
+        var r = toRecord_(header, row);
+        if (!isDate_(r["Asked"])) return;
+        out.requests++;
+        var status = String(r["Status"]).trim().toLowerCase();
+        if (status === "taken" || status === "done") out.answered++;
+        if (isDate_(r["Taken"])) waits.push((r["Taken"].getTime() - r["Asked"].getTime()) / 60000);
+      });
+      waits.sort(function (x, y) {
+        return x - y;
+      });
+      if (waits.length) out.medianWait = Math.round(waits[Math.floor((waits.length - 1) / 2)]);
+    }
+  } catch (err) {
+    console.error("activity_ failed: " + err);
+  }
+  return out;
 }
 
 // the admin key or a voter's own key: null when it is one of them, else the answer to send back

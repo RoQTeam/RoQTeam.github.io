@@ -10,7 +10,7 @@
 		     (script.google.com answers through a redirect to script.googleusercontent.com) -->
 		<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src https://script.google.com https://script.googleusercontent.com; frame-src blob:; base-uri 'none'; form-action 'none'" />
 		<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Raleway:700|Source+Sans+Pro:300,400,600&amp;display=swap" />
-		<link rel="stylesheet" href="assets/css/admin.css?v=20261014" />
+		<link rel="stylesheet" href="assets/css/admin.css?v=20261015" />
 		<link rel="icon" type="image/png" href="images/favicon-2026.png">
 	</head>
 	<body>
@@ -66,6 +66,7 @@
 					<button type="button" data-view="checkin" aria-pressed="false">Check-in</button>
 					<button type="button" data-view="board" aria-pressed="false">Team dashboard</button>
 					<button type="button" data-view="after" aria-pressed="false">After the event</button>
+					<button type="button" data-view="numbers" aria-pressed="false">In numbers</button>
 				</div>
 
 				<div class="view" id="view-regs">
@@ -92,6 +93,16 @@
 					</div>
 					<input type="search" id="search" placeholder="Search names, emails, universities…" aria-label="Search" autocomplete="off" spellcheck="false" />
 				</div>
+
+				<!-- the filters on (the bars below are filters too: a click keeps only those people), and the ones the bars
+				     do not show, under More filters -->
+				<div class="filter-bar">
+					<button type="button" class="btn small" id="more-filters" aria-expanded="false" aria-controls="more-panel">More filters</button>
+					<div class="chips" id="chips"></div>
+					<span class="filter-count" id="filter-count" aria-live="polite"></span>
+				</div>
+				<section class="panel more-panel" id="more-panel" aria-label="More filters" hidden></section>
+				<p class="muted filter-help">Click any bar below to keep only those people, and more bars to narrow it down. The other bars, the chart, the table, Copy emails and the CSV follow.</p>
 
 				<section class="panel" aria-labelledby="per-day-h">
 					<h2 id="per-day-h">Registrations per day</h2>
@@ -332,6 +343,26 @@
 
 				</div>
 
+				<!-- the edition in numbers, for the sponsorship brochure: counts only, no names (admin.js, "edition in numbers") -->
+				<div class="view" id="view-numbers" hidden>
+
+					<section class="panel send-panel" aria-labelledby="nums-h">
+						<div class="panel-head">
+							<div>
+								<h2 id="nums-h">BreaQ 2026 in numbers</h2>
+								<p class="send-status">Counts only, never a name: safe for the sponsorship brochure.</p>
+							</div>
+							<div class="panel-actions">
+								<button type="button" class="btn small" id="nums-csv">Download every number (CSV)</button>
+							</div>
+						</div>
+						<p class="muted send-help">Each chart downloads as an SVG (a designer can restyle it in Illustrator or Figma) or a PNG. For “vs 2025”, fill in last year’s numbers in LAST_EDITION in assets/js/admin.js.</p>
+					</section>
+
+					<div id="nums"></div>
+
+				</div>
+
 			</section>
 
 			<dialog class="detail" id="detail" aria-labelledby="detail-name">
@@ -387,6 +418,6 @@
 
 		</main>
 
-		<script src="assets/js/admin.js?v=20261014b"></script>
+		<script src="assets/js/admin.js?v=20261015"></script>
 	</body>
 </html>

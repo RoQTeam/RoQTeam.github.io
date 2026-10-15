@@ -80,6 +80,10 @@ Switching it on, once:
 
 To change the key (someone leaves the team, it was shared too widely): Project Settings -> Script properties -> delete `ADMIN_KEY`, then run `adminKey` again. The old key stops working at once.
 
+**Filters.** Every bar in the breakdowns (You are, Experience, Tracks, University, City, Heard from, …) is a filter: click one to keep only those people, click more to narrow it down (several bars in one breakdown mean any of them; across breakdowns, all of them). The other breakdowns, the per-day chart, the table, Copy emails and the CSV follow, and each filter on shows above the table, one click from off. **More filters** has the rest: registered between two dates, your vote, the votes (none yet, a 2 to 1, with notes), the motivation letter, coming, checked in, put in a team, applied more than once, the confirmation email.
+
+**In numbers** is the edition for the sponsorship brochure, counts only and never a name: applications, people, universities and cities, applicants per place, registrations over time, who they are (for the applicants, the accepted, those who came, the conference or everyone), the hackathon from application to feedback, how it went (rating, would come again, mentor requests, announcements) and how they found us. Each chart downloads as an SVG (to restyle in Illustrator or Figma) or a PNG; **Download every number** gives them all in one CSV. For "vs 2025", fill in last year's numbers in `LAST_EDITION` in `assets/js/admin.js`. To count registrations by post or channel, share the form with a tag: `roqteam.ro/register?utm_source=instagram`.
+
 The page keeps the registrations in memory only and drops them on Lock. The "Letter" links open the PDFs in the Drive of the account that owns the script: share the "BreaQ 2026 motivation letters" folder with whoever reviews them.
 
 ## Team dashboard
