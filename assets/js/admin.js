@@ -932,6 +932,35 @@
 			state.problems = false;
 		}
 		box.appendChild(tile);
+
+		// the Quantum Hacking teams email without an answer: a button for the Team page filter, once it went out
+		var emailed = 0, silent = 0, answered = 0, denied = 0;
+		everyone.forEach(function (p) {
+			var h = hackReg(p);
+			if (!h || !/Quantum Hacking teams email sent/.test(get(h, 'Emails'))) return;
+			emailed++;
+			if (hackingSilent(h)) silent++;
+			else if (get(h, 'Team answered') || /answered on the team page/.test(get(h, 'Merged'))) answered++;
+			else if (!get(h, 'Team')) denied++;
+		});
+		if (!emailed) return;
+		var had = emailed - silent - answered - denied;
+		var qt = el('button', 'tile tile--ask');
+		qt.type = 'button';
+		qt.id = 'qh-silent';
+		qt.appendChild(el('span', 'tile-label', 'Quantum Hacking: not answered yet'));
+		qt.appendChild(el('span', 'tile-value', String(silent)));
+		qt.appendChild(el('span', 'tile-sub', 'of ' + emailed + ' emailed: ' + answered + ' answered, ' + had + ' had answered on the form' + (denied ? ', ' + denied + ' denied' : '')));
+		qt.title = 'Still to answer the Quantum Hacking teams email: those who had no answer on their form and have not answered on the team page (the denied left out). Those who had one were told there was nothing to do. Click to list only them';
+		qt.setAttribute('aria-pressed', String(state.extra.tpage === 'qh'));
+		qt.addEventListener('click', function () {
+			if (state.extra.tpage === 'qh') delete state.extra.tpage;
+			else state.extra.tpage = 'qh';
+			if (state.extra.tpage && state.event === 'conference') setEvent('hackathon');
+			else { renderMore(); renderFiltered(); }
+			if (state.extra.tpage) $('people-h').scrollIntoView({ behavior: 'smooth', block: 'start' });
+		});
+		box.appendChild(qt);
 	}
 
 	/* --- event switch and search ----------------------------------------- */
@@ -1045,6 +1074,13 @@
 		var t = get(r, 'Team');
 		if (t === 'team') return 'With ' + (get(r, 'Team name and members') || 'a team');
 		return TEAM_LABEL[t] || t;
+	}
+
+	// had the Quantum Hacking teams email (sendHackingTeams) without an answer on their form, and has not answered
+	// it: any answer on the team page fills "Team". Those with an answer already were told there was nothing to
+	// do, and the denied are out anyway.
+	function hackingSilent(h) {
+		return /Quantum Hacking teams email sent/.test(get(h, 'Emails')) && !get(h, 'Team') && decisionOf(h) !== 'denied';
 	}
 
 	// the forms' own order for the answers they offer; free text sorts by count
@@ -1240,8 +1276,9 @@
 			options: [['yes', 'Yes'], ['no', 'Not yet']],
 			test: function (h, v) { return !!get(h, 'Checked in') === (v === 'yes'); } },
 		{ key: 'tpage', label: 'Team page', hack: true,
-			options: [['yes', 'Answered'], ['no', 'Emailed, not answered yet']],
+			options: [['yes', 'Answered'], ['qh', 'Quantum Hacking email, no answer'], ['no', 'Emailed, not answered yet']],
 			test: function (h, v) {
+				if (v === 'qh') return hackingSilent(h);
 				// before "Team answered" existed, only a change left a trace, in Merged
 				if (get(h, 'Team answered') || /answered on the team page/.test(get(h, 'Merged'))) return v === 'yes';
 				return v === 'no' && /Quantum Hacking teams email sent|Teammates reminder sent/.test(get(h, 'Emails'));
@@ -1320,6 +1357,8 @@
 
 	// the filters on, each one click away from off; how many people they leave
 	function renderChips() {
+		var qt = $('qh-silent');
+		if (qt) qt.setAttribute('aria-pressed', String(state.extra.tpage === 'qh'));
 		var box = $('chips');
 		box.textContent = '';
 		var chips = [];
@@ -1459,7 +1498,13 @@
 		{ key: 'team', label: 'Team', col: 'Team', cls: 'hide-md',
 			sort: function (r) { return fold(teamOf(r)); },
 			cell: function (r) {
-				var td = cellText(teamOf(r), 'hide-md c-team'), h = hackReg(r), at = h && get(h, 'Team answered');
+				var h = hackReg(r), at = h && get(h, 'Team answered');
+				if (h && hackingSilent(h)) {
+					var quiet = cellText('No answer', 'hide-md c-team c-silent');
+					quiet.title = 'Had the Quantum Hacking teams email and has not answered it';
+					return quiet;
+				}
+				var td = cellText(teamOf(r), 'hide-md c-team');
 				if (at && !isNaN(new Date(at))) td.title = 'Answered on the team page ' + fmtShort.format(new Date(at));
 				return td;
 			} },
