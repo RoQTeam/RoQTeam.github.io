@@ -60,7 +60,8 @@
 		shared: false,            // opened with the shared admin key: the voter is whoever says it is them
 		looking: false,           // with the shared key, "Just looking": not voting
 		voters: [],               // the organisers who vote on the hackathon registrations ([]: an older Apps Script)
-		majority: 0,              // this many of the same vote sets the Decision
+		majority: 0,              // this many grades, and their average sets the Decision
+		grades: null,             // { min, max, accept, waitlist }: the averages that accept and put on the waiting list
 		handOpen: false,          // "Decide by hand" open in the full view
 		people: [],               // the chosen event's registrations, one entry per person
 		shown: []
@@ -231,72 +232,103 @@
 
 	/* --- votes (hackathon) ------------------------------------------------------ */
 
-	// each organiser votes yes or no in their "Vote <name>" column, with their own key; state.majority of the same
-	// sets the Decision, as vote_ in tools/register-backend.gs does
+	// each organiser grades from 1 to 10 in their "Vote <name>" column, with their own key; once state.majority have,
+	// the average sets the Decision (state.grades.accept or more: accepted, .waitlist or more: the waiting list, below:
+	// denied), as vote_ in tools/register-backend.gs does
+	var GRADES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
 	function voting() { return state.voters.length > 0; }
 
 	function voteCol(v) { return 'Vote ' + v; }
 
+	// a grade, or 0 while there is none
 	function voteOf(r, v) {
-		var x = String(get(r, voteCol(v))).trim().toLowerCase();
-		return x === 'yes' || x === 'no' ? x : '';
+		var x = String(get(r, voteCol(v))).trim();
+		var n = /^\d+$/.test(x) ? Number(x) : 0;
+		return GRADES.indexOf(n) !== -1 ? n : 0;
 	}
 
-	// yes and no, with mine (when given) in place of the reader's own vote
-	function voteCount(r, mine) {
-		var n = { yes: 0, no: 0 };
+	// the grades given, with mine (when given; 0 takes it back) in place of the reader's own: { n, avg }
+	function gradesOf(r, mine) {
+		var n = 0, sum = 0;
 		state.voters.forEach(function (v) {
 			var x = v === state.voter && mine !== undefined ? mine : voteOf(r, v);
-			if (x) n[x]++;
+			if (x) { n++; sum += x; }
 		});
-		return n;
+		return { n: n, avg: n ? sum / n : 0 };
 	}
 
-	function majorityOf(r, mine) {
-		var n = voteCount(r, mine);
-		return n.yes >= state.majority ? 'accepted' : n.no >= state.majority ? 'denied' : '';
+	// accepted, waitlist or denied as the grades' average says, once state.majority of them are in
+	function bandOf(avg) {
+		return avg >= state.grades.accept ? 'accepted' : avg >= state.grades.waitlist ? 'waitlist' : 'denied';
 	}
 
-	// the Decision after the reader votes mine: set by the vote when it makes or undoes a majority, else as it was
+	function outcomeOf(r, mine) {
+		var g = gradesOf(r, mine);
+		return g.n >= state.majority ? bandOf(g.avg) : '';
+	}
+
+	// the Decision after the reader grades mine: set by the grade when it changes what the average says, else as it was
 	function decisionAfter(r, mine) {
-		var after = majorityOf(r, mine);
-		return after !== majorityOf(r) ? after : decisionOf(r);
+		var after = outcomeOf(r, mine);
+		return after !== outcomeOf(r) ? after : decisionOf(r);
 	}
+
+	// 7.33, 8, 6.5
+	function avgText(avg) { return String(Math.round(avg * 100) / 100); }
 
 	function noteCol(v) { return 'Note ' + v; }
 
 	function noteOf(r, v) { return get(r, noteCol(v)); }
 
-	// Each registration goes first to state.majority of the voters, by turns, so each reads about 3 letters in 5; a
-	// team counts as its first registration, so its members go to the same voters, one after another
+	// Each registration goes first to state.majority of the voters, picked at random for it, so each reads about 3
+	// letters in 5. At random, but the same on every device: the dice are its email and DEAL. A team counts as its
+	// first registration, so its members go to the same voters, one after another.
+	var DEAL = '2026-10-16';   // another word deals the letters out again
+
 	function groupAt(h) {
 		return h.team ? Math.min.apply(null, h.team.members.map(function (m) { return m.at; })) : h.at;
 	}
 
+	// the registration a team goes by: its first
+	function groupHead(h) {
+		return h.team ? h.team.members.reduce(function (a, m) { return m.at < a.at ? m : a; }) : h;
+	}
+
+	// numbers between 0 and 1 that look random, the same for the same words (FNV-1a, then mulberry32)
+	function dice(words) {
+		var x = 2166136261;
+		for (var i = 0; i < words.length; i++) x = Math.imul(x ^ words.charCodeAt(i), 16777619) >>> 0;
+		return function () {
+			x = (x + 0x6D2B79F5) >>> 0;
+			var t = Math.imul(x ^ (x >>> 15), x | 1);
+			t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+			return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+		};
+	}
+
 	function assignees(h) {
-		var n = state.voters.length;
-		var out = [];
-		for (var i = 0; i < Math.min(state.majority || n, n); i++) out.push(state.voters[(groupAt(h) + i) % n]);
-		return out;
+		var roll = dice(DEAL + ' ' + groupHead(h).email);
+		var order = state.voters.slice();
+		for (var i = order.length - 1; i > 0; i--) {
+			var j = Math.floor(roll() * (i + 1));
+			var t = order[i]; order[i] = order[j]; order[j] = t;
+		}
+		return order.slice(0, Math.min(state.majority || order.length, order.length));
 	}
 
 	function votesIn(h) {
 		return state.voters.filter(function (v) { return voteOf(h, v); }).length;
 	}
 
-	// its first voters are all in and no side has the majority (2 to 1): the others break it
-	function isSplit(h) {
-		return !decisionOf(h) && votesIn(h) >= assignees(h).length;
-	}
-
-	// waiting for the reader: undecided, not voted on by them, and one of theirs or a 2 to 1
+	// waiting for the reader: one of theirs, undecided and not graded by them
 	function needsMe(h) {
 		var me = state.voter;
 		if (!me || decisionOf(h) || voteOf(h, me)) return false;
-		return assignees(h).indexOf(me) !== -1 || isSplit(h);
+		return assignees(h).indexOf(me) !== -1;
 	}
 
-	// the others' votes and notes show once the reader has voted (or it is decided), so each judges a letter alone;
+	// the others' grades and notes show once the reader has graded (or it is decided), so each judges a letter alone;
 	// the shared admin key, which does not vote, sees them all
 	function revealed(regs) {
 		return !state.voter || regs.every(function (r) { return voteOf(r, state.voter) || decisionOf(r); });
@@ -314,13 +346,95 @@
 			.filter(Boolean);
 	}
 
+	// the words of a name, folded as nameKey has them, in the order written
+	function nameWords(s) {
+		return fold(s).split(/[^a-z0-9]+/).filter(Boolean);
+	}
+
+	// two words of a name that are one: the same, a short form ("alex" of "alexandru", never "stan" of "stanescu"), or
+	// a typo (a letter off, two in a long word). Ioan and Ioana, Cristian and Cristina are two people.
+	function nearWord(a, b) {
+		if (a === b) return true;
+		if ((a.slice(-1) === 'a') !== (b.slice(-1) === 'a')) return false;
+		var s = a.length <= b.length ? a : b, l = s === a ? b : a;
+		if (s.length < 4) return false;
+		if (l.indexOf(s) === 0 && !/^(escu|eanu|anu)$/.test(l.slice(s.length))) return true;
+		return distance(a, b) <= (l.length >= 8 ? 2 : 1);
+	}
+
+	// every word of part has its like in whole
+	function within(part, whole) {
+		return part.every(function (t) { return whole.some(function (u) { return nearWord(t, u); }); });
+	}
+
+	// one person in two names of two words or more: every word of the shorter in the longer
+	function samePerson(a, b) {
+		return a.length >= 2 && b.length >= 2 && (a.length <= b.length ? within(a, b) : within(b, a));
+	}
+
+	// A teammate's name that nobody registered under as written, matched to the same people written another way, as
+	// similarMates_ in the Apps Script does. people: { words, mails (their emails before the @), mates (the names they
+	// wrote) }, namer among them. { found: the people it is, left: what is still nobody's ("" for none) }:
+	// - whole names in what was written: a longer form ("Cosmin-Eusebiu Patrașcu" for Cosmin Patrascu), or several
+	//   run together without a comma ("Nitas Robert-Cristian Moise Robert-Alexandru"), the namer's own among them
+	// - a shorter form, a typo or a short form ("David Munteanu" for David-Andrei Munteanu, "Pospai Alexandru" for
+	//   alex pospai), when only one person fits
+	// - the given names right and the family name in their email (registered with a teammate's family name)
+	// - someone who named the namer back, with two words of it ("Radu Stan Pop" for Radu-Stefan Pop), or the one
+	//   word written ("Bogdan")
+	function similarMates(name, people, namer) {
+		var words = nameWords(name);
+		var none = { found: [], left: name };
+		if (!words.length) return none;
+		var inside = people.filter(function (p) { return p.words.length >= 2 && within(p.words, words); });
+		if (inside.length) {
+			var used = [].concat.apply([], inside.map(function (p) { return p.words; }));
+			var left = words.filter(function (t) { return !used.some(function (u) { return nearWord(t, u); }); });
+			// two words or more left over are someone else, named in the same breath
+			var rest = left.length < 2 ? '' : String(name).trim().split(/[\s-]+/).filter(function (w) {
+				return nameWords(w).some(function (t) { return left.indexOf(t) !== -1; });
+			}).join(' ');
+			return { found: inside.filter(function (p) { return p !== namer; }), left: rest };
+		}
+		if (namer && words.length >= 2 && within(words, namer.words)) return { found: [], left: '' };   // their own, shorter
+		var others = people.filter(function (p) { return p !== namer; });
+		var fit = words.length < 2 ? [] : others.filter(function (p) { return within(words, p.words); });
+		if (fit.length) return fit.length === 1 ? { found: fit, left: '' } : none;
+		var mail = others.filter(function (p) {
+			var same = words.filter(function (t) { return p.words.some(function (u) { return nearWord(t, u); }); });
+			return same.length >= 2 && words.every(function (t) {
+				return same.indexOf(t) !== -1 || (t.length >= 4 && p.mails.some(function (m) { return m.indexOf(t) !== -1; }));
+			});
+		});
+		if (mail.length === 1) return { found: mail, left: '' };
+		if (namer) {
+			var back = others.filter(function (p) {
+				var same = words.filter(function (t) { return p.words.some(function (u) { return nearWord(t, u); }); }).length;
+				return (same >= 2 || (words.length === 1 && same === 1)) &&
+					p.mates.some(function (m) { var w = nameWords(m); return w.slice().sort().join(' ') === namer.words.slice().sort().join(' ') || samePerson(w, namer.words); });
+			});
+			if (back.length === 1) return { found: back, left: '' };
+		}
+		return none;
+	}
+
 	// Teams among the hackathon registrations: whoever named someone, or was named, joins them, with the names
-	// nobody registered under. Each member's record gets r.team = { id, members, missing }; others get null.
+	// nobody registered under. Each member's record gets r.team = { id, members, missing }; others get null. One
+	// named another way than they registered (similarMates) gets r.namedAs, the names written for them.
 	function buildTeams(records) {
 		var hack = records.filter(function (r) { return r.event === 'hackathon' || r.event === 'both'; });
 		var byName = {}, up = [], missing = [];
+		var people = hack.map(function (r, i) {
+			return {
+				i: i,
+				words: nameWords(r.name),
+				mails: [r.email].concat(get(r, 'Other emails').split(/[,;\s]+/)).filter(Boolean).map(function (e) { return fold(e).split('@')[0]; }),
+				mates: get(r, 'Team') === 'team' ? teammates(get(r, 'Team name and members')) : []
+			};
+		});
 		hack.forEach(function (r, i) {
 			r.team = null;
+			r.namedAs = [];
 			r.nameKey = nameKey(r.name);
 			(byName[r.nameKey] = byName[r.nameKey] || []).push(i);
 			up.push(i);
@@ -332,8 +446,13 @@
 			teammates(get(r, 'Team name and members')).forEach(function (n) {
 				var k = nameKey(n);
 				if (!k || k === r.nameKey) return;
-				if (byName[k]) byName[k].forEach(function (j) { up[root(j)] = root(i); });
-				else missing[i].push(n);
+				if (byName[k]) { byName[k].forEach(function (j) { up[root(j)] = root(i); }); return; }
+				var m = similarMates(n, people, people[i]);
+				m.found.forEach(function (p) {
+					up[root(p.i)] = root(i);
+					if (hack[p.i].namedAs.indexOf(n) === -1) hack[p.i].namedAs.push(n);
+				});
+				if (m.left) missing[i].push(m.left);
 			});
 		});
 		var groups = {}, id = 0;
@@ -608,6 +727,21 @@
 		});
 	}
 
+	// for a save that can go twice and change nothing more (a vote sets the same vote and note again): when Google
+	// does not answer, or answers with its error page, it is tried again, three times in all, as the list is. Not
+	// after a time-out: the first one may still be at work.
+	function postAgain(body, timeout, done) {
+		var started = Date.now();
+		var tries = 0;
+		(function attempt() {
+			tries++;
+			post(body, timeout, function (json, err) {
+				if (!json && err && err.name !== 'AbortError' && tries < 3 && Date.now() - started < 40000) window.setTimeout(attempt, tries * 1500);
+				else done(json, err);
+			});
+		})();
+	}
+
 	// why a decision or a send did not go through; an answer without "action" comes from a script older than the page
 	function actionProblem(json, err, what) {
 		if (json && json.action && json.error) return json.error;
@@ -719,7 +853,10 @@
 		unlock(key, $('remember').checked);
 	});
 
-	$('lock-now').addEventListener('click', function () { lock(''); });
+	$('lock-now').addEventListener('click', function () {
+		if (poolSize() && !window.confirm(plural(poolSize(), 'grade is', 'grades are') + ' not sent yet, and Lock forgets them. Lock anyway?')) return;
+		lock('');
+	});
 
 	/* --- who is reading, with the shared key ----------------------------------------- */
 
@@ -763,8 +900,10 @@
 	function setWho(v) {
 		if (v) chooseVoter(v);
 		else forgetVoter();
+		if (v !== state.voter) sendPool();   // the grades not sent yet go in the name they were made in
 		state.voter = v;
 		state.looking = !v;
+		applyPool();
 		if (whoDlg.open) {
 			if (typeof whoDlg.close === 'function') whoDlg.close();
 			else whoDlg.removeAttribute('open');
@@ -826,10 +965,15 @@
 		state.certificate = json.certificate || '';
 		state.voters = json.voters || [];
 		state.majority = json.majority || 0;
+		state.grades = json.grades || null;
+		// an Apps Script from before the grades still counts yes and no: no grading until it is deployed again
+		var old = state.voters.length > 0 && !state.grades;
+		if (old) state.voters = [];
 		// a personal key votes as its own; the shared one as whoever this device says it is (asked below)
 		state.shared = !json.voter && state.voters.length > 0;
-		state.voter = json.voter || (state.shared && state.voters.indexOf(chosenVoter()) !== -1 ? chosenVoter() : '');
+		state.voter = old ? '' : json.voter || (state.shared && state.voters.indexOf(chosenVoter()) !== -1 ? chosenVoter() : '');
 		if (state.decision === 'tovote' && !state.voter) state.decision = 'any';
+		applyPool();
 		state.at = json.at ? new Date(json.at) : new Date();
 		state.emailsLeft = typeof json.emailsLeft === 'number' ? json.emailsLeft : null;
 		$('lock').hidden = true;
@@ -838,13 +982,14 @@
 		renderTiles();
 		renderEvent();
 		renderView();
+		if (old) dashError('The Apps Script still counts Yes and No, and this page gives grades from 1 to 10: paste tools/register-backend.gs into the editor, then Deploy → Manage deployments → pencil → Version: New version → Deploy. Until then nobody can grade.');
 		if (state.shared && !state.voter && !state.looking) askWho();
 	}
 
 	function renderMeta() {
 		var parts = ['Updated ' + fmtClock.format(state.at)];
 		if (state.emailsLeft !== null) parts.push(plural(state.emailsLeft, 'email', 'emails') + ' left today');
-		if (voting()) parts.push(state.voter ? 'Voting as ' + state.voter : 'Just looking');
+		if (voting()) parts.push(state.voter ? 'Grading as ' + state.voter : 'Just looking');
 		var meta = $('meta');
 		meta.textContent = parts.join(' · ');
 		if (state.shared) {
@@ -1254,16 +1399,15 @@
 	// More filters: what the bars do not show. hack: on the person's hackathon registration (and only in the
 	// hackathon views); when: shown only then
 	var EXTRAS = [
-		{ key: 'myvote', label: 'Your vote', hack: true, when: function () { return !!state.voter; },
-			options: [['none', 'Not voted yet'], ['yes', 'Yes'], ['no', 'No']],
-			test: function (h, v) { var x = voteOf(h, state.voter); return v === 'none' ? !x : x === v; } },
-		{ key: 'votes', label: 'Votes', hack: true, when: voting,
-			options: [['none', 'Nobody voted yet'], ['some', 'Some votes, undecided'], ['split', 'A 2 to 1'], ['notes', 'With notes you can see']],
+		{ key: 'myvote', label: 'Your grade', hack: true, when: function () { return !!state.voter; },
+			options: [['none', 'Not graded yet'], ['accepted', 'High (accept)'], ['waitlist', 'Middle (waitlist)'], ['denied', 'Low (deny)']],
+			test: function (h, v) { var x = voteOf(h, state.voter); return v === 'none' ? !x : !!x && bandOf(x) === v; } },
+		{ key: 'votes', label: 'Grades', hack: true, when: voting,
+			options: [['none', 'Nobody graded yet'], ['some', 'Some grades, undecided'], ['notes', 'With notes you can see']],
 			test: function (h, v) {
 				var n = votesIn(h);
 				if (v === 'none') return !n;
 				if (v === 'some') return n > 0 && !decisionOf(h);
-				if (v === 'split') return isSplit(h);
 				return revealed([h]) && state.voters.some(function (x) { return noteOf(h, x); });
 			} },
 		{ key: 'letter', label: 'Motivation letter', hack: true,
@@ -1465,13 +1609,16 @@
 				td.appendChild(b);
 				return td;
 			} },
-		// the hackathon decision, or the votes that make it: undecided first when sorted, and among them those the
-		// reader has not voted on
-		{ key: 'decision', label: function () { return voting() ? 'Vote' : 'Decision'; }, always: true,
+		// the hackathon decision, or the grades that make it: with grades, the highest average first when sorted (one
+		// the reader may not see yet goes with the ungraded), else undecided first
+		{ key: 'decision', label: function () { return voting() ? 'Grade' : 'Decision'; }, always: true,
 			when: function () { return state.event !== 'conference'; },
 			sort: function (r) {
 				var h = hackReg(r);
-				return h ? (DECISIONS.indexOf(decisionOf(h)) + 1) * 2 + (state.voter && voteOf(h, state.voter) ? 1 : 0) : 99;
+				if (!h) return voting() ? -1 : 99;
+				if (!voting()) return DECISIONS.indexOf(decisionOf(h)) + 1;
+				var g = gradesOf(h);
+				return g.n && revealed([h]) ? g.avg : 0;
 			},
 			cell: function (r) {
 				var td = el('td', 'c-decision');
@@ -1660,6 +1807,11 @@
 		});
 	}
 
+	// "ALEX-BOGDAN FEHER (named “Farcas Alex-Bogdan”)": a teammate matched by a name written another way, to check
+	function namedAsText(r) {
+		return r.name + ' (named ' + r.namedAs.map(function (n) { return '“' + n + '”'; }).join(', ') + ')';
+	}
+
 	// the Teams tab: a row above each team's members, with the decision for all of them at once in the Decision
 	// column, and who is in it after
 	function teamRow(team, cols) {
@@ -1680,6 +1832,8 @@
 		info.appendChild(el('span', 'team-names', team.members.map(function (r) { return r.name; }).join(', ')));
 		if (team.missing.length) info.appendChild(el('span', 'team-warn', '⚠ Not registered: ' + team.missing.join(', ')));
 		if (size > 3) info.appendChild(el('span', 'team-warn', '⚠ Over 3 people'));
+		var named = team.members.filter(function (r) { return r.namedAs.length; });
+		if (named.length) info.appendChild(el('span', 'team-named', 'Named another way: ' + named.map(namedAsText).join(', ')));
 		rest.appendChild(info);
 		tr.appendChild(mid);
 		tr.appendChild(rest);
@@ -1690,8 +1844,8 @@
 		var b = ev.target.closest('[data-sort]');
 		if (!b) return;
 		var key = b.getAttribute('data-sort');
-		// a new column starts with the newest or A to Z; a second click turns it round
-		state.sort = state.sort.key === key ? { key: key, dir: -state.sort.dir } : { key: key, dir: key === 'time' ? -1 : 1 };
+		// a new column starts with the newest, the highest average or A to Z; a second click turns it round
+		state.sort = state.sort.key === key ? { key: key, dir: -state.sort.dir } : { key: key, dir: key === 'time' || key === 'decision' && voting() ? -1 : 1 };
 		renderTable();
 	});
 
@@ -1739,27 +1893,28 @@
 			box.appendChild(decisionControl([h], p.name || 'this person'));
 		}
 		if (h.team) {
-			var mates = h.team.members.filter(function (m) { return m !== h; }).map(function (m) { return m.name; })
-				.concat(h.team.missing.map(function (n) { return n + ' (not registered)'; }));
+			var mates = h.team.members.filter(function (m) { return m !== h; }).map(function (m) {
+				return m.namedAs.length ? namedAsText(m) : m.name;
+			}).concat(h.team.missing.map(function (n) { return n + ' (not registered)'; }));
 			if (mates.length) box.appendChild(el('p', 'detail-team', 'Team with ' + mates.join(', ')));
 		}
 		if (decisionOf(h) === 'accepted') box.appendChild(dashboardLine(h));
 	}
 
-	// the full view with votes: the reader's vote, everyone's, what they add up to, and the decision by hand for the
+	// the full view with grades: the reader's, everyone's, what they add up to, and the decision by hand for the
 	// exceptions, folded away
 	function renderDetailVotes(box, h, who) {
-		box.appendChild(el('span', 'detail-decision-label', state.voter ? 'Your vote' : 'Votes'));
-		if (state.voter) box.appendChild(voteControl([h], who));
+		box.appendChild(el('span', 'detail-decision-label', state.voter ? 'Your grade' : 'Grades'));
+		if (state.voter) box.appendChild(voteControl([h], who, true));
 		var open = revealed([h]);
 		var list = el('div', 'vote-list');
 		state.voters.forEach(function (v) {
 			var x = voteOf(h, v);
 			if (!open && v !== state.voter) list.appendChild(el('span', 'vote-chip' + (x ? ' is-in' : ''), v + ' ' + (x ? '·' : '–')));
-			else list.appendChild(el('span', 'vote-chip' + (x ? ' is-' + x : ''), v + ' ' + (x === 'yes' ? '✓' : x === 'no' ? '✕' : '–')));
+			else list.appendChild(el('span', 'vote-chip' + gradeClass(x), v + ' ' + (x || '–')));
 		});
 		box.appendChild(list);
-		if (!open) box.appendChild(el('p', 'vote-hidden muted', 'Vote first: then you see how the others voted, and their notes.'));
+		if (!open) box.appendChild(el('p', 'vote-hidden muted', 'Grade first: then you see the others’ grades, and their notes.'));
 		else state.voters.forEach(function (v) {
 			if (noteOf(h, v)) box.appendChild(el('p', 'vote-note', v + ': “' + noteOf(h, v) + '”'));
 		});
@@ -1769,7 +1924,7 @@
 		hand.addEventListener('toggle', function () { state.handOpen = hand.open; });
 		hand.appendChild(el('summary', null, 'Decide by hand'));
 		hand.appendChild(decisionControl([h], who));
-		hand.appendChild(el('p', 'muted', 'For the exceptions: the waiting list, a tie while someone is away. The next vote that makes or undoes a majority sets the decision again.'));
+		hand.appendChild(el('p', 'muted', 'For the exceptions: someone away, an average just under the line. The next grade that changes what the average says sets the decision again.'));
 		box.appendChild(hand);
 	}
 
@@ -1912,7 +2067,7 @@
 
 	/* --- votes -------------------------------------------------------------------- */
 
-	// the table's cell, or a team's: the reader's vote (none with the shared key), everyone's, and the result
+	// the table's cell, or a team's: the reader's grade (none with the shared key), everyone's, and the result
 	function voteCell(regs, who) {
 		var box = el('div', 'dec-box');
 		if (state.voter) box.appendChild(voteControl(regs, who));
@@ -1921,35 +2076,56 @@
 		return box;
 	}
 
-	// Yes and No for the reader, on one registration or a whole team; pressing the chosen one again takes it back
-	function voteControl(regs, who) {
+	// ' is-accepted', ' is-waitlist' or ' is-denied' for a grade, by where it would put the average
+	function gradeClass(x) { return x ? ' is-' + bandOf(x) : ''; }
+
+	// the reader's grade, on one registration or a whole team: in the table a list (– takes it back), in the full view
+	// the ten buttons (pressing the chosen one again takes it back)
+	function voteControl(regs, who, wide) {
 		var mine = regs.map(function (r) { return voteOf(r, state.voter); });
-		var current = mine.every(function (x) { return x === mine[0]; }) ? mine[0] : null;   // null: a team voted differently
+		var current = mine.every(function (x) { return x === mine[0]; }) ? mine[0] : null;   // null: a team graded differently
 		var saving = regs.some(function (r) { return state.pending[r.email]; });
-		var group = el('div', 'dec vote' + (saving ? ' is-saving' : ''));
-		group.setAttribute('role', 'group');
-		group.setAttribute('aria-label', 'Your vote on ' + who);
+		var group = el(wide ? 'div' : 'span', 'dec ' + (wide ? 'grade' : 'grade-pick') + (saving ? ' is-saving' : ''));
 		group.setAttribute('data-key', regs.map(function (r) { return r.email; }).join(' '));
+		group.addEventListener('click', function (ev) { ev.stopPropagation(); });   // a click here does not open the registration
+		if (!wide) {
+			var pick = el('select', 'grade-select' + gradeClass(current));
+			pick.setAttribute('data-d', 'pick');
+			pick.setAttribute('aria-label', 'Your grade for ' + who + ', from 1 to 10');
+			if (current === null) pick.appendChild(new Option('Mixed', 'mixed'));
+			pick.appendChild(new Option('–', ''));
+			GRADES.forEach(function (g) { pick.appendChild(new Option(String(g), String(g))); });
+			pick.value = current === null ? 'mixed' : String(current || '');
+			if (saving) pick.setAttribute('aria-disabled', 'true');   // not disabled: that would lose the focus
+			pick.addEventListener('change', function () {
+				if (saving || pick.value === 'mixed') { pick.value = current === null ? 'mixed' : String(current || ''); return; }
+				setVote(regs, Number(pick.value) || 0);
+			});
+			group.appendChild(pick);
+			return group;
+		}
+		group.setAttribute('role', 'group');
+		group.setAttribute('aria-label', 'Your grade for ' + who + ', from 1 to 10');
 		if (saving) group.setAttribute('aria-busy', 'true');
-		['yes', 'no'].forEach(function (x) {
-			var b = el('button', 'dec-' + x, x === 'yes' ? 'Yes' : 'No');
+		GRADES.forEach(function (g) {
+			var b = el('button', 'dec-g' + gradeClass(g), String(g));
 			b.type = 'button';
-			b.setAttribute('data-d', x);
-			b.setAttribute('aria-pressed', String(current === x));
+			b.setAttribute('data-d', String(g));
+			b.setAttribute('aria-pressed', String(current === g));
 			if (saving) b.setAttribute('aria-disabled', 'true');
 			group.appendChild(b);
 		});
 		group.addEventListener('click', function (ev) {
-			ev.stopPropagation();   // a click here does not open the registration
 			var b = ev.target.closest('button[data-d]');
 			if (!b || saving) return;
-			var x = b.getAttribute('data-d');
-			setVote(regs, current === x ? '' : x);
+			var g = Number(b.getAttribute('data-d'));
+			setVote(regs, current === g ? 0 : g);
 		});
 		return group;
 	}
 
-	// one tag per organiser: yes, no, not yet (and, for a team, members voted differently); the names in the title
+	// one tag per organiser: their grade, or not yet (and, for a team, members graded differently); the names in the
+	// title
 	function voteChips(regs) {
 		var box = el('div', 'votes');
 		var said = [];
@@ -1960,30 +2136,30 @@
 			if (!open && v !== state.voter) {
 				var any = xs.some(Boolean);
 				box.appendChild(el('span', 'vote-chip' + (any ? ' is-in' : ''), v.slice(0, 2)));
-				said.push(v + ': ' + (any ? 'voted' : 'not yet'));
+				said.push(v + ': ' + (any ? 'graded' : 'not yet'));
 				return;
 			}
 			var x = xs.every(function (y) { return y === xs[0]; }) ? xs[0] : 'mixed';
-			box.appendChild(el('span', 'vote-chip' + (x ? ' is-' + x : ''), v.slice(0, 2)));
-			said.push(v + ': ' + (x === 'yes' ? 'yes' : x === 'no' ? 'no' : x === 'mixed' ? 'not the same for everyone' : 'not yet'));
+			box.appendChild(el('span', 'vote-chip' + (x === 'mixed' ? ' is-mixed' : gradeClass(x)), v.slice(0, 2) + (x && x !== 'mixed' ? ' ' + x : '')));
+			said.push(v + ': ' + (x === 'mixed' ? 'not the same for everyone' : x || 'not yet'));
 		});
-		if (!open) said.push('vote to see how');
+		if (!open) said.push('grade to see theirs');
 		box.title = said.join(' · ');
 		box.setAttribute('aria-label', said.join(', '));
 		return box;
 	}
 
-	// what the votes came to: the Decision, how many voted, "by hand" when it is not what the votes say, and the
-	// note on the email
+	// what the grades came to: the Decision, the average (or how many graded, before the reader has), "by hand" when
+	// it is not what the average says, and the note on the email
 	function voteResult(regs) {
 		var ds = regs.map(decisionOf);
 		var current = ds.every(function (d) { return d === ds[0]; }) ? ds[0] : null;
 		var line = el('div', 'vote-result');
 		if (current !== null) {
-			var n = regs.length === 1 ? voteCount(regs[0]) : null;
+			var g = regs.length === 1 ? gradesOf(regs[0]) : null;
 			var text = DECISION_LABEL[current];
-			if (n && !current) text += revealed(regs) ? ' · ' + n.yes + ' yes, ' + n.no + ' no' : ' · ' + plural(n.yes + n.no, 'vote', 'votes') + ' in';
-			if (n && current && current !== majorityOf(regs[0])) text += ' · by hand';
+			if (g && g.n) text += revealed(regs) ? ' · average ' + avgText(g.avg) + ' of ' + g.n : ' · ' + plural(g.n, 'grade', 'grades') + ' in';
+			if (g && current && current !== outcomeOf(regs[0])) text += ' · by hand';
 			line.appendChild(el('span', 'dec-state is-' + (current || 'none'), text));
 		}
 		var note = decisionNote(regs, current);
@@ -1997,39 +2173,39 @@
 		if (j !== -1) r.row[j] = v;
 	}
 
-	// shows the vote, and the decision it makes, at once and saves it; the Apps Script answers everyone's votes as
-	// they are now, which the page then shows. Put back as it was if the save fails.
-	// opts (the reading mode): { note, done(ok, set, problem) }, set being what the Apps Script answered for regs[0]
-	function setVote(regs, x, opts) {
-		opts = opts || {};
-		var col = voteCol(state.voter);
-		var next = regs.map(function (r) { return decisionAfter(r, x); });
-		// a vote that changes the decision of someone already emailed another: ask, as for a decision by hand
+	// a grade that changes the decision of someone already emailed another: asked first, as for a decision by hand
+	function voteConfirmed(regs, next) {
 		var told = regs.filter(function (r, i) {
 			var m = emailedOf(r);
 			return m && m.sent && next[i] !== decisionOf(r) && next[i] !== m.decision;
 		});
-		if (told.length) {
-			var r0 = told[0], d = next[regs.indexOf(r0)], was = emailedOf(r0).decision;
-			var q = (regs.length > 1 ? told.length + ' of them were' : (r0.name || 'This person') + ' was') +
-				' already emailed “' + (DECISION_LABEL[was] || was) + '”. ' +
-				(d ? 'Your vote makes it ' + DECISION_LABEL[d] + ': the next send emails that.'
-					: 'Your vote leaves no majority: Undecided again, and no email goes out about that, so tell them yourself.') +
-				' Vote anyway?';
-			if (!window.confirm(q)) { if (opts.done) opts.done(false, null, ''); return; }
-		}
-		var before = regs.map(function (r) { return { vote: get(r, col), note: get(r, noteCol(state.voter)), decision: get(r, 'Decision') }; });
+		if (!told.length) return true;
+		var r0 = told[0], d = next[regs.indexOf(r0)], was = emailedOf(r0).decision;
+		return window.confirm((regs.length > 1 ? told.length + ' of them were' : (r0.name || 'This person') + ' was') +
+			' already emailed “' + (DECISION_LABEL[was] || was) + '”. ' +
+			(d ? 'Your grade makes it ' + DECISION_LABEL[d] + ': the next send emails that.'
+				: 'Without your grade there are too few: Undecided again, and no email goes out about that, so tell them yourself.') +
+			' Grade anyway?');
+	}
+
+	// shows the grade (0: taken back), and the decision it makes, at once and saves it; the Apps Script answers
+	// everyone's grades as they are now, which the page then shows. Put back as it was if the save fails.
+	function setVote(regs, x) {
+		var col = voteCol(state.voter);
+		var next = regs.map(function (r) { return decisionAfter(r, x); });
+		if (!voteConfirmed(regs, next)) return;
+		var before = regs.map(function (r) { return { vote: get(r, col), decision: get(r, 'Decision') }; });
 		regs.forEach(function (r, i) {
-			setCell(r, col, x);
-			if (opts.note !== undefined) setCell(r, noteCol(state.voter), opts.note);
+			setCell(r, col, x || '');
 			setLocal(r, next[i]);
 			state.pending[r.email] = true;
+			delete rv.pool[r.email];   // the newest grade wins over one of the reading mode not sent yet
 		});
+		keepPool();
 		refreshDecisions();
-		var body = { action: 'vote', key: state.key, emails: regs.map(function (r) { return r.email; }), vote: x };
-		if (opts.note !== undefined) body.note = opts.note;
+		var body = { action: 'vote', key: state.key, emails: regs.map(function (r) { return r.email; }), vote: x || '' };
 		if (state.shared) body.as = state.voter;
-		post(body, 60000, function (json, err) {
+		postAgain(body, 60000, function (json, err) {
 			regs.forEach(function (r) { delete state.pending[r.email]; });
 			if (json && json.denied) { lock(json.error); return; }
 			if (json && json.ok && json.action === 'vote') {
@@ -2037,32 +2213,32 @@
 				(json.set || []).forEach(function (s) { got[s.email] = s; });
 				var missing = [];
 				regs.forEach(function (r, i) {
-					var s = got[r.email];
-					if (!s) {
-						missing.push(r.email);
-						setCell(r, col, before[i].vote);
-						setLocal(r, before[i].decision);
-						return;
-					}
-					Object.keys(s.votes || {}).forEach(function (v) { setCell(r, voteCol(v), s.votes[v]); });
-					Object.keys(s.notes || {}).forEach(function (v) { setCell(r, noteCol(v), s.notes[v]); });
-					setLocal(r, s.decision);
+					if (got[r.email]) { answered(r, got[r.email]); return; }
+					missing.push(r.email);
+					setCell(r, col, before[i].vote);
+					setLocal(r, before[i].decision);
 				});
-				var problem = missing.length ? 'Not saved, as the sheet has no hackathon registration for ' + missing.join(', ') + ' any more. Refresh the page.' : '';
-				dashError(problem);
-				if (opts.done) opts.done(!problem, got[regs[0].email] || null, problem);
+				dashError(missing.length ? notThere(missing) : '');
 			} else {
 				regs.forEach(function (r, i) {
 					setCell(r, col, before[i].vote);
-					if (opts.note !== undefined) setCell(r, noteCol(state.voter), before[i].note);
 					setLocal(r, before[i].decision);
 				});
-				var why = 'The vote was not saved. ' + actionProblem(json, err, 'vote');
-				dashError(why);
-				if (opts.done) opts.done(false, null, why);
+				dashError('The grade was not saved. ' + actionProblem(json, err, 'vote'));
 			}
 			refreshDecisions();
 		});
+	}
+
+	// what the Apps Script answered for one registration: everyone's grades and notes, and the Decision they make
+	function answered(r, s) {
+		Object.keys(s.votes || {}).forEach(function (v) { setCell(r, voteCol(v), s.votes[v]); });
+		Object.keys(s.notes || {}).forEach(function (v) { setCell(r, noteCol(v), s.notes[v]); });
+		setLocal(r, s.decision);
+	}
+
+	function notThere(emails) {
+		return 'Not saved, as the sheet has no hackathon registration for ' + emails.join(', ') + ' any more. Refresh the page.';
 	}
 
 	// after a decision: the table and its tabs, the send panel and the open registration, with the focus kept on
@@ -2416,9 +2592,9 @@
 
 	/* --- reading the letters --------------------------------------------------------- */
 
-	// One registration at a time, its letter beside the facts: Y and N vote and move on, S skips (it comes back at
-	// the end), ← goes back. The queue is what needsMe says: the 2 to 1s first, then the reader's own, a team's
-	// members one after another, and the ones skipped after all of them. Every BREAK_EVERY votes, a pause. The letters come through the Apps Script (the
+	// One registration at a time, its letter beside the facts: 1 to 9 and 0 (for 10) grade and move on, S skips (it
+	// comes back at the end), ← goes back. The queue is what needsMe says: the reader's own, a team's members one after
+	// another, and the ones skipped after all of them. Every BREAK_EVERY grades, a pause. The letters come through the Apps Script (the
 	// "letter" action) as PDFs shown in the page, the next two fetched while the reader reads.
 
 	var BREAK_EVERY = 20;
@@ -2426,11 +2602,14 @@
 
 	var rv = {
 		current: null,    // the registration on screen
-		trail: [],        // the emails voted on or skipped this time, for Back
+		trail: [],        // the emails graded or skipped this time, for Back
 		skipped: {},      // emails skipped this time: at the end of the queue
-		done: 0,          // votes this time, for the pauses
+		done: 0,          // grades this time, for the pauses
 		resting: false,
 		letters: {},      // email -> { loading, url, none, error }
+		pool: {},         // email -> { vote, note, before }: the grades not sent yet
+		poolVoter: '',    // whose they are
+		sending: false,
 		order: []         // the emails of the letters kept, oldest first
 	};
 	var review = $('review');
@@ -2442,22 +2621,21 @@
 	function reviewQueue() {
 		return hackRecords().filter(needsMe).sort(function (a, b) {
 			return Number(!!rv.skipped[a.email]) - Number(!!rv.skipped[b.email]) ||
-				Number(isSplit(b)) - Number(isSplit(a)) ||
 				groupAt(a) - groupAt(b) || a.at - b.at;
 		});
 	}
 
 	// above the table, for a voter: how many letters wait for them
 	function renderReviewPanel() {
+		renderPool();
 		var panel = $('review-panel');
 		panel.hidden = !state.voter || state.event === 'conference';
 		if (panel.hidden) return;
 		var q = reviewQueue();
-		var splits = q.filter(isSplit).length;
 		var voted = hackRecords().filter(function (h) { return voteOf(h, state.voter); }).length;
-		$('review-status').textContent = (q.length
-			? plural(q.length, 'letter waits', 'letters wait') + ' for you' + (splits ? ', ' + splits + ' of them a 2 to 1 to break' : '')
-			: 'No letter waits for you now') + ' · you have voted on ' + voted;
+		$('review-status').textContent = (q.length ? plural(q.length, 'letter waits', 'letters wait') + ' for you' : 'No letter waits for you now') +
+			' · you have graded ' + voted +
+			(poolSize() ? ', ' + plural(poolSize(), 'grade', 'grades') + ' not sent yet' : '');
 		$('review-open').disabled = !q.length;
 	}
 
@@ -2475,6 +2653,7 @@
 			else review.removeAttribute('open');
 		}
 		rv.current = null;
+		sendPool();
 		refreshDecisions();
 	}
 
@@ -2488,6 +2667,8 @@
 		rv.order = [];
 		rv.skipped = {};
 		rv.done = 0;
+		rv.pool = {};
+		keepPool();
 		if (review.open) closeReview();
 	}
 
@@ -2531,7 +2712,7 @@
 	function renderReview() {
 		var q = reviewQueue();
 		var total = rv.done + q.length;
-		$('rv-count').textContent = rv.done ? rv.done + ' voted this time · ' + plural(q.length, 'left', 'left') : plural(q.length, 'letter', 'letters') + ' for you';
+		$('rv-count').textContent = rv.done ? rv.done + ' graded this time · ' + plural(q.length, 'left', 'left') : plural(q.length, 'letter', 'letters') + ' for you';
 		$('rv-bar').style.width = (total ? Math.round(100 * rv.done / total) : 100) + '%';
 		$('rv-main').hidden = rv.resting || !rv.current;
 		$('rv-msg').hidden = !$('rv-main').hidden;
@@ -2588,7 +2769,7 @@
 		var card = $('rv-card');
 		card.textContent = '';
 		var mine = voteOf(h, state.voter);
-		card.appendChild(el('p', 'eyebrow', mine ? 'You voted ' + mine : isSplit(h) ? 'A 2 to 1: yours breaks it' : 'One of yours'));
+		card.appendChild(el('p', 'eyebrow', mine ? 'You gave it ' + mine + (rv.pool[h.email] ? ' · not sent yet' : '') : 'One of yours'));
 		card.appendChild(el('h2', 'rv-name', h.name || '(no name)'));
 		var dl = el('dl', 'rv-facts');
 		// the merged name, and what they wrote when it says more than a spelling of it ("Facultatea de Geologie")
@@ -2602,17 +2783,17 @@
 		fact(dl, 'Motivation', get(h, 'Motivation'));
 		card.appendChild(dl);
 
-		// the others: who has voted, and how once the reader has
+		// the others: who has graded, and their grades once the reader has
 		var others = state.voters.filter(function (v) { return v !== state.voter; });
 		var box = el('div', 'rv-others');
 		if (!revealed([h])) {
 			var n = others.filter(function (v) { return voteOf(h, v); }).length;
-			box.appendChild(el('p', 'muted', n ? plural(n, 'other has', 'others have') + ' voted: you see how once you vote.' : 'Nobody else has voted on it yet.'));
+			box.appendChild(el('p', 'muted', n ? plural(n, 'other has', 'others have') + ' graded it: you see theirs once you grade.' : 'Nobody else has graded it yet.'));
 		} else {
 			others.forEach(function (v) {
 				var x = voteOf(h, v);
 				var line = el('p', 'rv-other');
-				line.appendChild(el('span', 'vote-chip' + (x ? ' is-' + x : ''), v + ' ' + (x === 'yes' ? '✓' : x === 'no' ? '✕' : '–')));
+				line.appendChild(el('span', 'vote-chip' + gradeClass(x), v + ' ' + (x || '–')));
 				if (noteOf(h, v)) line.appendChild(el('span', 'rv-other-note', '“' + noteOf(h, v) + '”'));
 				box.appendChild(line);
 			});
@@ -2632,16 +2813,17 @@
 		card.appendChild(note);
 
 		var row = el('div', 'rv-vote');
-		[['yes', 'Yes', 'Y'], ['no', 'No', 'N']].forEach(function (b) {
-			var btn = el('button', 'btn rv-' + b[0]);
+		row.setAttribute('role', 'group');
+		row.setAttribute('aria-label', 'Your grade, from 1 to 10');
+		GRADES.forEach(function (g) {
+			var btn = el('button', 'btn rv-grade' + gradeClass(g), String(g));
 			btn.type = 'button';
-			btn.setAttribute('aria-pressed', String(mine === b[0]));
-			btn.appendChild(document.createTextNode(b[1]));
-			btn.appendChild(el('kbd', null, b[2]));
-			btn.addEventListener('click', function () { reviewVote(b[0]); });
+			btn.setAttribute('aria-pressed', String(mine === g));
+			btn.addEventListener('click', function () { reviewVote(g); });
 			row.appendChild(btn);
 		});
 		card.appendChild(row);
+		card.appendChild(el('p', 'rv-scale muted', 'An average of ' + state.grades.accept + ' or more accepts, ' + state.grades.waitlist + ' or more puts on the waiting list, below that denies.'));
 		var more = el('div', 'rv-more');
 		var back = el('button', 'btn small ghost', '← Back');
 		back.type = 'button';
@@ -2653,36 +2835,34 @@
 		more.appendChild(back);
 		more.appendChild(skip);
 		card.appendChild(more);
-		card.appendChild(el('p', 'rv-keys muted', 'Y yes · N no · S or → ' + (mine ? 'next' : 'skip') + ' · ← back · Esc close'));
+		card.appendChild(el('p', 'rv-keys muted', '1 to 9, 0 for 10 · S or → ' + (mine ? 'next' : 'skip') + ' · ← back · Esc close'));
 	}
 
 	function reviewVote(x) {
 		var h = rv.current;
 		if (!h || state.pending[h.email]) return;
 		var note = $('rv-note') ? $('rv-note').value.trim() : '';
-		var again = !!voteOf(h, state.voter);   // a vote changed after Back
-		setVote([h], x, {
-			note: note,
-			done: function (ok, set, problem) {
-				if (!ok) { if (problem) toast(problem, true); return; }
-				var said = state.voters.filter(function (v) { return v !== state.voter && set && set.votes[v]; })
-					.map(function (v) { return v + ' ' + set.votes[v]; });
-				toast((x === 'yes' ? 'Yes' : 'No') + ' on ' + (h.name || 'this one') +
-					(said.length ? ' · ' + said.join(', ') : '') +
-					(set && set.decision ? ' · ' + DECISION_LABEL[set.decision] : ''));
-			}
-		});
-		if (voteOf(h, state.voter) !== x) return;   // asked first, and not confirmed
+		var again = !!voteOf(h, state.voter);   // a grade changed after Back
+		if (!poolVote(h, x, note)) return;   // asked first, and not confirmed
+		var said = state.voters.filter(function (v) { return v !== state.voter && voteOf(h, v); })
+			.map(function (v) { return v + ' ' + voteOf(h, v); });
+		toast(x + ' for ' + (h.name || 'this one') +
+			(said.length ? ' · ' + said.join(', ') + ' · average ' + avgText(gradesOf(h).avg) : '') +
+			(decisionOf(h) ? ' · ' + DECISION_LABEL[decisionOf(h)] : '') +
+			' · ' + plural(poolSize(), 'grade', 'grades') + ' to send');
 		if (rv.trail[rv.trail.length - 1] !== h.email) rv.trail.push(h.email);
 		delete rv.skipped[h.email];
 		if (!again) {
 			rv.done++;
-			if (rv.done % BREAK_EVERY === 0) rv.resting = true;
+			if (rv.done % BREAK_EVERY === 0) {
+				rv.resting = true;
+				sendPool();   // the pause sends what was read since the last one
+			}
 		}
 		nextLetter();
 	}
 
-	// skipped: back at the end of the queue; one already voted on (after Back): on to the next
+	// skipped: back at the end of the queue; one already graded (after Back): on to the next
 	function reviewSkip() {
 		var h = rv.current;
 		if (!h) return;
@@ -2691,7 +2871,7 @@
 		nextLetter();
 	}
 
-	// the one before: voted on or skipped, to see the others' votes or change one's own
+	// the one before: graded or skipped, to see the others' grades or change one's own
 	function reviewBack() {
 		var email = rv.trail.pop();
 		if (!email) return;
@@ -2724,13 +2904,138 @@
 		var box = $('rv-msg');
 		box.textContent = '';
 		box.appendChild(el('h2', null, rv.done ? 'That was all of yours. Thank you!' : 'Nothing waits for you now.'));
-		box.appendChild(el('p', 'muted', 'A 2 to 1 among the others comes here once their votes are in, and so do new registrations: Refresh the page later to see them.'));
+		box.appendChild(el('p', 'muted', 'New registrations come here too: Refresh the page later to see them.'));
 		var close = el('button', 'btn primary', 'Close');
 		close.type = 'button';
 		close.addEventListener('click', closeReview);
 		box.appendChild(close);
 		close.focus();
 	}
+
+	/* the reading mode's grades: on the page at once, and sent together when the reader presses Send, at each pause
+	   and when the letters close. This tab keeps them (sessionStorage) through a reload until they are sent. */
+	var POOL_STORE = 'breaq-2026-votes';
+
+	function poolSize() { return Object.keys(rv.pool).length; }
+
+	function keepPool() {
+		try {
+			if (poolSize()) window.sessionStorage.setItem(POOL_STORE, JSON.stringify({ voter: rv.poolVoter, pool: rv.pool }));
+			else window.sessionStorage.removeItem(POOL_STORE);
+		} catch (e) {}
+	}
+
+	function hackByEmail(email) {
+		return hackRecords().filter(function (r) { return r.email === email; })[0] || null;
+	}
+
+	// one grade of the pool on the page: the grade and note in the reader's columns and the decision they make; what
+	// was there before stays from the first time, to put back if the sheet no longer has the registration
+	function poolOn(h, x, note) {
+		var had = rv.pool[h.email];
+		var before = had && had.before ? had.before : { vote: get(h, voteCol(state.voter)), note: noteOf(h, state.voter), decision: get(h, 'Decision') };
+		var next = decisionAfter(h, x);
+		setCell(h, voteCol(state.voter), x || '');
+		setCell(h, noteCol(state.voter), note);
+		setLocal(h, next);
+		rv.pool[h.email] = { vote: x, note: note, before: before };
+	}
+
+	function poolVote(h, x, note) {
+		if (!voteConfirmed([h], [decisionAfter(h, x)])) return false;
+		if (rv.poolVoter !== state.voter && poolSize()) sendPool();
+		rv.poolVoter = state.voter;
+		poolOn(h, x, note);
+		keepPool();
+		renderPool();
+		return true;
+	}
+
+	// after the list comes (a Refresh, a reload of the tab): the grades not sent yet, on the registrations as the sheet
+	// has them now
+	function applyPool() {
+		if (!state.voter) return;
+		if (!poolSize()) {
+			try {
+				var kept = JSON.parse(window.sessionStorage.getItem(POOL_STORE) || 'null');
+				if (kept && kept.voter === state.voter && kept.pool) { rv.pool = kept.pool; rv.poolVoter = kept.voter; }
+			} catch (e) {}
+		}
+		if (rv.poolVoter !== state.voter) return;
+		Object.keys(rv.pool).forEach(function (email) {
+			var p = rv.pool[email];
+			var h = hackByEmail(email);
+			delete rv.pool[email];
+			if (h && !state.pending[email]) poolOn(h, p.vote, p.note);   // one no longer in the sheet goes
+			else if (h) rv.pool[email] = p;
+		});
+		keepPool();
+	}
+
+	// the pool to the Apps Script in one request, as many grades; what does not go through stays, for Send again
+	function sendPool() {
+		var emails = Object.keys(rv.pool);
+		if (!emails.length || rv.sending) return;
+		var sent = {};
+		emails.forEach(function (e) { sent[e] = rv.pool[e]; state.pending[e] = true; });
+		var voter = rv.poolVoter;
+		rv.sending = true;
+		renderPool();
+		var body = { action: 'votes', key: state.key, items: emails.map(function (e) { return { emails: [e], vote: sent[e].vote, note: sent[e].note }; }) };
+		if (state.shared) body.as = voter;
+		postAgain(body, 120000, function (json, err) {
+			rv.sending = false;
+			emails.forEach(function (e) { delete state.pending[e]; });
+			if (json && json.denied) { lock(json.error); return; }
+			if (json && json.ok && json.action === 'votes') {
+				var got = {};
+				(json.set || []).forEach(function (s) { got[s.email] = s; });
+				var missing = [];
+				emails.forEach(function (e) {
+					var h = hackByEmail(e), p = sent[e];
+					if (rv.pool[e] === p) delete rv.pool[e];
+					if (!h) return;
+					if (got[e]) { answered(h, got[e]); return; }
+					missing.push(e);
+					setCell(h, voteCol(voter), p.before.vote);
+					setCell(h, noteCol(voter), p.before.note);
+					setLocal(h, p.before.decision);
+				});
+				keepPool();
+				poolNote(missing.length ? notThere(missing) : plural(emails.length, 'grade', 'grades') + ' saved', !!missing.length);
+			} else {
+				poolNote('The grades were not sent. ' + actionProblem(json, err, 'take several grades at once') + ' They are kept on this page: press Send again.', true);
+			}
+			refreshDecisions();
+			if (review.open && rv.current && !rv.resting) renderCard(rv.current);
+		});
+		refreshDecisions();
+	}
+
+	function poolNote(text, bad) {
+		if (review.open) toast(text, bad);
+		else dashError(bad ? text : '');
+	}
+
+	// Send, in the reading mode and above the table, while there is something to send
+	function renderPool() {
+		var n = poolSize();
+		forEach([$('rv-send'), $('review-send')], function (b) {
+			b.hidden = !n && !rv.sending;
+			b.disabled = rv.sending;
+			b.textContent = rv.sending ? 'Sending…' : 'Send ' + plural(n, 'grade', 'grades');
+		});
+	}
+
+	$('rv-send').addEventListener('click', sendPool);
+	$('review-send').addEventListener('click', sendPool);
+
+	// leaving the page with grades not sent: the browser asks first
+	window.addEventListener('beforeunload', function (ev) {
+		if (!poolSize() && !rv.sending) return;
+		ev.preventDefault();
+		ev.returnValue = '';
+	});
 
 	var toastTimer = null;
 	function toast(text, bad) {
@@ -2752,8 +3057,7 @@
 		}
 		if (rv.resting || !rv.current) return;
 		var k = ev.key.toLowerCase();
-		if (k === 'y') reviewVote('yes');
-		else if (k === 'n') reviewVote('no');
+		if (/^[0-9]$/.test(k)) reviewVote(Number(k) || 10);
 		else if (k === 's' || ev.key === 'ArrowRight') reviewSkip();
 		else if (ev.key === 'ArrowLeft') reviewBack();
 		else return;
@@ -2773,6 +3077,7 @@
 	// pressed (a team still being decided waits)
 	function renderSendPanel() {
 		$('send-panel').hidden = state.event === 'conference';
+		if (state.grades) $('grade-scale').textContent = state.grades.accept + ' or more: accepted, ' + state.grades.waitlist + ' or more: the waiting list, below: denied';
 		var c = { accepted: 0, waitlist: 0, denied: 0, '': 0 }, due = 0, done = 0, held = 0;
 		state.records.forEach(function (r) {
 			if (r.event !== 'hackathon' && r.event !== 'both') return;

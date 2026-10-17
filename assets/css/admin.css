@@ -874,20 +874,21 @@ input[type="checkbox"] {
 		}
 
 		.dec .dec-accepted[aria-pressed="true"],
-		.dec .dec-yes[aria-pressed="true"] {
+		.dec .dec-g.is-accepted[aria-pressed="true"] {
 			background: rgba(95, 196, 138, 0.18);
 			box-shadow: inset 0 0 0 1px var(--good);
 			color: var(--good-text);
 		}
 
-		.dec .dec-waitlist[aria-pressed="true"] {
+		.dec .dec-waitlist[aria-pressed="true"],
+		.dec .dec-g.is-waitlist[aria-pressed="true"] {
 			background: rgba(255, 140, 0, 0.16);
 			box-shadow: inset 0 0 0 1px var(--hot);
 			color: var(--warn-text);
 		}
 
 		.dec .dec-denied[aria-pressed="true"],
-		.dec .dec-no[aria-pressed="true"] {
+		.dec .dec-g.is-denied[aria-pressed="true"] {
 			background: rgba(255, 107, 102, 0.16);
 			box-shadow: inset 0 0 0 1px var(--bad);
 			color: var(--bad-text);
@@ -897,8 +898,68 @@ input[type="checkbox"] {
 		opacity: 0.55;
 	}
 
-		.dec.is-saving button {
+		.dec.is-saving button,
+		.dec.is-saving select {
 			cursor: progress;
+		}
+
+	/* the full view's grades: ten in a row, two rows of five on a phone */
+	.dec.grade {
+		display: inline-grid;
+		grid-template-columns: repeat(10, 30px);
+	}
+
+		.dec.grade button {
+			padding: 0;
+			font-size: 13px;
+			font-variant-numeric: lining-nums;
+			letter-spacing: 0;
+		}
+
+	@media (max-width: 480px) {
+		.dec.grade {
+			grid-template-columns: repeat(5, 40px);
+		}
+	}
+
+	/* the table's grade: a list, 1 to 10 */
+	.dec.grade-pick {
+		padding: 0;
+		box-shadow: none;
+	}
+
+	.grade-select {
+		height: 28px;
+		padding: 0 4px;
+		border: solid 1px var(--line);
+		border-radius: 5px;
+		background: var(--raised);
+		color: var(--fg);
+		font: inherit;
+		font-size: 13px;
+		font-weight: 600;
+		color-scheme: dark;
+		cursor: pointer;
+	}
+
+		.grade-select:focus {
+			border-color: var(--hot);
+			outline: 0;
+		}
+
+		.grade-select.is-accepted {
+			border-color: var(--good);
+			color: var(--good-text);
+		}
+
+		.grade-select.is-waitlist {
+			border-color: var(--hot);
+			color: var(--warn-text);
+		}
+
+		.grade-select.is-denied {
+			border-color: var(--bad);
+			color: var(--bad-text);
 		}
 
 .dec-note {
@@ -919,7 +980,7 @@ input[type="checkbox"] {
 		color: var(--warn-text);
 	}
 
-/* the votes: a tag per organiser, then what they came to */
+/* the grades: a tag per organiser, coloured by where the grade would put the average, then what they came to */
 .votes,
 .vote-list {
 	display: inline-flex;
@@ -945,21 +1006,22 @@ input[type="checkbox"] {
 	text-align: center;
 }
 
-	.vote-chip.is-yes {
+	.vote-chip.is-accepted {
 		background: rgba(95, 196, 138, 0.18);
 		box-shadow: inset 0 0 0 1px var(--good);
 		color: var(--good-text);
 	}
 
-	/* not by colour alone: a no is struck through */
-	.votes .vote-chip.is-no {
-		text-decoration: line-through;
-	}
-
-	.vote-chip.is-no {
+	.vote-chip.is-denied {
 		background: rgba(255, 107, 102, 0.16);
 		box-shadow: inset 0 0 0 1px var(--bad);
 		color: var(--bad-text);
+	}
+
+	.vote-chip.is-waitlist {
+		background: rgba(255, 140, 0, 0.16);
+		box-shadow: inset 0 0 0 1px var(--hot);
+		color: var(--warn-text);
 	}
 
 	.vote-chip.is-mixed {
@@ -1051,6 +1113,12 @@ input[type="checkbox"] {
 	.team-warn {
 		font-size: 0.88em;
 		color: var(--warn-text);
+	}
+
+	/* a teammate written another way than they registered: matched, to check */
+	.team-named {
+		font-size: 0.88em;
+		color: var(--fg-light);
 	}
 
 /* the send panel and its dialog */
@@ -1934,6 +2002,12 @@ input[type="checkbox"] {
 	align-items: center;
 }
 
+.review-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+}
+
 .review-status {
 	margin: 4px 0 0;
 	color: var(--fg-light);
@@ -2153,46 +2227,60 @@ input[type="checkbox"] {
 			border-color: var(--hot);
 		}
 
+	/* 1 to 5, then 6 to 10, each edged with where it would put the average; the chosen one filled */
 	.rv-vote {
 		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 10px;
+		grid-template-columns: repeat(5, minmax(0, 1fr));
+		gap: 8px;
 	}
 
 		.rv-vote .btn {
-			gap: 10px;
-			height: 54px;
-			font-size: 13px;
+			height: 46px;
+			padding: 0;
+			font-size: 17px;
+			font-variant-numeric: lining-nums;
+			letter-spacing: 0;
 		}
 
-		.rv-vote kbd {
-			padding: 1px 6px;
-			border-radius: 3px;
-			box-shadow: inset 0 0 0 1px currentColor;
-			font-family: inherit;
-			font-size: 10px;
-			opacity: 0.75;
-		}
-
-		.btn.rv-yes {
+		.btn.rv-grade.is-accepted {
 			box-shadow: inset 0 0 0 2px var(--good);
 			color: var(--good-text);
 		}
 
-			.btn.rv-yes:hover,
-			.btn.rv-yes[aria-pressed="true"] {
+			.btn.rv-grade.is-accepted:hover,
+			.btn.rv-grade.is-accepted[aria-pressed="true"] {
 				background: rgba(95, 196, 138, 0.2);
 			}
 
-		.btn.rv-no {
+		.btn.rv-grade.is-waitlist {
+			box-shadow: inset 0 0 0 2px var(--hot);
+			color: var(--warn-text);
+		}
+
+			.btn.rv-grade.is-waitlist:hover,
+			.btn.rv-grade.is-waitlist[aria-pressed="true"] {
+				background: rgba(255, 140, 0, 0.16);
+			}
+
+		.btn.rv-grade.is-denied {
 			box-shadow: inset 0 0 0 2px var(--bad);
 			color: var(--bad-text);
 		}
 
-			.btn.rv-no:hover,
-			.btn.rv-no[aria-pressed="true"] {
+			.btn.rv-grade.is-denied:hover,
+			.btn.rv-grade.is-denied[aria-pressed="true"] {
 				background: rgba(255, 107, 102, 0.18);
 			}
+
+		.btn.rv-grade[aria-pressed="true"] {
+			outline: solid 2px currentColor;
+			outline-offset: 2px;
+		}
+
+	.rv-scale {
+		margin: -6px 0 0;
+		font-size: 0.82em;
+	}
 
 	.rv-more {
 		display: flex;

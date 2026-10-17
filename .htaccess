@@ -12,6 +12,15 @@ Options -MultiViews
 DirectoryIndex index.html
 ErrorDocument 404 /404.html
 
+# the pages: checked again on every visit (a short 304 when nothing changed), so a new version reaches everyone at
+# once; without it a browser keeps a page for hours and loads its old scripts. The scripts and styles change
+# address with ?v= on each new version, so they can stay in the cache.
+<IfModule mod_headers.c>
+	<FilesMatch "\.html$">
+		Header set Cache-Control "no-cache"
+	</FilesMatch>
+</IfModule>
+
 <IfModule mod_rewrite.c>
 	RewriteEngine On
 

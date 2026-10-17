@@ -10,7 +10,7 @@
 		     (script.google.com answers through a redirect to script.googleusercontent.com) -->
 		<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src https://script.google.com https://script.googleusercontent.com; frame-src blob:; base-uri 'none'; form-action 'none'" />
 		<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Raleway:700|Source+Sans+Pro:300,400,600&amp;display=swap" />
-		<link rel="stylesheet" href="assets/css/admin.css?v=20261015b" />
+		<link rel="stylesheet" href="assets/css/admin.css?v=20261017a" />
 		<link rel="icon" type="image/png" href="images/favicon-2026.png">
 	</head>
 	<body>
@@ -29,7 +29,7 @@
 				<form class="lock-card" id="lock-form" novalidate>
 					<img class="lock-logo" src="images/BreaQ_logo_2026-light.svg" alt="BreaQ 2026" />
 					<h1>Registrations</h1>
-					<p class="muted">For the organisers. Paste the key (<code>adminKey</code> in the Apps Script editor): the page then asks which of you is reading, and votes in your name.</p>
+					<p class="muted">For the organisers. Paste the key (<code>adminKey</code> in the Apps Script editor): the page then asks which of you is reading, and grades in your name.</p>
 					<!-- lets a password manager file the key under a name -->
 					<input type="text" name="username" value="BreaQ admin" autocomplete="username" hidden />
 					<label for="key">Your key</label>
@@ -73,16 +73,19 @@
 
 				<div class="tiles" id="tiles"></div>
 
-				<!-- for an organiser with their own key: the letters waiting for their vote, read one at a time -->
+				<!-- for an organiser with their own key: the letters waiting for their grade, read one at a time -->
 				<section class="panel review-panel" id="review-panel" aria-labelledby="review-h" hidden>
 					<div class="panel-head">
 						<div>
 							<h2 id="review-h">Your letters</h2>
 							<p class="review-status" id="review-status"></p>
 						</div>
-						<button type="button" class="btn primary" id="review-open">Start reading</button>
+						<div class="review-actions">
+							<button type="button" class="btn" id="review-send" hidden>Send</button>
+							<button type="button" class="btn primary" id="review-open">Start reading</button>
+						</div>
 					</div>
-					<p class="muted review-help">Each registration goes first to three of you, by turns, a team’s members to the same three; a 2 to 1 goes to the other two. One letter at a time: Y for yes, N for no, S to skip it for now. You see the others’ votes once you have voted.</p>
+					<p class="muted review-help">Each registration goes to three of you, picked at random for it, a team’s members to the same three. One letter at a time: grade it from 1 to 10 (the keys 1 to 9, and 0 for 10), S to skip it for now. You see the others’ grades once you have given yours. Your grades wait on this page and go together when you press Send, at each pause (every 20 letters) and when you close the letters.</p>
 				</section>
 
 				<div class="bar-row">
@@ -111,7 +114,7 @@
 
 				<div class="breakdowns" id="breakdowns"></div>
 
-				<!-- Decision emails (hackathon): the votes (or Accept, Waitlist and Deny by hand) only note the decision; this button sends what is
+				<!-- Decision emails (hackathon): the grades (or Accept, Waitlist and Deny by hand) only note the decision; this button sends what is
 				     due, after showing who gets what (the "decisions" action of the Apps Script) -->
 				<section class="panel send-panel" id="send-panel" aria-labelledby="send-h">
 					<div class="panel-head">
@@ -121,7 +124,7 @@
 						</div>
 						<button type="button" class="btn primary" id="send-open">Send decision emails</button>
 					</div>
-					<p class="muted send-help">You vote Yes or No in Your letters above (or in the table): 3 of the same make the decision (Yes: accepted, No: denied), and that only notes it. Nothing goes out until you press Send, which first shows who gets what. Google allows about 100 emails a day: the accepted go first, then the waiting list, then the denied, and the next day’s Send carries on. Registration closes on 18 October at 23:59.</p>
+					<p class="muted send-help">You grade from 1 to 10 in Your letters above (or in the table): once 3 of you have, the average makes the decision (<span id="grade-scale">7 or more: accepted, 5 or more: the waiting list, below: denied</span>), and that only notes it. Sort the table by Grade for the highest averages first. Nothing goes out until you press Send, which first shows who gets what. Google allows about 100 emails a day: the accepted go first, then the waiting list, then the denied, and the next day’s Send carries on. Registration closes on 18 October at 23:59.</p>
 				</section>
 
 				<section class="panel" aria-labelledby="people-h">
@@ -143,7 +146,7 @@
 						</div>
 						<div class="seg" role="group" aria-label="Decision" id="f-decision">
 							<button type="button" data-decision="any" aria-pressed="true">Any decision</button>
-							<button type="button" data-decision="tovote" aria-pressed="false" hidden>To vote <span class="n"></span></button>
+							<button type="button" data-decision="tovote" aria-pressed="false" hidden>To grade <span class="n"></span></button>
 							<button type="button" data-decision="none" aria-pressed="false">Undecided <span class="n"></span></button>
 							<button type="button" data-decision="accepted" aria-pressed="false">Accepted <span class="n"></span></button>
 							<button type="button" data-decision="waitlist" aria-pressed="false">Waitlist <span class="n"></span></button>
@@ -391,10 +394,10 @@
 				</div>
 			</dialog>
 
-			<!-- opened with the shared key: who is reading, so that the votes go in their name -->
+			<!-- opened with the shared key: who is reading, so that the grades go in their name -->
 			<dialog class="detail who-dlg" id="who-dlg" aria-labelledby="who-h">
 				<h2 id="who-h">Who are you?</h2>
-				<p class="muted">Your votes go in your name. This device remembers you for as long as it remembers the key.</p>
+				<p class="muted">Your grades go in your name. This device remembers you for as long as it remembers the key.</p>
 				<div class="who-grid" id="who-grid"></div>
 				<button type="button" class="btn ghost small" id="who-none">Just looking</button>
 			</dialog>
@@ -404,6 +407,7 @@
 				<div class="rv-top">
 					<span class="rv-count" id="rv-count"></span>
 					<div class="rv-bar" aria-hidden="true"><i id="rv-bar"></i></div>
+					<button type="button" class="btn small" id="rv-send" hidden>Send</button>
 					<button type="button" class="btn ghost small" id="rv-close">Close</button>
 				</div>
 				<div class="rv-main" id="rv-main">
@@ -418,6 +422,6 @@
 
 		</main>
 
-		<script src="assets/js/admin.js?v=20261015d"></script>
+		<script src="assets/js/admin.js?v=20261017a"></script>
 	</body>
 </html>

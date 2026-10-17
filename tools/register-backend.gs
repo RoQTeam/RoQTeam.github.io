@@ -55,19 +55,21 @@
  * the log what would be merged, then "mergeDuplicates" to merge them. It first copies the tab as a backup,
  * sends no emails and deletes the rows it merged into an earlier one.
  *
- * Votes (hackathon only): each of the VOTERS votes yes or no on every registration, on the admin page. Opened with
+ * Votes (hackathon only): each of the VOTERS grades registrations from 1 to 10, on the admin page. Opened with
  * the shared admin key, the page asks who you are and votes as the one picked (sharedAs_): only the five have the
  * key. A personal key (pick "voterKeys" in the editor's function list and press Run) votes as its own, without
- * asking. Each vote goes in that person's "Vote <name>" column. MAJORITY of the same vote sets the Decision: yes is accepted, no is denied. Taking a vote back so that
- * neither side has the majority any more makes it undecided again. A Decision set by hand (the waiting list, a
- * tie while someone is away) stays until a vote next makes or undoes a majority. A vote typed in the sheet by
- * hand changes no Decision: vote on the admin page. To change someone's key: Project Settings -> Script
+ * asking. Each grade goes in that person's "Vote <name>" column. Once MAJORITY of them have graded, the average of
+ * the grades sets the Decision: ACCEPT_FROM or more is accepted, WAITLIST_FROM or more the waiting list, below that
+ * denied. Taking a grade back below MAJORITY makes it undecided again. A Decision set by hand (someone away, an
+ * average just under the line) stays until a grade next changes what the average says. A grade typed in the sheet
+ * by hand changes no Decision: grade on the admin page. To change someone's key: Project Settings -> Script
  * properties -> delete their VOTE_KEY_<NAME>, then run voterKeys again.
  * The admin page's reading mode shows one letter at a time (the "letter" action sends the PDF itself, so nobody
- * needs the Drive folder shared), each registration first to three of the voters by turns, and a vote there can
- * carry a short note for the others ("Note <name>", next to the votes).
+ * needs the Drive folder shared), each registration first to three of the voters picked at random, and a grade there can
+ * carry a short note for the others ("Note <name>", next to the grades). The reading mode keeps its grades on the page and
+ * sends them together (the "votes" action), when the reader presses Send or closes it.
  *
- * Decision emails (hackathon only): the votes, or the admin page's Accept, Waitlist and Deny buttons, fill the "Decision"
+ * Decision emails (hackathon only): the grades, or the admin page's Accept, Waitlist and Deny buttons, fill the "Decision"
  * column (accepted, waitlist, denied; empty is undecided), and deciding sends nothing. The emails go out when
  * someone presses "Send decision emails" on the admin page, or from the editor's function list:
  *   - previewDecisions: logs who would get which email, and flags teams with members decided differently, a
@@ -139,13 +141,18 @@ var SITE = "https://roqteam.ro";
 var LETTERS_FOLDER = "BreaQ 2026 motivation letters"; // Drive folder, created on first use (or by setup)
 var LETTER_MAX_BYTES = 5 * 1024 * 1024; // register.js has the same limit
 
-// the organisers who vote yes or no on each hackathon registration, on the admin page, each with their own key
-// (voterKeys). An odd number, so once everyone has voted one side has the majority.
+// the organisers who grade each hackathon registration from 1 to 10, on the admin page, each with their own key
+// (voterKeys)
 var VOTERS = ["Andy", "Cristi", "Alex", "Filip", "Tudor"];
-var MAJORITY = Math.floor(VOTERS.length / 2) + 1; // 3 of 5: this many of the same vote sets the Decision
-var VOTES = ["yes", "no"];
+var MAJORITY = Math.floor(VOTERS.length / 2) + 1; // 3 of 5: this many grades, and their average sets the Decision
+var GRADE_MIN = 1;
+var GRADE_MAX = 10;
+// the average that accepts, and the one that puts on the waiting list; below WAITLIST_FROM is denied. The admin
+// page reads them from here. Changed later, they apply to each registration at its next grade.
+var ACCEPT_FROM = 7;
+var WAITLIST_FROM = 5;
 var VOTE_COLUMNS = VOTERS.map(function (v) {
-  return "Vote " + v; // yes, no, or empty while they have not voted
+  return "Vote " + v; // a grade from 1 to 10, or empty while they have not graded
 });
 var NOTE_COLUMNS = VOTERS.map(function (v) {
   return "Note " + v; // a line the voter may add to their vote, for the others ("copied from the web")
@@ -189,7 +196,7 @@ var COLUMNS = [
   "Checked in",
   "Certificate",
 ];
-// each organiser's note and vote, just before the Decision the votes add up to
+// each organiser's note and grade, just before the Decision the grades add up to
 COLUMNS.splice.apply(COLUMNS, [COLUMNS.indexOf("Decision"), 0].concat(NOTE_COLUMNS, VOTE_COLUMNS));
 
 // not the person's answers: a second application that differs only in these changes nothing
@@ -501,6 +508,7 @@ function doPost(e) {
   var ADMIN_ACTIONS = [
     "list",
     "vote",
+    "votes",
     "letter",
     "decide",
     "decisions",
@@ -520,7 +528,7 @@ function doPost(e) {
     try {
       var denied = checkKey_(data.key);
       if (denied) return json_(denied);
-      if (data.action === "vote") return json_(vote_(data));
+      if (data.action === "vote" || data.action === "votes") return json_(vote_(data));
       if (data.action === "letter") return json_(letter_(data));
       if (data.action === "decide") return json_(decide_(data));
       if (data.action === "decisions") return json_(decisions_(!!data.send));
@@ -937,7 +945,7 @@ function decisionsLocked_(send) {
       continue;
     }
     var p = person_(values, header, r);
-    var team = teamOf_(values, header, p.mates);
+    var team = teamOf_(values, header, p.mates, r);
     item.note = teamLine_(team, kind);
     item.warn = item.note.indexOf("⚠") !== -1;
     if (String(r["Decision email"]).indexOf(kind + ": sent") === 0) {
@@ -1065,7 +1073,7 @@ function decisionColumn_(sheet, header) {
     );
 }
 
-// the vote columns among cols as dropdowns of VOTES
+// the vote columns among cols as whole grades from GRADE_MIN to GRADE_MAX (a decimal one is refused by vote_)
 function voteColumns_(sheet, header, cols) {
   var rows = sheet.getMaxRows() - 1;
   cols.forEach(function (col) {
@@ -1075,7 +1083,7 @@ function voteColumns_(sheet, header, cols) {
       .getRange(2, c, rows, 1)
       .setDataValidation(
         SpreadsheetApp.newDataValidation()
-          .requireValueInList(VOTES, true)
+          .requireNumberBetween(GRADE_MIN, GRADE_MAX)
           .setAllowInvalid(false)
           .build(),
       );
@@ -1116,21 +1124,205 @@ function teammates_(text) {
     .filter(String);
 }
 
-// the teammates someone named, each with the decision in their own row, found by name among the hackathon
-// registrations: { name, decision } ("" not decided yet, null not registered under that name)
-function teamOf_(values, header, mates) {
-  return mates.map(function (m) {
-    var key = nameKey_(m, "");
-    for (var i = 1; i < values.length; i++) {
-      var t = toRecord_(header, values[i]);
-      if (
-        eventKey_(t["Attends"]) === "hackathon" &&
-        nameKey_(t["First name"], t["Last name"]) === key
-      )
-        return { name: m, decision: String(t["Decision"]).trim().toLowerCase() };
-    }
-    return { name: m, decision: null };
+// the teammates r named, each with the decision in their own row, found by name among the hackathon
+// registrations: { name, decision } ("" not decided yet, null not registered under that name). A name written
+// another way than its registration still finds it (similarMates_); several run together without a comma come
+// back one by one, each under the name they registered with.
+function teamOf_(values, header, mates, r) {
+  var people = hackPeople_(values, header);
+  var email = r ? String(r["Email"]).trim().toLowerCase() : "";
+  var namer = null;
+  people.forEach(function (p) {
+    if (email && p.email === email) namer = p;
   });
+  var team = [];
+  mates.forEach(function (m) {
+    var key = nameKey_(m, "");
+    for (var i = 0; i < people.length; i++)
+      if (people[i].key === key) return team.push({ name: m, decision: people[i].decision });
+    var found = similarMates_(m, people, namer);
+    found.found.forEach(function (p) {
+      team.push({ name: found.found.length === 1 && !found.left ? m : p.name, decision: p.decision });
+    });
+    if (found.left) team.push({ name: found.left, decision: null });
+  });
+  return team;
+}
+
+// the hackathon registrations, for finding the teammates named: { key, words, email, mails (their emails before
+// the @), mates (the names they wrote), decision, name }. Read once for the same values.
+var hackPeople = { values: null, people: [] };
+function hackPeople_(values, header) {
+  if (hackPeople.values === values) return hackPeople.people;
+  var people = [];
+  for (var i = 1; i < values.length; i++) {
+    var t = toRecord_(header, values[i]);
+    if (eventKey_(t["Attends"]) !== "hackathon") continue;
+    people.push({
+      key: nameKey_(t["First name"], t["Last name"]),
+      words: nameWords_(t["First name"] + " " + t["Last name"]),
+      email: String(t["Email"]).trim().toLowerCase(),
+      mails: emailsOf_(t).map(function (e) {
+        return e.split("@")[0];
+      }),
+      mates: String(t["Team"]).trim() === "team" ? teammates_(t["Team name and members"]) : [],
+      decision: String(t["Decision"]).trim().toLowerCase(),
+      name: String(t["First name"] + " " + t["Last name"]).trim(),
+    });
+  }
+  hackPeople = { values: values, people: people };
+  return people;
+}
+
+// the words of a name, as nameKey_ has them, in the order written
+function nameWords_(s) {
+  return String(s)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter(String);
+}
+
+// two words of a name that are one: the same, a short form ("alex" of "alexandru", never "stan" of "stanescu"), or a
+// typo (a letter off, two in a long word). Ioan and Ioana, Cristian and Cristina are two people.
+function nearWord_(a, b) {
+  if (a === b) return true;
+  if ((a.slice(-1) === "a") !== (b.slice(-1) === "a")) return false;
+  var s = a.length <= b.length ? a : b;
+  var l = s === a ? b : a;
+  if (s.length < 4) return false;
+  if (l.indexOf(s) === 0 && !/^(escu|eanu|anu)$/.test(l.slice(s.length))) return true;
+  return distance_(a, b) <= (l.length >= 8 ? 2 : 1);
+}
+
+// every word of part has its like in whole
+function within_(part, whole) {
+  return part.every(function (t) {
+    return whole.some(function (u) {
+      return nearWord_(t, u);
+    });
+  });
+}
+
+// Damerau-Levenshtein (optimal string alignment): letters added, dropped, changed or swapped
+function distance_(a, b) {
+  var d = [];
+  var i, j;
+  for (i = 0; i <= a.length; i++) d[i] = [i];
+  for (j = 1; j <= b.length; j++) d[0][j] = j;
+  for (i = 1; i <= a.length; i++) {
+    for (j = 1; j <= b.length; j++) {
+      d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + 1);
+    }
+  }
+  return d[a.length][b.length];
+}
+
+// A teammate's name that nobody registered under as written, matched to the same people written another way (the
+// admin page's similarMates does the same). people from hackPeople_, namer among them. { found: the people it is,
+// left: what is still nobody's ("" for none) }:
+// - whole names in what was written: a longer form ("Cosmin-Eusebiu Patrașcu" for Cosmin Patrascu), or several run
+//   together without a comma ("Nitas Robert-Cristian Moise Robert-Alexandru"), the namer's own among them
+// - a shorter form, a typo or a short form ("David Munteanu" for David-Andrei Munteanu, "Pospai Alexandru" for alex
+//   pospai), when only one person fits
+// - the given names right and the family name in their email (registered with a teammate's family name)
+// - someone who named the namer back, with two words of it ("Radu Stan Pop" for Radu-Stefan Pop), or the one word
+//   written ("Bogdan")
+function similarMates_(name, people, namer) {
+  var words = nameWords_(name);
+  var none = { found: [], left: name };
+  if (!words.length) return none;
+  var inside = people.filter(function (p) {
+    return p.words.length >= 2 && within_(p.words, words);
+  });
+  if (inside.length) {
+    var used = [].concat.apply(
+      [],
+      inside.map(function (p) {
+        return p.words;
+      }),
+    );
+    var left = words.filter(function (t) {
+      return !used.some(function (u) {
+        return nearWord_(t, u);
+      });
+    });
+    // two words or more left over are someone else, named in the same breath
+    var rest =
+      left.length < 2
+        ? ""
+        : String(name)
+            .trim()
+            .split(/[\s-]+/)
+            .filter(function (w) {
+              return nameWords_(w).some(function (t) {
+                return left.indexOf(t) !== -1;
+              });
+            })
+            .join(" ");
+    return {
+      found: inside.filter(function (p) {
+        return p !== namer;
+      }),
+      left: rest,
+    };
+  }
+  if (namer && words.length >= 2 && within_(words, namer.words)) return { found: [], left: "" }; // their own, shorter
+  var others = people.filter(function (p) {
+    return p !== namer;
+  });
+  var fit =
+    words.length < 2
+      ? []
+      : others.filter(function (p) {
+          return within_(words, p.words);
+        });
+  if (fit.length) return fit.length === 1 ? { found: fit, left: "" } : none;
+  var mail = others.filter(function (p) {
+    var same = words.filter(function (t) {
+      return p.words.some(function (u) {
+        return nearWord_(t, u);
+      });
+    });
+    return (
+      same.length >= 2 &&
+      words.every(function (t) {
+        return (
+          same.indexOf(t) !== -1 ||
+          (t.length >= 4 &&
+            p.mails.some(function (m) {
+              return m.indexOf(t) !== -1;
+            }))
+        );
+      })
+    );
+  });
+  if (mail.length === 1) return { found: mail, left: "" };
+  if (namer) {
+    var back = others.filter(function (p) {
+      var same = words.filter(function (t) {
+        return p.words.some(function (u) {
+          return nearWord_(t, u);
+        });
+      }).length;
+      return (
+        (same >= 2 || (words.length === 1 && same === 1)) &&
+        p.mates.some(function (m) {
+          var w = nameWords_(m);
+          return (
+            w.slice().sort().join(" ") === namer.key ||
+            (w.length >= 2 &&
+              namer.words.length >= 2 &&
+              (w.length <= namer.words.length ? within_(w, namer.words) : within_(namer.words, w)))
+          );
+        })
+      );
+    });
+    if (back.length === 1) return { found: back, left: "" };
+  }
+  return none;
 }
 
 // the team and what to check before sending, marked ⚠: a teammate with another decision (the team is held back
@@ -1613,7 +1805,8 @@ function teammatesReminder_(send) {
       var r = toRecord_(header, values[i]);
       if (eventKey_(r["Attends"]) !== "hackathon" || String(r["Team"]).trim() !== "team") continue;
       var p = person_(values, header, r);
-      var missing = teamOf_(values, header, p.mates)
+      var team = teamOf_(values, header, p.mates, r);
+      var missing = team
         .filter(function (m) {
           return m.decision === null;
         })
@@ -1630,6 +1823,13 @@ function teammatesReminder_(send) {
         continue;
       }
       p.missing = missing;
+      p.here = team
+        .filter(function (m) {
+          return m.decision !== null;
+        })
+        .map(function (m) {
+          return m.name;
+        });
       p.conference = missing.filter(function (m) {
         return conference[nameKey_(m, "")];
       });
@@ -1702,13 +1902,16 @@ function teammatesReminder_(send) {
 }
 
 // The teammates reminder. p: { name, email (the button carries that email's code), mates (every teammate they
-// named), missing (those with no hackathon registration under that name), conference (of the missing, those
-// registered for the conference) }. Change the wording here; sendTeammatesReminderSample shows the result.
+// named), missing (those with no hackathon registration under that name), here (those registered, when known),
+// conference (of the missing, those registered for the conference) }. Change the wording here;
+// sendTeammatesReminderSample shows the result.
 function teammatesReminderEmail_(p) {
   var one = p.missing.length === 1;
-  var here = p.mates.filter(function (m) {
-    return p.missing.indexOf(m) === -1;
-  });
+  var here =
+    p.here ||
+    p.mates.filter(function (m) {
+      return p.missing.indexOf(m) === -1;
+    });
   return {
     subject: "BreaQ Hackathon: your team" + (one ? "mate has" : "mates have") + " not registered yet",
     heading: "Your team is not complete yet, " + p.name + ".",
@@ -1733,7 +1936,17 @@ function teammatesReminderEmail_(p) {
         : "",
       "Did " +
         (one ? "they" : "some of them") +
-        " register under a name written differently, or have your plans changed? Use the button below: you can correct their names there, or choose to take part on your own or to be put in a team with other participants.",
+        " register under a name written differently? Use the button below to correct the names.",
+      // a teammate named on the form who has since dropped out: the team can change without them
+      "If " +
+        (one ? p.missing[0] + " is" : "any of them are") +
+        " no longer taking part, that is fine: you can change your team with the same button, by " +
+        HACKING_BY +
+        ". Take " +
+        (one ? "them" : "off whoever is not coming") +
+        (one ? " off" : "") +
+        (here.length ? " and stay with " + and_(here) : "") +
+        ", take part on your own, or ask us to put you in a team with other participants.",
       "This email is not about your application: we are still reading them all, and our decision reaches you in a separate email.",
     ].filter(String),
     button: { label: "Check my team", href: TEAM_PAGE + "#code=" + dashboardCode_(p.email) },
@@ -1967,6 +2180,7 @@ function list_(key) {
     voter: voterOf_(key),
     voters: VOTERS,
     majority: MAJORITY,
+    grades: { min: GRADE_MIN, max: GRADE_MAX, accept: ACCEPT_FROM, waitlist: WAITLIST_FROM },
     emailsLeft: emailsLeft_(),
     at: new Date(),
   };
@@ -2081,53 +2295,75 @@ function decide_(data) {
   }
 }
 
-// admin.html: one organiser's vote on hackathon registrations, each found by one of its emails: yes, no, or "" to
-// take it back. Only a voter's own key votes, in their column. A vote that makes a majority or undoes one sets the
-// Decision (accepted, denied, or undecided again); any other leaves it as it is, so a decision made by hand stays
-// until then. Sends nothing. Answers each registration's votes and Decision as they are now, with everyone's
-// votes, for the page to show.
+// admin.html: one organiser's grade on hackathon registrations, each found by one of its emails: a whole number from
+// GRADE_MIN to GRADE_MAX, or "" to take it back. Only a voter's own key votes, in their column. A grade that changes
+// what the average says (outcome_) sets the Decision (accepted, waitlist, denied, or undecided again); any other
+// leaves it as it is, so a decision made by hand stays until then. Sends nothing. Answers each registration's grades
+// and Decision as they are now, with everyone's grades, for the page to show. "vote" is one grade for all the emails
+// given ({ emails, vote, note? }); "votes" is the reading mode's grades, sent together ({ items: [{ emails, vote, note }] }).
 function vote_(data) {
+  var action = data.action === "votes" ? "votes" : "vote";
   var voter = voterOf_(data.key) || sharedAs_(data);
   if (!voter)
     return {
       ok: false,
-      action: "vote",
+      action: action,
       error: "Say who you are first: the admin page asks when it is opened with the shared key.",
     };
-  var vote = String(data.vote || "")
-    .trim()
-    .toLowerCase();
-  if (vote && VOTES.indexOf(vote) === -1)
-    return { ok: false, action: "vote", error: "Not a vote: " + vote };
-  var emails = emailsOf_({ Email: "", "Other emails": [].concat(data.emails || []).join(",") });
-  if (!emails.length)
-    return { ok: false, action: "vote", error: "No registration given." };
+  var items = action === "votes" ? [].concat(data.items || []) : [{ emails: data.emails, vote: data.vote, note: data.note }];
+  for (var k = 0; k < items.length; k++) {
+    items[k] = {
+      emails: emailsOf_({ Email: "", "Other emails": [].concat(items[k].emails || []).join(",") }),
+      vote: String(items[k].vote || "").trim(),
+      note: items[k].note,
+    };
+    if (items[k].vote && !gradeOf_(items[k].vote))
+      return { ok: false, action: action, error: "Not a grade from " + GRADE_MIN + " to " + GRADE_MAX + ": " + items[k].vote };
+    items[k].vote = gradeOf_(items[k].vote) || "";
+    if (!items[k].emails.length) return { ok: false, action: action, error: "No registration given." };
+  }
+  if (!items.length) return { ok: false, action: action, error: "No registration given." };
   var lock = LockService.getScriptLock();
   lock.waitLock(10000);
   try {
     var sheet = sheet_();
     var values = sheet.getDataRange().getValues();
     var header = header_(values);
+    voteList_(sheet, header);
     var mine = header.indexOf("Vote " + voter);
     var note = header.indexOf("Note " + voter);
     var dec = header.indexOf("Decision");
+    // each email's hackathon row, read once for all the votes
+    var rowOf = {};
+    var records = [];
+    for (var i = 1; i < values.length; i++) {
+      var rec = (records[i] = toRecord_(header, values[i]));
+      if (eventKey_(rec["Attends"]) !== "hackathon") continue;
+      emailsOf_(rec).forEach(function (e) {
+        if (!(e in rowOf)) rowOf[e] = i;
+      });
+    }
     var set = [];
     var missing = [];
     var decided = false;
-    emails.forEach(function (email) {
-      for (var i = 1; i < values.length; i++) {
-        var r = toRecord_(header, values[i]);
-        if (eventKey_(r["Attends"]) !== "hackathon" || emailsOf_(r).indexOf(email) === -1) continue;
-        var before = majority_(r);
-        values[i][mine] = r["Vote " + voter] = vote;
-        sheet.getRange(i + 1, mine + 1).setValue(vote);
+    items.forEach(function (item) {
+      item.emails.forEach(function (email) {
+        if (!(email in rowOf)) {
+          missing.push(email);
+          return;
+        }
+        var i = rowOf[email];
+        var r = records[i];
+        var before = outcome_(r);
+        values[i][mine] = r["Vote " + voter] = item.vote;
+        sheet.getRange(i + 1, mine + 1).setValue(item.vote);
         // the note comes with a vote from the reading mode; a vote from the table leaves it as it is
-        if (data.note !== undefined && note !== -1) {
-          var text = clean_(data.note).replace(/\s+/g, " ").slice(0, NOTE_MAX);
+        if (item.note !== undefined && note !== -1) {
+          var text = clean_(item.note).replace(/\s+/g, " ").slice(0, NOTE_MAX);
           values[i][note] = r["Note " + voter] = text;
           sheet.getRange(i + 1, note + 1).setValue(cellFor_("Note " + voter, text));
         }
-        var after = majority_(r);
+        var after = outcome_(r);
         if (after !== before) {
           values[i][dec] = r["Decision"] = after;
           sheet.getRange(i + 1, dec + 1).setValue(after);
@@ -2136,19 +2372,27 @@ function vote_(data) {
         var votes = {};
         var notes = {};
         VOTERS.forEach(function (v) {
-          votes[v] = voteOf_(r, v);
+          votes[v] = voteOf_(r, v) || "";
           notes[v] = String(r["Note " + v] || "").trim();
         });
         set.push({ email: email, votes: votes, notes: notes, decision: String(r["Decision"]).trim().toLowerCase() });
-        return;
-      }
-      missing.push(email);
+      });
     });
     if (decided) rosterChanged_(); // the dashboard's access follows the decision at once
-    return { ok: true, action: "vote", voter: voter, set: set, missing: missing };
+    return { ok: true, action: action, voter: voter, set: set, missing: missing };
   } finally {
     lock.releaseLock();
   }
+}
+
+// the vote columns' rule as voteColumns_ says, once after it changes (the grades came after yes, no and waitlist): the
+// old dropdown would refuse a grade
+function voteList_(sheet, header) {
+  var props = PropertiesService.getScriptProperties();
+  var rule = "grades " + GRADE_MIN + "-" + GRADE_MAX;
+  if (props.getProperty("VOTE_LIST") === rule) return;
+  voteColumns_(sheet, header, VOTE_COLUMNS);
+  props.setProperty("VOTE_LIST", rule);
 }
 
 // the admin page's reading mode: one hackathon registration's motivation letter, the PDF itself in base64, so
@@ -2182,23 +2426,33 @@ function letter_(data) {
   return { ok: false, action: "letter", error: "The sheet has no hackathon registration for " + email + " any more. Refresh the page." };
 }
 
-function voteOf_(r, voter) {
-  var v = String(r["Vote " + voter] || "")
-    .trim()
-    .toLowerCase();
-  return VOTES.indexOf(v) === -1 ? "" : v;
+// a whole grade from GRADE_MIN to GRADE_MAX, or 0 for anything else (empty, a word, 7.5)
+function gradeOf_(x) {
+  var s = String(x === undefined || x === null ? "" : x).trim();
+  var n = /^\d+$/.test(s) ? Number(s) : 0;
+  return n >= GRADE_MIN && n <= GRADE_MAX ? n : 0;
 }
 
-// what the votes add up to: "accepted" with MAJORITY yes, "denied" with MAJORITY no, "" while neither side has it
-function majority_(r) {
-  var yes = 0;
-  var no = 0;
+// the voter's grade, 0 while they have not graded
+function voteOf_(r, voter) {
+  return gradeOf_(r["Vote " + voter]);
+}
+
+// what the grades add up to: "" before MAJORITY of them, then by their average "accepted" (ACCEPT_FROM or more),
+// "waitlist" (WAITLIST_FROM or more) or "denied"
+function outcome_(r) {
+  var n = 0;
+  var sum = 0;
   VOTERS.forEach(function (v) {
     var x = voteOf_(r, v);
-    if (x === "yes") yes++;
-    if (x === "no") no++;
+    if (x) {
+      n++;
+      sum += x;
+    }
   });
-  return yes >= MAJORITY ? "accepted" : no >= MAJORITY ? "denied" : "";
+  if (n < MAJORITY) return "";
+  var avg = sum / n;
+  return avg >= ACCEPT_FROM ? "accepted" : avg >= WAITLIST_FROM ? "waitlist" : "denied";
 }
 
 /* --- the team dashboard ------------------------------------------------- */
