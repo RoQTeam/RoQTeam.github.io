@@ -243,6 +243,15 @@ var BOARD_COLUMNS = [
 // with no Challenge; checklist: what to set up and bring before the day, ticked off on the dashboard (for a
 // challenge, or for all with no Challenge); submission: how to hand in; practical: Wi-Fi, Discord, who to ask
 var BOARD_SECTIONS = ["announcement", "resource", "checklist", "submission", "practical"];
+// From when the teams get a section: the checklist and the challenges' resources from Friday 09:00 (a day to get
+// ready), the submission posts from Sunday 00:00. Until then the board leaves them out for everyone but the
+// organisers, so they are not in the page's data either (PREP_FROM and SUBMIT_FROM in assets/js/teams.js show the
+// sections at the same times).
+var BOARD_FROM = {
+  checklist: "2026-10-23T09:00:00+03:00",
+  resource: "2026-10-23T09:00:00+03:00",
+  submission: "2026-10-25T00:00:00+03:00",
+};
 var CHALLENGES = ["Quantum Foundations", "Quantum AI", "Quantum Hacking"];
 var TEAMS_PAGE = SITE + "/teams";
 var MENTORS_PAGE = SITE + "/mentors";
@@ -260,10 +269,20 @@ var HACKING_BY = "Saturday 17 October";
 var HACKING_SENT = "Quantum Hacking teams email sent";
 var MATES_SENT = "Teammates reminder sent";
 
-// the hackathon's teams, one row each; who is in which is the "Hackathon team" column of the registrations
+// the hackathon's teams, one row each; who is in which is the "Hackathon team" column of the registrations. The
+// last columns are the team's hand-in, from the dashboard (handin_)
 var TEAMS_SHEET = "Teams";
-var TEAM_COLUMNS = ["Team", "Challenge", "Table", "Pitch", "Room", "Award"];
+var TEAM_COLUMNS = ["Team", "Challenge", "Table", "Pitch", "Room", "Award", "Repository", "Slides", "Video", "About", "Handed in", "Handed in by"];
 var AWARDS = ["1st", "2nd", "3rd"]; // a challenge's podium; the certificate says it
+var HANDIN_BY = "2026-10-25T09:00:00+02:00"; // coding stops: the hand-in closes (STOP in assets/js/schedule.js)
+
+// The audience award: the organisers open the vote at the awards (the admin page, Team dashboard view); each
+// participant checked in at the door gives one vote, to a team not their own, and can change it while the vote is
+// open. The AUDIENCE script property is its state: "" before, "open", then "shown" (closed, the result on the
+// dashboards and on the big screen, screen.html).
+var AUDIENCE_SHEET = "Audience vote";
+var AUDIENCE_COLUMNS = ["Email", "Team", "Voted"];
+var AUDIENCE_STATES = ["", "open", "shown"];
 
 // "Ask a mentor" on the dashboard: one row per request; mentors.html shows the queue and moves each on
 var QUEUE_SHEET = "Mentor queue";
@@ -438,21 +457,28 @@ function doPost(e) {
 
   // teams.html: the team dashboard, for the accepted participants (their own code) and the organisers (the admin
   // key); the participants also answer "are you coming?", ask for a mentor and send their feedback through it
-  var TEAM_ACTIONS = ["board", "coming", "help", "help-cancel", "feedback"];
+  var TEAM_ACTIONS = ["board", "coming", "help", "help-cancel", "feedback", "handin", "audience", "team-name", "flash"];
   if (TEAM_ACTIONS.indexOf(data.action) !== -1) {
     try {
       var who = dashboardWho_(data.code);
       if (who.denied) return json_(who);
       if (data.action === "board") return json_(board_(who));
-      if (who.organiser)
+      // the big screen's live message, asked every few seconds: for the screen and the organisers
+      if (data.action === "flash") return json_({ ok: true, action: "flash", flash: who.screen || who.organiser ? flashOf_() : null });
+      if (who.organiser || who.screen)
         return json_({
           ok: false,
           action: data.action,
-          error: "You are signed in with the admin key: this is for the participants. Their answers show on the admin page.",
+          error: who.screen
+            ? "The big screen's password only shows the screen."
+            : "You are signed in with the admin key: this is for the participants. Their answers show on the admin page.",
         });
       if (data.action === "coming") return json_(coming_(who, data));
       if (data.action === "help") return json_(helpAsk_(who, data));
       if (data.action === "help-cancel") return json_(helpCancel_(who, data));
+      if (data.action === "handin") return json_(handin_(who, data));
+      if (data.action === "audience") return json_(audienceVote_(who, data));
+      if (data.action === "team-name") return json_(teamName_(who, data));
       return json_(feedback_(who, data));
     } catch (err) {
       console.error(data.action + " failed: " + err);
@@ -521,6 +547,9 @@ function doPost(e) {
     "checkin",
     "mentor-key",
     "certificates",
+    "audience-state",
+    "screen-key",
+    "screen-flash",
   ];
   if (ADMIN_ACTIONS.indexOf(data.action) !== -1) {
     // an exception here would make Apps Script answer with an HTML error page: send the admin page the reason instead
@@ -542,6 +571,9 @@ function doPost(e) {
       if (data.action === "mentor-key")
         return json_({ ok: true, action: "mentor-key", key: mentorKey_(!!data.renew), page: MENTORS_PAGE });
       if (data.action === "certificates") return json_(certificates_(!!data.send, !!data.sample));
+      if (data.action === "audience-state") return json_(audienceSet_(data));
+      if (data.action === "screen-key") return json_(screenKeySet_(data));
+      if (data.action === "screen-flash") return json_(flashSet_(data));
       return json_(list_(data.key));
     } catch (err) {
       console.error(data.action + " failed: " + err);
@@ -2171,6 +2203,9 @@ function list_(key) {
     rows: values.slice(1), // dates arrive as ISO strings
     codes: codes,
     teams: teamsList_(),
+    audience: audienceOrNull_(),
+    screenKey: screenKey_(),
+    flash: flashOf_(),
     mentors: { key: mentorKey_(false), page: MENTORS_PAGE },
     feedback: feedbackRows_(),
     activity: activity_(),
@@ -2333,6 +2368,12 @@ function vote_(data) {
     var mine = header.indexOf("Vote " + voter);
     var note = header.indexOf("Note " + voter);
     var dec = header.indexOf("Decision");
+    // whatever rule the note column has (a dropdown it got by mistake) would refuse the note
+    var noting = note !== -1 && items.some(function (it) { return clean_(it.note); });
+    if (noting && sheet.getMaxRows() > 1 && sheet.getRange(2, note + 1).getDataValidation()) {
+      sheet.getRange(2, note + 1, sheet.getMaxRows() - 1, 1).clearDataValidations();
+      console.log("vote_: took the rule off Note " + voter);
+    }
     // each email's hackathon row, read once for all the votes
     var rowOf = {};
     var records = [];
@@ -2378,6 +2419,9 @@ function vote_(data) {
         set.push({ email: email, votes: votes, notes: notes, decision: String(r["Decision"]).trim().toLowerCase() });
       });
     });
+    // saved now, so that a write the sheet refuses fails here, with its reason, rather than after the answer (the
+    // page would only see Google's error page)
+    SpreadsheetApp.flush();
     if (decided) rosterChanged_(); // the dashboard's access follows the decision at once
     return { ok: true, action: action, voter: voter, set: set, missing: missing };
   } finally {
@@ -2567,6 +2611,8 @@ function dashboardWho_(code) {
   var admin = PropertiesService.getScriptProperties().getProperty("ADMIN_KEY");
   if ((admin && String(code || "").trim() === admin) || voterOf_(code))
     return { name: "", organiser: true };
+  var screen = screenKey_();
+  if (screen && String(code || "").trim().toLowerCase() === screen.toLowerCase()) return { name: "", organiser: false, screen: true };
   var key = codeKey_(code);
   var roster = key.length === 8 ? roster_() : null;
   var at = roster ? roster.codes[key] : undefined;
@@ -2629,12 +2675,23 @@ function board_(who) {
       cache.put("board", JSON.stringify(items), 60);
     } catch (err) {} // over the cache's 100 KB: read from the sheet each time
   }
+  if (!who.organiser) {
+    var now = Date.now();
+    items = items.filter(function (it) {
+      var from = BOARD_FROM[it.section];
+      return (!from || now >= Date.parse(from)) && (!who.screen || it.section === "announcement");
+    });
+  }
   return {
     ok: true,
     action: "board",
     items: items,
-    who: { name: who.name, organiser: who.organiser },
+    who: { name: who.name, organiser: who.organiser, screen: !!who.screen },
     me: meOf_(who),
+    handinBy: HANDIN_BY,
+    audience: audienceOrNull_(who),
+    queue: who.organiser || who.screen ? queueCounts_() : null,
+    flash: who.organiser || who.screen ? flashOf_() : null,
     at: new Date(),
   };
 }
@@ -2663,6 +2720,7 @@ function meOf_(who) {
           mates: t.members.filter(function (n) {
             return n !== p.name;
           }),
+          handin: t.repo ? { repo: t.repo, slides: t.slides, video: t.video, about: t.about, at: t.handedIn, by: t.handedInBy } : null,
         }
       : null,
     help: helpOf_(p),
@@ -2728,7 +2786,8 @@ function coming_(who, data) {
 
 /* --- the teams --------------------------------------------------------- */
 
-// the Teams tab: [{ name, challenge, table, pitch, room, award }], in its order
+// the Teams tab: [{ name, challenge, table, pitch, room, award, repo, slides, video, about, handedIn, handedInBy }],
+// in its order
 function teamsList_() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName(TEAMS_SHEET);
@@ -2751,9 +2810,363 @@ function teamsList_() {
       pitch: hhmm_(r["Pitch"]),
       room: String(r["Room"]).trim(),
       award: AWARDS.indexOf(award) !== -1 ? award : "",
+      repo: webLink_(r["Repository"]),
+      slides: webLink_(r["Slides"]),
+      video: webLink_(r["Video"]),
+      about: String(r["About"] || "").trim(),
+      handedIn: isDate_(r["Handed in"]) ? r["Handed in"] : null,
+      handedInBy: String(r["Handed in by"] || "").trim(),
     });
   }
   return out;
+}
+
+// a web address as typed: "github.com/team/repo" gets its https://; anything that is not one, ""
+function webLink_(v) {
+  var s = String(v || "").trim();
+  if (!s) return "";
+  if (!/^https?:\/\//i.test(s) && /^[\w-]+(\.[\w-]+)+(\/|$)/.test(s)) s = "https://" + s;
+  return /^https?:\/\/[^\s"<>]+\.[^\s"<>]+$/i.test(s) ? s : "";
+}
+
+// the Teams tab, with the columns that came later (the hand-in's) added after the others on a tab made before them
+function teamsTab_() {
+  var sheet = tab_(TEAMS_SHEET, TEAM_COLUMNS);
+  var have = header_(sheet.getRange(1, 1, 1, Math.max(1, sheet.getLastColumn())).getValues());
+  var missing = TEAM_COLUMNS.filter(function (c) {
+    return have.indexOf(c) === -1;
+  });
+  if (missing.length) sheet.getRange(1, have.length + 1, 1, missing.length).setValues([missing]).setFontWeight("bold");
+  return sheet;
+}
+
+/* --- the team's own name ------------------------------------------------------------------ */
+
+var TEAM_NAME_MAX = 40;
+
+// teams.html: a team of two or more names itself (the organisers' "Team Ana, Mihai and Ioana" until then), as often
+// as it likes until coding stops; any of its members can, and the last one counts. The new name goes everywhere the
+// old one was: the Teams tab, the members' "Hackathon team", the mentor queue and the audience votes. The admin
+// page can still change it (Teams, Edit).
+function teamName_(who, data) {
+  var fail = function (msg) {
+    return { ok: false, action: "team-name", error: msg };
+  };
+  if (Date.now() >= Date.parse(HANDIN_BY)) return fail("Coding has stopped, and the team names with it. Ask at the desk for a change.");
+  var roster = roster_();
+  var p = personOf_(roster, who.email);
+  if (!p) return fail("Your registration is not in the sheet any more. Ask at the desk.");
+  if (!p.team) return fail("You are not in a team yet.");
+  var t = roster.teams[p.team.toLowerCase()];
+  if (!t || t.members.length < 2) return fail("A name is for a team of two or more: for now you are on your own.");
+  var name = clean_(data.name).replace(/\s+/g, " ").trim();
+  if (name.length < 2) return fail("Give your team a name of at least two letters.");
+  if (name.length > TEAM_NAME_MAX) return fail("Keep it to " + TEAM_NAME_MAX + " letters, so it fits on the big screen.");
+  if (/https?:|www\.|@|[<>{}\[\]\\|]/i.test(name)) return fail("Just a name, without links or symbols.");
+  var was = t.name;
+  if (name === was) return { ok: true, action: "team-name", me: meOf_(who) };
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    var sheet = teamsTab_();
+    var values = sheet.getDataRange().getValues();
+    var at = teamRow_(values, was);
+    var clash = teamRow_(values, name);
+    if (clash !== -1 && clash !== at) return fail("Another team is called " + String(values[clash - 1][0]).trim() + " already: pick another name.");
+    if (at === -1) sheet.appendRow([cell_(name), "", "", "", "", ""]);
+    else sheet.getRange(at, 1).setValue(cell_(name));
+    renameMembers_(was, name);
+    renameInTab_(QUEUE_SHEET, "Team", was, name);
+    renameInTab_(AUDIENCE_SHEET, "Team", was, name);
+    SpreadsheetApp.flush();
+    queueChanged_();
+    CacheService.getScriptCache().remove("audience");
+    rosterChanged_();
+  } finally {
+    lock.releaseLock();
+  }
+  return { ok: true, action: "team-name", me: meOf_(who) };
+}
+
+// a team's new name in a tab of its own (the mentor queue, the audience votes), where its old one was
+function renameInTab_(tab, column, from, to) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(tab);
+  if (!sheet || sheet.getLastRow() < 2) return;
+  var values = sheet.getDataRange().getValues();
+  var col = header_(values).indexOf(column);
+  if (col === -1) return;
+  for (var i = 1; i < values.length; i++)
+    if (String(values[i][col]).trim().toLowerCase() === from.toLowerCase()) sheet.getRange(i + 1, col + 1).setValue(cell_(to));
+}
+
+/* --- the hand-in ------------------------------------------------------------------------ */
+
+// teams.html: the team's hand-in, as often as they like until coding stops (HANDIN_BY): where the code is (a
+// repository, a Colab or Drive link: required), the slides and a demo video (optional), a line on what they built.
+// Any of the team can change it, and the last one counts. The admin page shows it to the jury, team by team.
+function handin_(who, data) {
+  var fail = function (msg) {
+    return { ok: false, action: "handin", error: msg };
+  };
+  if (Date.now() >= Date.parse(HANDIN_BY))
+    return fail("Coding has stopped, and the hand-in with it. Talk to an organiser at the desk.");
+  var roster = roster_();
+  var p = personOf_(roster, who.email);
+  if (!p) return fail("Your registration is not in the sheet any more. Ask at the desk.");
+  if (!p.team) return fail("You are not in a team yet. Ask at the desk, then hand in from here.");
+  var links = {};
+  var names = { repo: "your code", slides: "the slides", video: "the video" };
+  for (var k in names) {
+    var raw = String(data[k] || "").trim();
+    links[k] = webLink_(raw);
+    if (raw && !links[k]) return fail("The link to " + names[k] + " has to be a web address, like https://github.com/your-team/project.");
+  }
+  if (!links.repo) return fail("Give the link to your code: a repository, or a Colab or Drive link anyone with it can open.");
+  var about = clean_(data.about).slice(0, 280);
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    var sheet = teamsTab_();
+    var values = sheet.getDataRange().getValues();
+    var header = header_(values);
+    var row = teamRow_(values, p.team);
+    if (row === -1) {
+      // a team typed only in the registrations' "Hackathon team" column: it goes in the Teams tab now
+      sheet.appendRow([cell_(p.team), "", "", "", "", ""]);
+      row = sheet.getLastRow();
+    }
+    var put = {
+      Repository: links.repo,
+      Slides: links.slides,
+      Video: links.video,
+      About: cell_(about),
+      "Handed in": new Date(),
+      "Handed in by": cell_(p.name),
+    };
+    Object.keys(put).forEach(function (col) {
+      sheet.getRange(row, header.indexOf(col) + 1).setValue(put[col]);
+    });
+    SpreadsheetApp.flush();
+    rosterChanged_(); // the team's dashboards show the hand-in at their next ask
+  } finally {
+    lock.releaseLock();
+  }
+  return { ok: true, action: "handin", me: meOf_(who) };
+}
+
+/* --- the audience award -------------------------------------------------------------------- */
+
+function audienceState_() {
+  var s = PropertiesService.getScriptProperties().getProperty("AUDIENCE") || "";
+  return AUDIENCE_STATES.indexOf(s) === -1 ? "" : s;
+}
+
+// every vote, { email: team }: half a minute in the cache, cleared by each vote
+function audienceVotes_() {
+  var cache = CacheService.getScriptCache();
+  var hit = cache.get("audience");
+  if (hit) return JSON.parse(hit);
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(AUDIENCE_SHEET);
+  var votes = {};
+  if (sheet && sheet.getLastRow() > 1) {
+    var values = sheet.getDataRange().getValues();
+    var header = header_(values);
+    for (var i = 1; i < values.length; i++) {
+      var r = toRecord_(header, values[i]);
+      var email = String(r["Email"]).trim().toLowerCase();
+      var team = String(r["Team"]).trim();
+      if (email && team) votes[email] = team;
+    }
+  }
+  try {
+    cache.put("audience", JSON.stringify(votes), 30);
+  } catch (err) {}
+  return votes;
+}
+
+// the teams with someone in them, each with its votes, the most first
+function audienceTally_(roster) {
+  var votes = audienceVotes_();
+  var n = {};
+  Object.keys(votes).forEach(function (e) {
+    var k = votes[e].toLowerCase();
+    n[k] = (n[k] || 0) + 1;
+  });
+  var teams = Object.keys(roster.teams)
+    .map(function (k) {
+      return roster.teams[k];
+    })
+    .filter(function (t) {
+      return t.members.length;
+    })
+    .map(function (t) {
+      return { name: t.name, challenge: t.challenge, votes: n[t.name.toLowerCase()] || 0 };
+    });
+  teams.sort(function (a, b) {
+    return b.votes - a.votes || a.name.localeCompare(b.name);
+  });
+  return { total: Object.keys(votes).length, teams: teams };
+}
+
+// what a page is told about the vote: the organisers (the admin page, the big screen) everything; a participant
+// the state, the teams they can vote for, their own vote, and the votes once the result is shown
+function audienceFor_(who) {
+  var state = audienceState_();
+  var roster = roster_();
+  var tally = audienceTally_(roster);
+  if (who.organiser) return { state: state, total: tally.total, teams: tally.teams };
+  if (!state) return { state: "" };
+  var p = personOf_(roster, who.email);
+  var own = p && p.team ? p.team.toLowerCase() : "";
+  return {
+    state: state,
+    total: tally.total,
+    mine: audienceVotes_()[who.email] || "",
+    canVote: !!(p && p.checkedIn),
+    teams: tally.teams
+      .filter(function (t) {
+        return t.name.toLowerCase() !== own || state === "shown";
+      })
+      .map(function (t) {
+        return state === "shown" ? t : { name: t.name, challenge: t.challenge };
+      }),
+  };
+}
+
+// never a reason for the board or the list to fail
+function audienceOrNull_(who) {
+  try {
+    return audienceFor_(who || { organiser: true });
+  } catch (err) {
+    console.error("audience failed: " + err);
+    return null;
+  }
+}
+
+// teams.html: a participant's vote, while the vote is open: one each, for a team not their own, changed as often
+// as they like
+function audienceVote_(who, data) {
+  var fail = function (msg) {
+    return { ok: false, action: "audience", error: msg };
+  };
+  if (audienceState_() !== "open") return fail("The vote is not open now.");
+  var roster = roster_();
+  var p = personOf_(roster, who.email);
+  if (!p) return fail("Your registration is not in the sheet any more. Ask at the desk.");
+  if (!p.checkedIn) return fail("Only those at the hackathon vote: check in at the desk first.");
+  var name = String(data.team || "").trim();
+  var t = roster.teams[name.toLowerCase()];
+  if (!t || !t.members.length) return fail("That team is not on the list. Refresh the page.");
+  if (p.team && p.team.toLowerCase() === t.name.toLowerCase()) return fail("Vote for another team: not your own.");
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    var sheet = tab_(AUDIENCE_SHEET, AUDIENCE_COLUMNS);
+    var values = sheet.getDataRange().getValues();
+    var row = -1;
+    for (var i = 1; i < values.length; i++) if (String(values[i][0]).trim().toLowerCase() === who.email) row = i + 1;
+    var line = [who.email, cell_(t.name), new Date()];
+    if (row === -1) sheet.appendRow(line);
+    else sheet.getRange(row, 1, 1, line.length).setValues([line]);
+    SpreadsheetApp.flush();
+    CacheService.getScriptCache().remove("audience");
+  } finally {
+    lock.releaseLock();
+  }
+  return { ok: true, action: "audience", me: meOf_(who), audience: audienceFor_(who) };
+}
+
+// admin.html: opens the vote ("open"), closes it and shows the result ("shown"), or puts it back as before ("");
+// clear: deletes every vote (after a test)
+function audienceSet_(data) {
+  var state = String(data.state || "").trim().toLowerCase();
+  if (AUDIENCE_STATES.indexOf(state) === -1) return { ok: false, action: "audience-state", error: "Not a state of the vote: " + state };
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    PropertiesService.getScriptProperties().setProperty("AUDIENCE", state);
+    if (data.clear) {
+      var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(AUDIENCE_SHEET);
+      if (sheet && sheet.getLastRow() > 1) sheet.deleteRows(2, sheet.getLastRow() - 1);
+      CacheService.getScriptCache().remove("audience");
+    }
+  } finally {
+    lock.releaseLock();
+  }
+  return { ok: true, action: "audience-state", audience: audienceFor_({ organiser: true }) };
+}
+
+// The big screen's own password (screen.html, for a smart board or a laptop left at the venue), set on the admin
+// page (Team dashboard, Big screen) and kept in the SCREEN_KEY script property, never in this file: it opens the
+// screen's view of the board (the announcements, the mentor queue in numbers, the audience vote as the teams see it)
+// and nothing else. Empty: only the admin key opens the screen.
+function screenKey_() {
+  return PropertiesService.getScriptProperties().getProperty("SCREEN_KEY") || "";
+}
+
+function screenKeySet_(data) {
+  var key = String(data.screenKey || "").trim();
+  if (key && !/^[A-Za-z0-9-]{6,40}$/.test(key))
+    return { ok: false, action: "screen-key", error: "Letters, digits and dashes only, from 6 to 40 of them." };
+  var props = PropertiesService.getScriptProperties();
+  if (key && (key === props.getProperty("ADMIN_KEY") || key === props.getProperty("MENTOR_KEY")))
+    return { ok: false, action: "screen-key", error: "Pick a password of its own, not one of the other keys." };
+  if (key) props.setProperty("SCREEN_KEY", key);
+  else props.deleteProperty("SCREEN_KEY");
+  return { ok: true, action: "screen-key", screenKey: key };
+}
+
+// The big screen's live message ("Food is served: come and eat."): the admin page puts it on the screen at once
+// (screen.html asks every few seconds, the "flash" action), for a few minutes or until it is taken down; it can go
+// on the team dashboards too, as an announcement. Kept in the SCREEN_FLASH script property.
+var FLASH_TEXT_MAX = 80;
+var FLASH_SUB_MAX = 140;
+
+// the message while it is up: { id, text, sub, at, until }, else null
+function flashOf_() {
+  var raw = PropertiesService.getScriptProperties().getProperty("SCREEN_FLASH");
+  if (!raw) return null;
+  try {
+    var f = JSON.parse(raw);
+    return f && f.text && Date.now() < Date.parse(f.until) ? f : null;
+  } catch (err) {
+    return null;
+  }
+}
+
+// admin.html: { text, sub, minutes, post } shows it; an empty text takes it down
+function flashSet_(data) {
+  var text = clean_(data.text).replace(/\s+/g, " ").trim();
+  var sub = clean_(data.sub).replace(/\s+/g, " ").trim();
+  var props = PropertiesService.getScriptProperties();
+  if (!text) {
+    props.deleteProperty("SCREEN_FLASH");
+    return { ok: true, action: "screen-flash", flash: null };
+  }
+  if (text.length > FLASH_TEXT_MAX) return { ok: false, action: "screen-flash", error: "Keep the message to " + FLASH_TEXT_MAX + " letters, so it reads from the back of the room; the line under it can say more." };
+  if (sub.length > FLASH_SUB_MAX) return { ok: false, action: "screen-flash", error: "Keep the line under it to " + FLASH_SUB_MAX + " letters." };
+  var minutes = Math.min(60, Math.max(1, Math.round(Number(data.minutes) || 5)));
+  var now = new Date();
+  var flash = { id: newBoardId_(), text: text, sub: sub, at: now.toISOString(), until: new Date(now.getTime() + minutes * 60000).toISOString() };
+  props.setProperty("SCREEN_FLASH", JSON.stringify(flash));
+  var posted = null;
+  if (data.post) posted = boardSave_({ item: { section: "announcement", title: text, text: sub } });
+  return { ok: true, action: "screen-flash", flash: flash, posted: !!(posted && posted.ok) };
+}
+
+// the mentor queue in numbers, for the big screen
+function queueCounts_() {
+  try {
+    var waiting = 0;
+    var taken = 0;
+    queue_().forEach(function (it) {
+      if (it.status === "waiting") waiting++;
+      if (it.status === "taken") taken++;
+    });
+    return { waiting: waiting, taken: taken };
+  } catch (err) {
+    return null;
+  }
 }
 
 // a time typed in the sheet ("10:15", which Sheets may keep as a time of day) as "10:15"
@@ -3023,7 +3436,7 @@ function helpAsk_(who, data) {
   var question = clean_(data.question).slice(0, 300);
   var where = clean_(data.where).slice(0, 80);
   if (!question) return fail("Say in a line or two what you are stuck on, so the right mentor comes.");
-  if (!where) return fail("Say where you are (your table), so the mentor finds you.");
+  if (!where) return fail("Say where you are (the room, the spot), so the mentor finds you.");
   var lock = LockService.getScriptLock();
   lock.waitLock(10000);
   try {
@@ -3575,16 +3988,59 @@ function sheet_() {
     var missing = COLUMNS.filter(function (col) {
       return have.indexOf(col) === -1;
     });
-    if (missing.length)
+    if (missing.length) {
       sheet
         .getRange(1, have.length + 1, 1, missing.length)
         .setValues([missing])
         .setFontWeight("bold");
+      // a column added at the edge can come with the rule of the one before it: the new ones start without any
+      if (sheet.getMaxRows() > 1)
+        sheet.getRange(2, have.length + 1, sheet.getMaxRows() - 1, missing.length).clearDataValidations();
+    }
     if (missing.indexOf("Decision") !== -1)
       decisionColumn_(sheet, have.concat(missing));
     voteColumns_(sheet, have.concat(missing), missing);
+    fixRules_(sheet, have.concat(missing));
   }
   return sheet;
+}
+
+// The Note columns came with the vote dropdown (yes, no, waitlist) of the column before them, which refused every
+// note: Sheets only refuses it when it saves, after the answer, so the admin page could not even say why. Once
+// (RULES_FIXED), each column keeps only its own rule: the Decision its dropdown, the votes their 1 to 10, and any
+// other column loses a dropdown of votes or decisions, or a 1 to 10, it can only have been given by mistake. A rule
+// of another kind (a checkbox the team added) stays.
+var RULES_FIXED = "2026-10-17";
+
+function fixRules_(sheet, header) {
+  var props = PropertiesService.getScriptProperties();
+  if (props.getProperty("RULES_FIXED") === RULES_FIXED) return;
+  var rows = sheet.getMaxRows() - 1;
+  if (rows >= 1 && header.length) {
+    var rules = sheet.getRange(2, 1, 1, header.length).getDataValidations()[0];
+    var cleared = [];
+    header.forEach(function (col, j) {
+      if (col === "Decision" || VOTE_COLUMNS.indexOf(col) !== -1 || !rules[j] || !strayRule_(rules[j])) return;
+      sheet.getRange(2, j + 1, rows, 1).clearDataValidations();
+      cleared.push(col || "column " + (j + 1));
+    });
+    decisionColumn_(sheet, header);
+    voteColumns_(sheet, header, VOTE_COLUMNS);
+    console.log("fixRules_: " + (cleared.length ? "took the stray rule off " + cleared.join(", ") : "every column had its own rule"));
+  }
+  props.setProperty("RULES_FIXED", RULES_FIXED);
+}
+
+// a dropdown of votes or decisions, or a number between: the rules this script gives the Vote and Decision columns
+function strayRule_(rule) {
+  var C = SpreadsheetApp.DataValidationCriteria;
+  var type = rule.getCriteriaType();
+  if (type === C.NUMBER_BETWEEN) return true;
+  if (type !== C.VALUE_IN_LIST) return false;
+  var list = rule.getCriteriaValues()[0] || [];
+  return list.length > 0 && list.every(function (x) {
+    return ["yes", "no", "waitlist", "accepted", "denied"].indexOf(String(x).trim().toLowerCase()) !== -1;
+  });
 }
 
 function lettersFolder_() {

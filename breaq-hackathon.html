@@ -4,10 +4,10 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<title>BreaQ Hackathon 2026 · RoQTeam</title>
-		<meta name="description" content="The BreaQ Hackathon: teams take on real quantum computing challenges, with mentors on the floor and prizes at the end, on 24–25 October 2026 at the CAMPUS Research Institute, Bucharest. Free, and every level is welcome." />
+		<meta name="description" content="The BreaQ Hackathon: teams take on real quantum computing challenges, with mentors on the floor and 3,000 RON in prizes, on 24–25 October 2026 at the CAMPUS Research Institute, Bucharest. Free, and every level is welcome." />
 		<meta property="og:type" content="website" />
 		<meta property="og:title" content="BreaQ Hackathon 2026 · 24–25 October, Bucharest" />
-		<meta property="og:description" content="Teams take on real quantum computing challenges, with mentors on the floor and prizes at the end, on 24–25 October 2026 at the CAMPUS Research Institute, Bucharest. Free, and every level is welcome." />
+		<meta property="og:description" content="Teams take on real quantum computing challenges, with mentors on the floor and 3,000 RON in prizes, on 24–25 October 2026 at the CAMPUS Research Institute, Bucharest. Free, and every level is welcome." />
 		<meta property="og:site_name" content="RoQTeam" />
 		<meta property="og:locale" content="en_US" />
 		<meta property="og:image" content="https://roqteam.ro/images/share/breaq-2026.jpg" />
@@ -26,7 +26,7 @@
 			"@context": "https://schema.org",
 			"@type": "Event",
 			"name": "BreaQ 2026 Hackathon",
-			"description": "A quantum hackathon: teams work on real challenges with mentors on the floor and prizes at the end. Part of BreaQ 2026, RoQTeam's annual quantum event in Bucharest. Free to attend.",
+			"description": "A quantum hackathon: teams work on real challenges with mentors on the floor and 3,000 RON in prizes. Part of BreaQ 2026, RoQTeam's annual quantum event in Bucharest. Free to attend.",
 			"image": "https://roqteam.ro/images/share/breaq-2026.jpg",
 			"url": "https://roqteam.ro/breaq-hackathon.html",
 			"startDate": "2026-10-24T09:00:00+03:00",
@@ -67,7 +67,7 @@
 		}
 		</script>
 		<link rel="stylesheet" href="assets/css/main.css" />
-		<link rel="stylesheet" href="assets/css/breaq.css?v=20261014" />
+		<link rel="stylesheet" href="assets/css/breaq.css?v=20261017" />
 		<link rel="icon" type="image/png" href="images/favicon-2026.png">
 		<noscript><link rel="stylesheet" href="assets/css/noscript.css" /></noscript>
 	</head>
@@ -101,6 +101,7 @@
 									<a href="index.html">Home</a>
 									<a href="breaq.html">BreaQ 2026</a>
 									<a href="#about">About</a>
+									<a href="#prizes">Prizes</a>
 									<a href="#challenges">Challenges</a>
 									<a href="#last-year">Last year’s challenges</a>
 									<a href="#sponsors">Sponsors</a>
@@ -127,7 +128,17 @@
 										<span class="hero-cta"><a href="register.html" class="button primary">Register</a><small>Free · closes 18 October</small></span>
 									</div>
 								</div>
-								<figure class="ch-hero-art"><img src="images/BreaQ_logo_2026-light.svg" alt="" /></figure>
+								<figure class="ch-hero-art has-seal">
+									<img src="images/BreaQ_logo_2026-light.svg" alt="" />
+									<!-- the prize pool as a seal on the logo, its words turning round it; it leads to the Prizes section -->
+									<a class="prize-seal" href="#prizes">
+										<svg class="prize-seal-ring" viewBox="0 0 120 120" aria-hidden="true" focusable="false">
+											<defs><path id="prize-seal-path" d="M60,60 m-48,0 a48,48 0 1,1 96,0 a48,48 0 1,1 -96,0" /></defs>
+											<text><textPath href="#prize-seal-path" textLength="300" lengthAdjust="spacing">PRIZE POOL ✦ 3 CHALLENGES ✦ 9 TEAMS ✦ </textPath></text>
+										</svg>
+										<span class="prize-seal-core"><b>3,000</b><span>RON in prizes</span></span>
+									</a>
+								</figure>
 							</div>
 						</header>
 
@@ -138,7 +149,7 @@
 									<!-- About -->
 									<section id="about" class="section_space">
 										<h3 class="major">About the hackathon</h3>
-										<p>The BreaQ Hackathon is the part of BreaQ where you build: teams take on real quantum computing challenges at the CAMPUS Research Institute, with mentors on the floor and prizes at the end. Every level is welcome, from complete beginners to researchers, and the <a href="breaq-conference.html">BreaQ Conference</a> follows three weeks later.</p>
+										<p>The BreaQ Hackathon is the part of BreaQ where you build: teams take on real quantum computing challenges at the CAMPUS Research Institute, with mentors on the floor and 3,000 RON in prizes at the end. Every level is welcome, from complete beginners to researchers, and the <a href="breaq-conference.html">BreaQ Conference</a> follows three weeks later.</p>
 										<dl class="glance">
 											<div>
 												<dt><span class="glance-ic icon solid fa-calendar-alt" aria-hidden="true"></span>When</dt>
@@ -159,10 +170,35 @@
 										</dl>
 									</section>
 
+									<!-- Prizes: the pool, counted up as it comes into view (breaq.js), beside a podium for each challenge -->
+									<section id="prizes" class="section_space">
+										<h3 class="major">Prizes</h3>
+										<div class="prize" data-prize>
+											<div class="prize-pool">
+												<p class="prize-k"><span class="icon solid fa-trophy" aria-hidden="true"></span>Prize pool</p>
+												<p class="prize-sum"><span class="prize-sr">3,000 RON</span><span class="prize-n" data-count-to="3000" aria-hidden="true">3,000</span><span class="prize-cur" aria-hidden="true">RON</span></p>
+												<p class="prize-line">Nine teams on the podium: first, second and third place in each of the three challenges, chosen by the jury after the final presentations.</p>
+												<ul class="prize-tracks">
+													<li>Quantum Foundations</li>
+													<li>Quantum AI</li>
+													<li>Quantum Hacking</li>
+												</ul>
+											</div>
+											<div class="podium" aria-hidden="true">
+												<div class="podium-stage">
+													<div class="pod pod-2"><b>2</b><span>2nd</span></div>
+													<div class="pod pod-1"><span class="pod-cup icon solid fa-trophy"></span><b>1</b><span>1st</span></div>
+													<div class="pod pod-3"><b>3</b><span>3rd</span></div>
+												</div>
+												<p class="podium-x">× 3 challenges</p>
+											</div>
+										</div>
+									</section>
+
 									<!-- What to expect: this year's three challenges, then the countdown and the news -->
 									<section id="challenges" class="section_space">
 										<h3 class="major">What to Expect</h3>
-										<p>Three challenges on real quantum problems, each with a starter kit, mentors on the floor and prizes for the top three teams. New to quantum? Quantum Foundations is designed for you.</p>
+										<p>Three challenges on real quantum problems, each with a starter kit, mentors on the floor and <a href="#prizes">prizes for its top three teams</a>. New to quantum? Quantum Foundations is designed for you.</p>
 										<div class="ch-grid">
 											<article class="ch">
 												<span class="image fit"><img src="images/opt/quantum_foundations_2026.webp" alt="" loading="lazy" /></span>
@@ -194,7 +230,7 @@
 												</div>
 											</div>
 											<div class="soon-next-body">
-												<p>The schedule and the prizes are announced in the coming weeks, here and on <a href="https://www.linkedin.com/company/roqteam/" target="_blank" rel="noopener">RoQTeam’s LinkedIn</a>. Curious how last year went? <a href="#last-year">See last year’s challenges</a>.</p>
+												<p>The full schedule follows in the coming days, here and on <a href="https://www.linkedin.com/company/roqteam/" target="_blank" rel="noopener">RoQTeam’s LinkedIn</a>. Curious how last year went? <a href="#last-year">See last year’s challenges</a>.</p>
 												<p class="next-gcal">Add it to your calendar: <a href="breaq-2026-hackathon.ics" type="text/calendar">calendar file</a> · <a href="https://calendar.google.com/calendar/render?action=TEMPLATE&amp;text=BreaQ+2026+Hackathon&amp;dates=20261024T060000Z%2F20261025T120000Z&amp;location=CAMPUS+Research+Institute%2C+Splaiul+Independen%C8%9Bei+313%2C+Bucure%C8%99ti&amp;details=Quantum+hackathon.+Details%3A+https%3A%2F%2Froqteam.ro%2Fbreaq-hackathon.html" target="_blank" rel="noopener">Google Calendar</a> · iPhone and Mac: <a href="webcal://roqteam.ro/breaq-2026-hackathon.ics">subscribe</a>, it updates itself if the times change</p>
 											</div>
 										</div>
@@ -363,7 +399,7 @@
 													<span class="faq-chev" aria-hidden="true"></span>
 												</button>
 												<div class="faq-a" id="faq-a-5"><div>
-													<p>Yes. At the end of the hackathon each team publishes its code and gives a short presentation to the jury, and each challenge awards first, second and third place. We announce the prizes closer to the event.</p>
+													<p>Yes: 3,000 RON in prizes. At the end of the hackathon each team publishes its code and gives a short presentation to the jury, and each of the three challenges awards first, second and third place, so nine teams win a prize.</p>
 												</div></div>
 											</li>
 											<li class="faq-item">
@@ -480,6 +516,6 @@
 			<script src="assets/js/breakpoints.min.js"></script>
 			<script src="assets/js/util.js"></script>
 			<script src="assets/js/main.js"></script>
-			<script src="assets/js/breaq.js?v=20261014"></script>
+			<script src="assets/js/breaq.js?v=20261017"></script>
 	</body>
 </html>

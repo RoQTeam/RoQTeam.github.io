@@ -1,0 +1,123 @@
+<!DOCTYPE HTML>
+<html lang="en">
+	<head>
+		<title>Check-in · BreaQ Hackathon</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+		<meta name="robots" content="noindex, nofollow" />
+		<meta name="referrer" content="no-referrer" />
+		<meta name="theme-color" content="#061A40" />
+		<!-- added to the home screen, it opens as an app of its own: full screen, without the browser's bars -->
+		<meta name="mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+		<meta name="apple-mobile-web-app-title" content="BreaQ Check-in" />
+		<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; media-src 'self' blob: mediastream:; connect-src https://script.google.com https://script.googleusercontent.com; manifest-src 'self'; base-uri 'none'; form-action 'none'" />
+		<link rel="manifest" href="door-manifest.json" />
+		<link rel="apple-touch-icon" href="images/brand/app-icon-180.png" />
+		<link rel="icon" type="image/png" href="images/favicon-2026.png" />
+		<link rel="preload" href="assets/fonts/raleway-800.woff2" as="font" type="font/woff2" crossorigin />
+		<link rel="stylesheet" href="assets/css/team-board.css?v=20261017b" />
+		<link rel="stylesheet" href="assets/css/door.css?v=20261017" />
+	</head>
+	<body class="is-door">
+
+		<!--
+			The BreaQ Hackathon's check-in at the door (roqteam.ro/door), for a phone: the camera fills the screen, each
+			pass it reads (the QR code on the participant's team dashboard) checks its owner in at once, and a sheet
+			says who it was (team, T-shirt, diet) with a buzz and a beep, or that they are here already, or that the
+			code is not one we know. "Find by name or code" does it by hand. It reads the admin page's list (the "list"
+			action, with the admin key) and checks in with the "checkin" action, as the admin page's Check-in view does.
+			Chrome reads the codes with its own reader; Safari and every browser on an iPhone with jsQR
+			(assets/js/vendor). Added to the home screen (door-manifest.json), it opens as an app.
+		-->
+
+		<svg class="sprite" aria-hidden="true" focusable="false">
+			<symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" /></symbol>
+			<symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></symbol>
+			<symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></symbol>
+			<symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></symbol>
+			<symbol id="i-scan" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2" /><path d="M17 3h2a2 2 0 0 1 2 2v2" /><path d="M21 17v2a2 2 0 0 1-2 2h-2" /><path d="M7 21H5a2 2 0 0 1-2-2v-2" /><path d="M7 12h10" /></symbol>
+			<symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></symbol>
+			<symbol id="i-lock" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></symbol>
+		</svg>
+
+		<main class="door" id="door"
+			data-endpoint="https://script.google.com/macros/s/AKfycbwLAgxidNtxQiuxIsLQPgdlOuFQRu_1cNSOj1Gs1kQ_O-Vq38CV9XRbViZb1qNrm_xW/exec">
+
+			<!-- once on this phone: the admin key -->
+			<section class="door-screen" id="lock">
+				<form class="door-card" id="lock-form" novalidate>
+					<img class="door-logo" src="images/brand/breaq-horizontal.svg" alt="BreaQ" width="150" height="65" />
+					<p class="chip is-outline">Check-in</p>
+					<h1>The door, on your phone.</h1>
+					<p class="door-lead">Scan each participant’s pass, and they are in. It opens with the admin key, once on this phone.</p>
+					<input type="text" id="key" aria-label="Admin key" placeholder="Admin key" autocomplete="off" autocapitalize="off" spellcheck="false" />
+					<p class="err" id="lock-err" role="alert" hidden></p>
+					<button type="submit" class="btn primary" id="lock-btn">Open</button>
+				</form>
+			</section>
+
+			<!-- ready: one tap starts the camera (and lets the phone buzz and beep) -->
+			<section class="door-screen" id="start" hidden>
+				<div class="door-card">
+					<img class="door-logo" src="images/brand/breaq-horizontal.svg" alt="BreaQ" width="150" height="65" />
+					<p class="chip is-outline">Check-in</p>
+					<h1 id="start-title">Ready at the door.</h1>
+					<p class="door-count" id="start-count"></p>
+					<button type="button" class="btn primary door-go" id="go"><svg class="ic" aria-hidden="true"><use href="#i-scan" /></svg>Start scanning</button>
+					<button type="button" class="btn ghost" id="start-find"><svg class="ic" aria-hidden="true"><use href="#i-search" /></svg>Find by name or code</button>
+					<p class="err" id="start-err" role="alert" hidden></p>
+					<p class="door-fine">On an iPhone: Share, then Add to Home Screen, and it opens as an app.</p>
+				</div>
+			</section>
+
+			<!-- scanning: the camera across the screen, the viewfinder in the middle -->
+			<section class="cam" id="cam" hidden>
+				<video id="video" playsinline muted autoplay></video>
+				<div class="cam-shade" aria-hidden="true"></div>
+				<header class="cam-top">
+					<img src="images/brand/breaq-horizontal.svg" alt="BreaQ" width="84" height="36" />
+					<span class="cam-kicker">Check-in</span>
+					<span class="cam-count" id="count" aria-live="polite"></span>
+				</header>
+				<div class="finder" aria-hidden="true"><i></i><i></i><i></i><i></i><span class="finder-line"></span></div>
+				<p class="cam-hint" id="hint">Point the camera at a pass</p>
+				<footer class="cam-bottom">
+					<button type="button" class="btn ghost" id="find"><svg class="ic" aria-hidden="true"><use href="#i-search" /></svg>Find</button>
+					<button type="button" class="btn ghost" id="stop">Stop</button>
+				</footer>
+			</section>
+
+			<!-- what a pass said: who, and that they are in; or here already; or not a pass we know -->
+			<section class="sheet result" id="result" hidden role="alertdialog" aria-labelledby="res-name" aria-live="assertive">
+				<div class="result-body">
+					<span class="result-ring" id="res-ring"><svg class="ic" aria-hidden="true"><use id="res-icon" href="#i-check" /></svg></span>
+					<p class="result-kicker" id="res-kicker"></p>
+					<h2 class="result-name" id="res-name"></h2>
+					<p class="result-team" id="res-team"></p>
+					<div class="result-facts" id="res-facts"></div>
+					<p class="result-note" id="res-note"></p>
+				</div>
+				<div class="result-actions">
+					<button type="button" class="btn primary" id="res-next">Next</button>
+					<button type="button" class="btn ghost" id="res-undo" hidden>Undo</button>
+				</div>
+				<span class="result-timer" id="res-timer" aria-hidden="true"></span>
+			</section>
+
+			<!-- by hand: a name or a code -->
+			<section class="sheet find-sheet" id="find-sheet" hidden role="dialog" aria-labelledby="find-h">
+				<header class="find-head">
+					<h2 id="find-h">Find someone</h2>
+					<button type="button" class="btn small ghost" id="find-close">Close</button>
+				</header>
+				<input type="search" id="find-q" placeholder="Name, team or code" autocomplete="off" autocapitalize="off" spellcheck="false" />
+				<ul class="find-list" id="find-list"></ul>
+			</section>
+
+		</main>
+
+		<script src="assets/js/door.js?v=20261017"></script>
+	</body>
+</html>

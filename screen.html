@@ -1,0 +1,179 @@
+<!DOCTYPE HTML>
+<html lang="en">
+	<head>
+		<title>Big screen · BreaQ Hackathon</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="robots" content="noindex, nofollow" />
+		<meta name="referrer" content="no-referrer" />
+		<meta name="theme-color" content="#061A40" />
+		<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src https://script.google.com https://script.googleusercontent.com; base-uri 'none'; form-action 'none'" />
+		<link rel="preload" href="assets/fonts/raleway-800.woff2" as="font" type="font/woff2" crossorigin />
+		<link rel="stylesheet" href="assets/css/team-board.css?v=20261017b" />
+		<link rel="stylesheet" href="assets/css/screen.css?v=20261017e" />
+		<link rel="icon" type="image/png" href="images/favicon-2026.png">
+	</head>
+	<body class="is-screen">
+
+		<!--
+			The BreaQ Hackathon on the venue's big screen (roqteam.ro/screen), for a laptop on the projector: what is on
+			now and next, the countdown to the end of coding, the newest announcements, how many teams wait for a
+			mentor and, at the awards, the audience award's vote and its result. It reads the same "board" action as
+			the team dashboard, with the admin key (the organisers' view: the mentor queue in numbers and the votes),
+			every half minute; the schedule is assets/js/schedule.js. Full screen: the button, or F. It opens with its own
+			password (SCREEN_KEY, set on the admin page: Team dashboard, Big screen), so the admin key need not go on a
+			shared screen; the admin key opens it too.
+		-->
+
+		<div class="ground" aria-hidden="true">
+			<svg class="ghost-art ghost-top" viewBox="0 0 400 400" focusable="false">
+				<g class="ghost-line">
+					<ellipse cx="250" cy="150" rx="170" ry="58" transform="rotate(20 250 150)" />
+					<ellipse cx="250" cy="150" rx="170" ry="58" transform="rotate(80 250 150)" />
+					<ellipse cx="250" cy="150" rx="170" ry="58" transform="rotate(140 250 150)" />
+					<path d="M40,330L92,302M92,302L144,340M144,340L186,312M186,312L232,330" />
+				</g>
+				<g class="ghost-fill">
+					<circle cx="250" cy="150" r="7" /><circle cx="107" cy="76" r="5" /><circle cx="246" cy="300" r="5" /><circle cx="241" cy="229" r="5" />
+					<circle cx="40" cy="330" r="3.5" /><circle cx="92" cy="302" r="4.5" /><circle cx="144" cy="340" r="3.5" /><circle cx="186" cy="312" r="3.5" /><circle cx="232" cy="330" r="3.5" />
+				</g>
+			</svg>
+			<svg class="ghost-art ghost-bottom" viewBox="0 0 300 300" focusable="false">
+				<g class="ghost-line">
+					<ellipse cx="110" cy="190" rx="118" ry="40" transform="rotate(-18 110 190)" />
+					<ellipse cx="110" cy="190" rx="118" ry="40" transform="rotate(42 110 190)" />
+					<ellipse cx="110" cy="190" rx="118" ry="40" transform="rotate(102 110 190)" />
+				</g>
+				<g class="ghost-fill"><circle cx="110" cy="190" r="6" /><circle cx="204" cy="187" r="4" /><circle cx="120" cy="78" r="4" /></g>
+			</svg>
+			<!-- the post's traces: a bundle coming in from the right edge, in the bottom corner, away from the text -->
+			<svg class="screen-traces" viewBox="580 820 540 220" focusable="false">
+				<path class="tr" d="M1120,945L1018.6,945L958.6,1005L700,1005" /><circle class="dot" cx="700" cy="1005" r="5" />
+				<path class="tr" d="M1120,927L1011.2,927L951.2,987L760,987" /><circle class="dot" cx="760" cy="987" r="5" />
+				<path class="tr" d="M1120,909L1003.7,909L943.7,969L720,969" /><circle class="dot" cx="720" cy="969" r="5" />
+				<path class="tr" d="M1120,891L996.3,891L936.3,951L795,951" /><circle class="dot" cx="795" cy="951" r="5" />
+				<path class="tr" d="M1120,873L988.8,873L928.8,933L735,933" /><circle class="dot" cx="735" cy="933" r="5" />
+				<path class="tr" d="M1120,855L981.4,855L921.4,915L820,915" /><circle class="dot" cx="820" cy="915" r="5" />
+			</svg>
+		</div>
+
+		<main class="tm screen" id="screen"
+			data-endpoint="https://script.google.com/macros/s/AKfycbwLAgxidNtxQiuxIsLQPgdlOuFQRu_1cNSOj1Gs1kQ_O-Vq38CV9XRbViZb1qNrm_xW/exec">
+
+			<!-- Locked: the admin key, once on this laptop -->
+			<section class="lock" id="lock">
+				<form class="lock-card" id="lock-form" novalidate>
+					<img class="lock-logo" src="images/brand/breaq-horizontal.svg" alt="BreaQ" width="180" height="78" />
+					<p class="chip is-outline">Big screen</p>
+					<h1>The hackathon, on the wall.</h1>
+					<p class="lead">For the smart board or the laptop on the projector: now and next, the countdown, the announcements, the mentor queue and the audience award. It opens with the screen’s password (set on the admin page), or the admin key.</p>
+					<label class="label" for="key">Screen password</label>
+					<input type="text" id="key" name="key" autocomplete="off" autocapitalize="off" spellcheck="false" required />
+					<label class="check"><input type="checkbox" id="remember" checked /> Remember on this screen</label>
+					<p class="err" id="lock-err" role="alert" hidden></p>
+					<button type="submit" class="btn primary" id="lock-btn">Open</button>
+				</form>
+			</section>
+
+			<section class="wall" id="wall" hidden>
+				<header class="wall-top">
+					<img class="wall-logo" src="images/brand/breaq-horizontal.svg" alt="BreaQ" width="138" height="60" />
+					<span class="vrule" aria-hidden="true"></span>
+					<p class="kicker">Hackathon · 24–25 October · CAMPUS Research Institute</p>
+					<p class="wall-clock" id="clock"></p>
+				</header>
+
+				<div class="wall-body">
+					<section class="stage" id="stage" aria-live="polite"></section>
+					<aside class="side" id="side"></aside>
+				</div>
+
+				<footer class="wall-foot">
+					<p>Your team dashboard: <b>roqteam.ro/teams</b></p>
+					<p class="wall-status" id="status"></p>
+				</footer>
+				<button type="button" class="btn small ghost wall-full" id="full">Full screen</button>
+			</section>
+
+			<!-- the organisers' live message ("Food is served: come and eat."), sent from the admin page: over everything
+			     until it runs out or is taken down -->
+			<section class="flash" id="flash" hidden aria-live="assertive" role="alert">
+				<svg class="flash-traces" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+					<path class="tr" pathLength="1" d="M-20,760L240,760L300,700L520,700" /><circle class="dot" cx="520" cy="700" r="5" />
+					<path class="tr" pathLength="1" d="M-20,778L232,778L292,718L470,718" /><circle class="dot" cx="470" cy="718" r="5" />
+					<path class="tr" pathLength="1" d="M-20,796L225,796L285,736L495,736" /><circle class="dot" cx="495" cy="736" r="5" />
+					<path class="tr" pathLength="1" d="M1620,140L1360,140L1300,200L1080,200" /><circle class="dot" cx="1080" cy="200" r="5" />
+					<path class="tr" pathLength="1" d="M1620,158L1368,158L1308,218L1130,218" /><circle class="dot" cx="1130" cy="218" r="5" />
+					<path class="tr" pathLength="1" d="M1620,176L1375,176L1315,236L1105,236" /><circle class="dot" cx="1105" cy="236" r="5" />
+				</svg>
+				<div class="flash-body">
+					<p class="flash-kicker"><span class="flash-live" aria-hidden="true"></span>Live · <span id="flash-at"></span></p>
+					<h2 class="flash-text" id="flash-text"></h2>
+					<p class="flash-sub" id="flash-sub"></p>
+				</div>
+				<span class="flash-timer" id="flash-timer" aria-hidden="true"></span>
+			</section>
+
+			<!-- every few minutes, for a little while: the partners, tier by tier, the traces drawing in from the edges
+			     (screen.js plays it; P plays it now). The logos are the design kit's, for a dark ground. -->
+			<section class="partners" id="partners" hidden aria-label="Our partners">
+				<svg class="partners-traces" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+					<g class="pt-left">
+						<path class="tr" pathLength="1" d="M-20,300L180,300L240,360L470,360" /><circle class="dot" cx="470" cy="360" r="5" />
+						<path class="tr" pathLength="1" d="M-20,318L172,318L232,378L420,378" /><circle class="dot" cx="420" cy="378" r="5" />
+						<path class="tr" pathLength="1" d="M-20,336L165,336L225,396L445,396" /><circle class="dot" cx="445" cy="396" r="5" />
+						<path class="tr" pathLength="1" d="M-20,354L157,354L217,414L395,414" /><circle class="dot" cx="395" cy="414" r="5" />
+					</g>
+					<g class="pt-right">
+						<path class="tr" pathLength="1" d="M1620,300L1420,300L1360,360L1130,360" /><circle class="dot" cx="1130" cy="360" r="5" />
+						<path class="tr" pathLength="1" d="M1620,318L1428,318L1368,378L1180,378" /><circle class="dot" cx="1180" cy="378" r="5" />
+						<path class="tr" pathLength="1" d="M1620,336L1435,336L1375,396L1155,396" /><circle class="dot" cx="1155" cy="396" r="5" />
+						<path class="tr" pathLength="1" d="M1620,354L1443,354L1383,414L1205,414" /><circle class="dot" cx="1205" cy="414" r="5" />
+					</g>
+				</svg>
+				<div class="partners-body">
+					<p class="kicker partners-kicker">BreaQ Hackathon · Thank you</p>
+					<h2 class="partners-title">Our partners make it happen.</h2>
+					<div class="ptier ptier-gold">
+						<p class="pchip">Gold partners</p>
+						<!-- each gold logo in a frame of its own, so a glint can cross the logo itself (cut to its shape) -->
+						<div class="plogos">
+							<span class="pglint pglint-fsas"><img src="images/brand/partners/fsas.webp" alt="Fsas Technologies, a Fujitsu company" /></span>
+							<span class="pglint pglint-kinderpedia"><img class="is-wordmark" src="images/brand/partners/kinderpedia.svg" alt="Kinderpedia, also our recruiting partner" /></span>
+						</div>
+					</div>
+					<div class="ptier-row">
+						<div class="ptier ptier-silver">
+							<p class="pchip">Silver partner</p>
+							<div class="plogos"><img src="images/brand/partners/cybalgoris.webp" alt="Cybalgoris" /></div>
+						</div>
+						<div class="ptier ptier-bronze">
+							<p class="pchip">Bronze partner</p>
+							<div class="plogos"><img src="images/brand/partners/nxp.webp" alt="NXP" /></div>
+						</div>
+					</div>
+					<div class="ptier ptier-supporter">
+						<p class="pchip">Supporters</p>
+						<div class="plogos">
+							<img src="images/brand/partners/sap.webp" alt="SAP" />
+							<img src="images/brand/partners/sipit.webp" alt="Sipit" />
+							<img src="images/brand/partners/artesana.webp" alt="Artesana" />
+						</div>
+					</div>
+					<div class="ptier ptier-host">
+						<p class="kicker">Hosted at</p>
+						<div class="plogos">
+							<img src="images/brand/partners/campus.webp" alt="CAMPUS Research Institute" />
+							<img src="images/brand/partners/upb.webp" alt="POLITEHNICA București" />
+						</div>
+					</div>
+				</div>
+				<span class="partners-timer" aria-hidden="true"></span>
+			</section>
+
+		</main>
+
+		<script src="assets/js/schedule.js?v=20261017"></script>
+		<script src="assets/js/screen.js?v=20261017d"></script>
+	</body>
+</html>

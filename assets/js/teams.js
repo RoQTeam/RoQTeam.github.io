@@ -12,7 +12,11 @@
 	  the feedback form from the awards on ("feedback")
 	- notifications (assets/js/notify.js), when asked for: new announcements, a mentor on the way, what starts in
 	  5 minutes, 15 minutes before coding stops; only while the tab is hidden
-	- the live strip and the schedule come from SCHEDULE below: a draft until the organisers announce the schedule
+	- the team's hand-in ("handin": the links to the code, the slides and a demo video) until coding stops, the
+	  check-in pass (the participant's code as a QR code, assets/js/qr.js, which the admin page's Check-in view scans)
+	  and the audience award's vote while the organisers have it open ("audience")
+	- the live strip and the schedule come from assets/js/schedule.js (the big screen, screen.html, reads it too): a
+	  draft until the organisers announce the schedule
 	- every time is shown in Bucharest time, whatever the device's time zone
 */
 
@@ -35,31 +39,21 @@
 	var PLACE = { '1st': 'First place', '2nd': 'Second place', '3rd': 'Third place' };
 	var CHALLENGES = ['Quantum Foundations', 'Quantum AI', 'Quantum Hacking'];
 	var SUB_EMPTY = 'How and where to hand in your work is posted here before Sunday.';
+	// the Submission section shows the teams from midnight before coding stops: the hand-in is for the end
+	var SUBMIT_FROM = Date.parse('2026-10-25T00:00:00+03:00');
+	// the checklist and the challenges' resources show the teams from Friday 09:00: a day to get ready
+	var PREP_FROM = Date.parse('2026-10-23T09:00:00+03:00');
+
+	function prepShown() { return state.organiser || Date.now() >= PREP_FROM; }
+
+	// the organisers see it all along, with a word on when the teams do
+	function prepNote(box) {
+		if (state.organiser && Date.now() < PREP_FROM) box.appendChild(el('p', 'handin-note res-note', 'The teams see this section from Friday 23 October at ' + hm(PREP_FROM) + ', a day to get ready.'));
+	}
 	var TZ = 'Europe/Bucharest';
 
-	// The hackathon, as planned (not on breaq-hackathon.html yet). Full timestamps with their offset: summer time ends in the
-	// night (04:00 → 03:00 on Sunday), so the night's coding block is five hours.
-	var SCHEDULE = [
-		['2026-10-24T09:00:00+03:00', '2026-10-24T10:00:00+03:00', 'Official opening', 'key'],
-		['2026-10-24T10:30:00+03:00', '2026-10-24T13:30:00+03:00', 'Start hacking!', 'code'],
-		['2026-10-24T14:00:00+03:00', '2026-10-24T14:30:00+03:00', 'Workshop', 'talk'],
-		['2026-10-24T14:30:00+03:00', '2026-10-24T15:00:00+03:00', 'Coding time', 'code'],
-		['2026-10-24T15:00:00+03:00', '2026-10-24T15:30:00+03:00', 'Lunch', 'meal'],
-		['2026-10-24T15:30:00+03:00', '2026-10-24T20:00:00+03:00', 'Coding time', 'code'],
-		['2026-10-24T20:00:00+03:00', '2026-10-24T20:30:00+03:00', 'Workshop', 'talk'],
-		['2026-10-24T20:30:00+03:00', '2026-10-24T22:00:00+03:00', 'Coding time', 'code'],
-		['2026-10-24T22:00:00+03:00', '2026-10-24T22:30:00+03:00', 'Dinner', 'meal'],
-		['2026-10-24T22:30:00+03:00', '2026-10-25T02:00:00+03:00', 'Coding time', 'code'],
-		['2026-10-25T02:00:00+03:00', '2026-10-25T02:30:00+03:00', 'Snack', 'meal'],
-		['2026-10-25T02:30:00+03:00', '2026-10-25T06:30:00+02:00', 'Coding time', 'code'],
-		['2026-10-25T06:30:00+02:00', '2026-10-25T07:00:00+02:00', 'Breakfast', 'meal'],
-		['2026-10-25T07:00:00+02:00', '2026-10-25T09:00:00+02:00', 'Coding time', 'code'],
-		['2026-10-25T09:00:00+02:00', null, 'Stop coding', 'stop'],
-		['2026-10-25T09:30:00+02:00', '2026-10-25T12:00:00+02:00', 'Judging', 'key'],
-		['2026-10-25T12:00:00+02:00', '2026-10-25T14:00:00+02:00', 'Awards', 'award']
-	].map(function (s) {
-		return { from: Date.parse(s[0]), to: s[1] ? Date.parse(s[1]) : null, title: s[2], kind: s[3] };
-	});
+	// the hackathon's schedule: assets/js/schedule.js, loaded before this file
+	var SCHEDULE = window.BREAQ_SCHEDULE;
 
 	var START = SCHEDULE[0].from;
 	var END = SCHEDULE[SCHEDULE.length - 1].to;
@@ -91,7 +85,12 @@
 		actKey: '',        // what the action panel shows: drawn again only when that changes, so typing is kept
 		confirmNo: false,  // "I cannot come" pressed once: asks to be sure
 		draft: {},         // what is typed in the action panel's forms
-		nudged: {}         // the schedule's reminders already shown
+		nudged: {},        // the schedule's reminders already shown
+		handinBy: 0,       // when the hand-in closes (0: an older Apps Script, without it)
+		handinKey: '',     // what the hand-in shows: drawn again only when that changes
+		handinEdit: false, // "Change the hand-in" pressed
+		teamEdit: false,   // "Name your team" pressed
+		audience: null     // the audience award's vote: { state, teams, mine, canVote, total }
 	};
 
 	/* --- small helpers ---------------------------------------------- */
@@ -103,10 +102,28 @@
 		return node;
 	}
 
+	// an icon of the sprite in teams.html (Lucide, drawn in gold by the stylesheet); the old Font Awesome names still
+	// work
+	var ICONS = { 'fa-thumbtack': 'pin', 'fa-external-link-alt': 'external', 'fa-hourglass-half': 'hourglass', 'fa-trophy': 'trophy', 'fa-check': 'check' };
+	var SVG_NS = 'http://www.w3.org/2000/svg';
+
 	function icon(name) {
-		var i = el('span', 'icon solid ' + name);
-		i.setAttribute('aria-hidden', 'true');
-		return i;
+		var svg = document.createElementNS(SVG_NS, 'svg');
+		svg.setAttribute('class', 'ic');
+		svg.setAttribute('aria-hidden', 'true');
+		svg.setAttribute('focusable', 'false');
+		var use = document.createElementNS(SVG_NS, 'use');
+		use.setAttribute('href', '#i-' + (ICONS[name] || name));
+		svg.appendChild(use);
+		return svg;
+	}
+
+	// a line that something is done, after a check mark
+	function doneLine(text) {
+		var p = el('p', 'act-done');
+		p.appendChild(icon('check'));
+		p.appendChild(document.createTextNode(text));
+		return p;
 	}
 
 	function link(href, text) {
@@ -157,6 +174,16 @@
 		if (h) return h + ' h ' + pad(min) + ' min';
 		if (min) return min + ' min';
 		return 'under a minute';
+	}
+
+	// span(ms) as a stat: the numbers in gold, the units small after them
+	function bigSpan(ms) {
+		var p = el('p', 'live-clock');
+		span(ms).split(' ').forEach(function (w, i) {
+			if (i) p.appendChild(document.createTextNode(' '));
+			p.appendChild(/^\d+$/.test(w) ? el('b', null, w) : el('small', null, w));
+		});
+		return p;
 	}
 
 	// 18:42:07
@@ -292,6 +319,7 @@
 			if (json && json.ok && json.me) {
 				var old = state.me;
 				state.me = json.me;
+				if (json.audience) state.audience = json.audience;
 				done(null);
 				renderMine();
 				helpNotice(old && old.help, json.me.help);
@@ -375,12 +403,17 @@
 		state.organiser = false;
 		state.actKey = '';
 		state.draft = {};
+		state.handinKey = '';
+		state.handinEdit = false;
+		state.teamEdit = false;
+		state.audience = null;
 		window.clearTimeout(pollTimer);
-		forEach(['live', 'ann', 'res', 'sub', 'prac', 'sched', 'act', 'team', 'check'], function (id) { $(id).textContent = ''; });
+		forEach(['live', 'ann', 'res', 'sub', 'handin', 'prac', 'sched', 'act', 'team', 'check'], function (id) { $(id).textContent = ''; });
 		$('act').hidden = true;
 		$('team-panel').hidden = true;
 		$('mine').hidden = true;
 		$('who').textContent = '';
+		$('hello').textContent = 'Team dashboard.';
 		$('dash').hidden = true;
 		$('lock').hidden = false;
 		document.title = baseTitle;
@@ -401,6 +434,7 @@
 
 	var baseTitle = document.title;
 	var refreshBtn = $('refresh');
+	var refreshLabel = refreshBtn.querySelector('.btn-label') || refreshBtn;
 
 	function dashError(msg) {
 		$('dash-err').textContent = msg || '';
@@ -411,12 +445,12 @@
 		if (!state.code) return;
 		if (byHand) {
 			refreshBtn.disabled = true;
-			refreshBtn.textContent = 'Updating…';
+			refreshLabel.textContent = 'Updating…';
 		}
 		load(state.code, !!byHand, function (json, err) {
 			if (byHand) {
 				refreshBtn.disabled = false;
-				refreshBtn.textContent = 'Refresh';
+				refreshLabel.textContent = 'Refresh';
 			}
 			if (loaded(json)) { state.failing = false; dashError(''); show(json, false); return; }
 			if (json && json.denied) { lock('This code no longer opens the team dashboard. Questions? Reply to your acceptance email, or ask at the desk.'); return; }
@@ -449,7 +483,9 @@
 		var old = state.me;
 		state.me = json.me || null;
 		state.organiser = !!who.organiser;
-		$('who').textContent = who.organiser ? 'Organiser view: what the accepted teams see (each also sees their own team and answers)' : who.name ? 'Signed in as ' + who.name : '';
+		state.handinBy = json.handinBy ? Date.parse(json.handinBy) || 0 : 0;
+		state.audience = json.audience || null;
+		renderHello(who);
 		$('lock').hidden = true;
 		$('dash').hidden = false;
 		renderMeta();
@@ -457,7 +493,7 @@
 		renderMine();
 		if (!first) helpNotice(old && old.help, state.me && state.me.help);
 		renderResources();
-		renderList('sub', 'submission', SUB_EMPTY, submissionLead);
+		renderSubmission();
 		renderList('prac', 'practical', 'Wi-Fi, Discord, the room and who to ask for help: posted here before the event.');
 		renderLive();
 		renderSchedule();
@@ -468,11 +504,30 @@
 		schedulePoll();
 	}
 
+	// the hero's title: the participant's name as on their badge (the family name in gold), or the organiser view
+	function renderHello(who) {
+		var h = $('hello');
+		h.textContent = '';
+		var words = String(who.name || '').trim().split(/\s+/).filter(Boolean);
+		if (who.organiser || !words.length) {
+			h.appendChild(document.createTextNode(who.organiser ? 'Organiser ' : 'Team '));
+			h.appendChild(el('span', 'gold', who.organiser ? 'view' : 'dashboard'));
+			h.appendChild(document.createTextNode('.'));
+		} else {
+			if (words.length > 1) h.appendChild(document.createTextNode(words.slice(0, -1).join(' ') + ' '));
+			h.appendChild(el('span', 'gold', words[words.length - 1]));
+		}
+		$('who').textContent = who.organiser
+			? 'What the accepted teams see. Each of them also sees their own team and answers here.'
+			: words.length ? 'Welcome to the BreaQ Hackathon. Everything for your weekend is on this page, and it updates by itself.' : '';
+	}
+
 	// what is the participant's own: their team, the action panel, the checklist (which follows their challenge)
 	function renderMine() {
 		renderTeam();
 		renderChecklist();
 		renderActRow();
+		renderHandin();
 	}
 
 	// the action panel and the team card share a row: one of them alone takes all of it
@@ -612,11 +667,14 @@
 	}
 
 	// a challenge with a brief (long texts), and the participant's own, take the whole width, first
+	// the challenges' resources: for the teams from PREP_FROM on; the organisers always
 	function renderResources() {
 		var box = $('res');
 		var all = section('resource');
 		var own = state.me && state.me.team ? state.me.team.challenge : '';
+		$('res-panel').hidden = !prepShown();
 		box.textContent = '';
+		prepNote(box);
 		var common = all.filter(function (it) { return CHALLENGES.indexOf(it.challenge) === -1; });
 		if (common.length) {
 			var c = el('div', 'res-common');
@@ -657,7 +715,14 @@
 		box.textContent = '';
 		if (lead) lead(box);
 		if (items.length) box.appendChild(itemList(items));
-		else box.appendChild(el('p', 'empty', empty));
+		else if (empty) box.appendChild(el('p', 'empty', empty));
+	}
+
+	// the Submission section: for the teams from SUBMIT_FROM on, for the organisers always; with the hand-in
+	// below it, nothing says "posted here later" (an older Apps Script, without the hand-in, still does)
+	function renderSubmission() {
+		$('sub-panel').hidden = !state.organiser && Date.now() < SUBMIT_FROM;
+		renderList('sub', 'submission', state.handinBy ? '' : SUB_EMPTY, submissionLead);
 	}
 
 	/* --- your team ---------------------------------------------------------- */
@@ -671,6 +736,7 @@
 		var panel = $('team-panel');
 		var box = $('team');
 		var me = state.me;
+		if (state.teamEdit && box.querySelector('.team-name-form')) return;   // a poll never wipes the name being typed
 		box.textContent = '';
 		panel.hidden = !me;
 		if (!me) return;
@@ -678,20 +744,20 @@
 		var now = Date.now();
 		if (!t) {
 			box.appendChild(el('p', 'empty', now < START
-				? 'We are putting the teams together: yours shows here before the event, with your table and your teammates.'
+				? 'We are putting the teams together: yours shows here before the event, with your teammates.'
 				: 'Not in a team yet? Ask at the desk.'));
 		} else {
 			box.appendChild(el('p', 'team-name', t.name));
+			if (canName(t)) box.appendChild(state.teamEdit ? teamNameForm(t) : nameButton(t));
 			var dl = el('dl', 'team-facts');
 			fact(dl, 'Challenge', t.challenge || 'To be confirmed');
-			if (t.table) fact(dl, 'Table', t.table);
 			if (t.pitch) fact(dl, 'Pitch', 'Sunday, ' + t.pitch + (t.room ? ' · ' + t.room : ''));
 			box.appendChild(dl);
 			box.appendChild(el('p', 'team-mates', t.mates.length ? 'With ' + and(t.mates) + '.' : 'Just you so far: your teammates show here when we add them.'));
 			if (t.award && PLACE[t.award]) {
 				var won = el('p', 'team-award');
 				won.appendChild(icon('fa-trophy'));
-				won.appendChild(document.createTextNode(PLACE[t.award] + (t.challenge ? ' · ' + t.challenge : '') + '. Congratulations!'));
+				won.appendChild(document.createTextNode(PLACE[t.award] + (t.challenge ? ' · ' + t.challenge : '') + '. Congratulations.'));
 				box.appendChild(won);
 			}
 		}
@@ -700,7 +766,180 @@
 			here.appendChild(icon('fa-check'));
 			here.appendChild(document.createTextNode('Checked in ' + when(Date.parse(me.checkedIn))));
 			box.appendChild(here);
+		} else if (state.code) {
+			// on the day it comes first, so it is there when the phone comes out at the door
+			var pass = passCard();
+			if (pass && now >= DAY) box.insertBefore(pass, box.firstChild);
+			else if (pass) box.appendChild(pass);
 		}
+	}
+
+	/* --- the team's own name ---------------------------------------------------------------------- */
+
+	// a team of two or more names itself, until coding stops (an older Apps Script, without the hand-in, cannot)
+	function canName(t) {
+		return !!state.handinBy && !state.organiser && t.mates.length > 0 && Date.now() < STOP;
+	}
+
+	function nameButton(t) {
+		// the organisers' names are "Team Ana, Mihai and Ioana": then it asks; a name of their own, it offers a change
+		var own = !/^Team /.test(t.name);
+		var row = el('div', 'team-name-row');
+		if (!own) row.appendChild(el('p', 'team-name-hint', 'Give your team a name of its own: any of you can.'));
+		row.appendChild(button('small ghost', own ? 'Rename the team' : 'Name your team', function () { state.teamEdit = true; renderTeam(); var i = $('team').querySelector('.team-name-form input'); if (i) i.focus(); }));
+		return row;
+	}
+
+	function teamNameForm(t) {
+		var form = el('form', 'act-form team-name-form');
+		form.noValidate = true;
+		var input = drafted('input', 'team-name', /^Team /.test(t.name) ? '' : t.name, { maxlength: '40', autocomplete: 'off', placeholder: 'Entangled Bits' });
+		form.appendChild(field('Your team’s name', input, 'Any of you can change it until ' + hm(STOP) + ' on Sunday. It goes on the big screen, at the awards and on your certificates.'));
+		var go = el('button', 'btn small primary', 'Save the name');
+		go.type = 'submit';
+		var buttons = el('div', 'act-buttons');
+		buttons.appendChild(go);
+		buttons.appendChild(button('small ghost', 'Cancel', function () { state.teamEdit = false; delete state.draft['team-name']; renderTeam(); }));
+		form.appendChild(buttons);
+		form.addEventListener('submit', function (ev) {
+			ev.preventDefault();
+			var name = input.value.replace(/\s+/g, ' ').trim();
+			if (name.length < 2) { actError(form, 'Give your team a name of at least two letters.'); input.focus(); return; }
+			sending(go, form, 'Saving…', { action: 'team-name', name: name });
+		});
+		return form;
+	}
+
+	/* --- the check-in pass: the participant's code, as a QR code the door scans ------------------- */
+
+	var DAY = Date.parse('2026-10-24T00:00:00+03:00');
+
+	// "abcd efgh" as the codes are written: "ABCD-EFGH"
+	function codeText(code) {
+		var k = String(code || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+		return k.length === 8 ? k.slice(0, 4) + '-' + k.slice(4) : k;
+	}
+
+	// a QR code as an SVG: the dark modules as one path, with the quiet zone of four modules around them
+	function qrSvg(text) {
+		var m = window.breaqQr ? window.breaqQr(text) : null;
+		if (!m) return null;
+		var n = m.length, d = '';
+		m.forEach(function (row, y) {
+			row.forEach(function (dark, x) { if (dark) d += 'M' + (x + 4) + ' ' + (y + 4) + 'h1v1h-1z'; });
+		});
+		var svg = document.createElementNS(SVG_NS, 'svg');
+		svg.setAttribute('viewBox', '0 0 ' + (n + 8) + ' ' + (n + 8));
+		svg.setAttribute('shape-rendering', 'crispEdges');
+		svg.setAttribute('role', 'img');
+		svg.setAttribute('aria-label', 'QR code of your code, ' + text);
+		var path = document.createElementNS(SVG_NS, 'path');
+		path.setAttribute('d', d);
+		svg.appendChild(path);
+		return svg;
+	}
+
+	function passCard() {
+		var code = codeText(state.code);
+		var svg = qrSvg(code);
+		if (!svg) return null;
+		var pass = el('div', 'pass');
+		var plate = el('div', 'pass-qr');
+		plate.appendChild(svg);
+		pass.appendChild(plate);
+		var text = el('div', 'pass-text');
+		text.appendChild(el('p', 'pass-label', 'Your check-in pass'));
+		text.appendChild(el('p', 'pass-code', code));
+		text.appendChild(el('p', 'pass-sub', 'Show it at the door: we scan it, and you are in. The same code opens this page.'));
+		pass.appendChild(text);
+		return pass;
+	}
+
+	/* --- the hand-in: the team's links, until coding stops ------------------------------------- */
+
+	// drawn again only when what it shows changes, so a poll never wipes what is being typed
+	function renderHandin() {
+		var box = $('handin');
+		var me = state.me;
+		var t = me && me.team;
+		var open = !!state.handinBy && Date.now() < state.handinBy;
+		var key = JSON.stringify([state.handinBy, state.organiser, open, !!me, t && t.name, t && t.handin, state.handinEdit]);
+		if (key === state.handinKey) return;
+		state.handinKey = key;
+		box.textContent = '';
+		if (!state.handinBy) return;   // an older Apps Script: the organisers' posts only
+		if (state.organiser) {
+			box.appendChild(el('p', 'handin-note', 'The teams see this section from Sunday 00:00. Each hands in here, until coding stops: the link to its code, its slides and a demo video. The jury reads them on the admin page, under Teams.'));
+			return;
+		}
+		if (!me) return;
+		if (!t) {
+			box.appendChild(el('p', 'empty', 'Once you are in a team, you hand in its work here.'));
+			return;
+		}
+		var h = t.handin;
+		if (h && !state.handinEdit) {
+			var done = el('div', 'handin-done');
+			var head = el('div', 'handin-head');
+			var chip = el('span', 'tag');
+			chip.appendChild(icon('check'));
+			chip.appendChild(document.createTextNode('Handed in'));
+			head.appendChild(chip);
+			head.appendChild(el('span', 'handin-when', (h.at ? when(Date.parse(h.at)) : '') + (h.by ? ' · by ' + h.by : '')));
+			done.appendChild(head);
+			var ul = el('ul', 'handin-links');
+			[['Code', h.repo], ['Slides', h.slides], ['Demo video', h.video]].forEach(function (x) {
+				if (!x[1]) return;
+				var li = el('li');
+				li.appendChild(el('span', 'handin-k', x[0]));
+				var a = link(x[1], x[1].replace(/^https?:\/\//i, ''));
+				a.appendChild(icon('fa-external-link-alt'));
+				li.appendChild(a);
+				ul.appendChild(li);
+			});
+			done.appendChild(ul);
+			if (h.about) done.appendChild(el('p', 'handin-about', h.about));
+			if (open) {
+				var buttons = el('div', 'act-buttons');
+				buttons.appendChild(button('small ghost', 'Change the hand-in', function () { state.handinEdit = true; renderHandin(); }));
+				done.appendChild(buttons);
+				done.appendChild(el('p', 'handin-note', 'Any of your team can change it until ' + hm(state.handinBy) + ' on Sunday; the last one counts.'));
+			} else {
+				done.appendChild(el('p', 'handin-note', 'The hand-in is closed: this is what the jury sees.'));
+			}
+			box.appendChild(done);
+			return;
+		}
+		if (!open) {
+			box.appendChild(el('p', 'err', 'Nothing was handed in before coding stopped. Talk to an organiser at the desk.'));
+			return;
+		}
+		var form = el('form', 'act-form handin-form');
+		form.noValidate = true;
+		var opts = { autocomplete: 'off', spellcheck: 'false', inputmode: 'url' };
+		var repo = drafted('input', 'h-repo', h ? h.repo : '', Object.assign({ maxlength: '400', placeholder: 'https://github.com/your-team/project' }, opts));
+		var slides = drafted('input', 'h-slides', h ? h.slides : '', Object.assign({ maxlength: '400', placeholder: 'https://docs.google.com/presentation/…' }, opts));
+		var video = drafted('input', 'h-video', h ? h.video : '', Object.assign({ maxlength: '400', placeholder: 'https://youtu.be/…' }, opts));
+		var about = drafted('input', 'h-about', h ? h.about : '', { maxlength: '280', placeholder: 'A quantum classifier that holds up under noise', autocomplete: 'off' });
+		form.appendChild(el('p', 'handin-lead', 'Hand in by ' + hm(state.handinBy) + ' on Sunday. Any of your team can, and change it as often as you like until then: the last one counts.'));
+		form.appendChild(field('Your code', repo, 'A repository, or a Colab or Drive link that anyone with it can open.'));
+		var row = el('div', 'field-row');
+		row.appendChild(field('Slides · optional', slides));
+		row.appendChild(field('Demo video · optional', video));
+		form.appendChild(row);
+		form.appendChild(field('What did you build? · optional', about, 'One line, for the jury.'));
+		var go = el('button', 'btn primary', h ? 'Save the changes' : 'Hand in');
+		go.type = 'submit';
+		var buttons = el('div', 'act-buttons');
+		buttons.appendChild(go);
+		if (h) buttons.appendChild(button('ghost', 'Cancel', function () { state.handinEdit = false; renderHandin(); }));
+		form.appendChild(buttons);
+		form.addEventListener('submit', function (ev) {
+			ev.preventDefault();
+			if (!repo.value.trim()) { actError(form, 'Give the link to your code first.'); repo.focus(); return; }
+			sending(go, form, 'Handing in…', { action: 'handin', repo: repo.value.trim(), slides: slides.value.trim(), video: video.value.trim(), about: about.value.trim() });
+		});
+		box.appendChild(form);
 	}
 
 	/* --- the action panel: are you coming?, ask a mentor, your pitch, the feedback -------- */
@@ -710,16 +949,19 @@
 		var now = Date.now();
 		var me = state.me;
 		var h = me && me.help;
+		var a = state.audience;
 		var key = JSON.stringify([
+			a && [a.state, a.mine, a.canVote, a.teams && a.teams.map(function (t) { return t.name + ':' + (t.votes || 0); })],
 			phase(now), state.organiser, now < CONFIRM_END, state.confirmNo,
-			me && me.coming, me && me.team && [me.team.challenge, me.team.table, me.team.pitch, me.team.room],
+			me && me.coming, me && me.team && [me.team.challenge, me.team.pitch, me.team.room],
 			h && [h.id, h.status, h.mentor, h.ahead], me && me.feedback && me.feedback.sent, me && me.certificate, me && !!me.checkedIn
 		]);
 		if (key === state.actKey) return;
 		state.actKey = key;
 		var box = $('act');
 		var card = null;
-		if (me || state.organiser) {
+		if ((me || state.organiser) && a && a.state === 'open') card = audienceCard();
+		else if (me || state.organiser) {
 			var p = phase(now);
 			if (p === 'before') card = comingCard();
 			else if (p === 'during') card = h && (h.status === 'waiting' || h.status === 'taken') ? helpStatus(h) : helpForm(h);
@@ -760,11 +1002,20 @@
 		btn.disabled = true;
 		btn.classList.add('is-busy');
 		btn.textContent = label;
+		if (body.action === 'handin') state.handinEdit = false;   // renderMine, on the answer, shows what went in
 		ask(body, function (problem) {
 			btn.disabled = false;
 			btn.classList.remove('is-busy');
 			btn.textContent = was;
-			if (problem) actError(card, problem);
+			if (problem) {
+				if (body.action === 'handin') state.handinEdit = true;
+				actError(card, problem);
+			} else if (body.action === 'handin') {
+				['h-repo', 'h-slides', 'h-video', 'h-about'].forEach(function (k) { delete state.draft[k]; });
+			} else if (body.action === 'team-name') {
+				state.teamEdit = false;   // renderMine, right after, shows the new name
+				delete state.draft['team-name'];
+			}
 		});
 	}
 
@@ -774,7 +1025,7 @@
 		var by = Date.now() < CONFIRM_END ? 'Please answer by ' + CONFIRM_BY : 'Please answer now';
 		var card, buttons = el('div', 'act-buttons');
 		if (coming === 'yes') {
-			card = actCard('act-coming is-yes', 'Your answer', 'You are coming. See you on Saturday!', 'Doors open before the opening at ' + hm(START) + ' on ' + fmt.long.format(START) + '. Cannot come after all? Tell us, so your place goes to someone on the waiting list.');
+			card = actCard('act-coming is-yes', 'Your answer', 'You are coming. See you on Saturday.', 'Doors open before the opening at ' + hm(START) + ' on ' + fmt.long.format(START) + '. Cannot come after all? Tell us, so your place goes to someone on the waiting list.');
 			buttons.appendChild(button('small ghost', 'I cannot come after all', function () { state.confirmNo = true; renderActRow(); }));
 		} else if (coming === 'no') {
 			card = actCard('act-coming is-no', 'Your answer', 'You told us you cannot come', 'Thank you for letting us know: your place goes to someone on the waiting list. Changed your mind? Tell us straight away.');
@@ -820,16 +1071,15 @@
 	function helpForm(last) {
 		var me = state.me;
 		var t = me && me.team;
-		var card = actCard('act-help', 'During the hackathon', 'Stuck? Ask a mentor', 'A mentor comes to your table. Your team has one request at a time, and any of you can see it here.');
+		var card = actCard('act-help', 'During the hackathon', 'Stuck? Ask a mentor', 'A mentor comes to where you are. Your team has one request at a time, and any of you can see it here.');
 		if (last) {
-			var said = last.status === 'done'
-				? '✓ ' + (last.mentor || 'A mentor') + ' marked your last request done' + (last.closed ? ' at ' + hm(Date.parse(last.closed)) : '') + '.'
-				: 'Your last request was cancelled.';
-			card.querySelector('.act-text').appendChild(el('p', 'act-done', said));
+			card.querySelector('.act-text').appendChild(last.status === 'done'
+				? doneLine((last.mentor || 'A mentor') + ' marked your last request done' + (last.closed ? ' at ' + hm(Date.parse(last.closed)) : '') + '.')
+				: el('p', 'act-done', 'Your last request was cancelled.'));
 		}
 		var form = el('form', 'act-form');
 		form.noValidate = true;
-		var where = drafted('input', 'where', t && t.table ? 'Table ' + t.table : '', { maxlength: '80', placeholder: 'Table 12', autocomplete: 'off' });
+		var where = drafted('input', 'where', '', { maxlength: '80', placeholder: 'Room B, by the window', autocomplete: 'off' });
 		var question = drafted('textarea', 'question', '', { maxlength: '300', rows: '2', placeholder: 'Our circuit gives the same result for every input…' });
 		var challenge = null;
 		form.appendChild(field('What are you stuck on?', question, 'A line or two, so the right mentor comes.'));
@@ -893,16 +1143,60 @@
 		return actCard('act-pitch', 'Judging · ' + hm(JUDGING) + ' – ' + hm(AWARDS), 'Your pitch: ' + t.pitch + (t.room ? ' · ' + t.room : ''), 'Be there five minutes before, with your demo open.');
 	}
 
+	// the audience award: a vote for one team, not one's own, while the organisers have the vote open
+	function audienceCard() {
+		var a = state.audience;
+		var teams = a.teams || [];
+		var card = actCard('act-audience', 'Audience award · the vote is open',
+			a.mine ? 'You voted for ' + a.mine + '.' : 'Which team impressed you most?',
+			'One vote each, for a team that is not your own. You can change it until the vote closes, and the result goes up on the big screen.');
+		if (state.me && !a.canVote) {
+			card.querySelector('.act-text').appendChild(el('p', 'act-done', 'Only those at the hackathon vote: check in at the desk first, then come back here.'));
+			return card;
+		}
+		var list = el('div', 'vote-teams');
+		list.setAttribute('role', 'group');
+		list.setAttribute('aria-label', 'The teams');
+		teams.forEach(function (t) {
+			var b = el('button', 'vote-team');
+			b.type = 'button';
+			b.setAttribute('aria-pressed', String(a.mine === t.name));
+			b.appendChild(el('span', 'vote-name', t.name));
+			if (t.challenge) b.appendChild(el('span', 'vote-ch', t.challenge));
+			b.addEventListener('click', function () {
+				if (a.mine === t.name || list.classList.contains('is-busy')) return;
+				list.classList.add('is-busy');
+				b.classList.add('is-busy');
+				ask({ action: 'audience', team: t.name }, function (problem) {
+					list.classList.remove('is-busy');
+					b.classList.remove('is-busy');
+					if (problem) actError(card, problem);
+				});
+			});
+			list.appendChild(b);
+		});
+		if (!teams.length) list.appendChild(el('p', 'empty', 'No team to vote for yet.'));
+		card.appendChild(list);
+		return state.organiser ? preview(card) : card;
+	}
+
 	function feedbackCard() {
 		var me = state.me;
 		var fb = me && me.feedback;
-		var card = actCard('act-feedback', 'After the hackathon', fb ? 'Thank you for your feedback!' : 'How was it?',
+		var card = actCard('act-feedback', 'After the hackathon', fb ? 'Thank you for your feedback.' : 'How was it?',
 			fb ? 'Your answers are in. Change them any time: we read every answer, without your name.'
 				: 'Two minutes, and we read every answer. We keep them without your name.');
+		var aw = state.audience;
+		if (aw && aw.state === 'shown' && aw.teams && aw.teams.length && aw.teams[0].votes) {
+			var won = el('p', 'act-done act-award');
+			won.appendChild(icon('trophy'));
+			won.appendChild(document.createTextNode('Audience award: ' + aw.teams[0].name + ', with ' + aw.teams[0].votes + (aw.teams[0].votes === 1 ? ' vote' : ' votes') + '.'));
+			card.querySelector('.act-text').appendChild(won);
+		}
 		if (me && (me.certificate || me.checkedIn)) {
-			card.querySelector('.act-text').appendChild(el('p', 'act-done', me.certificate
-				? '✓ Your certificate is in your inbox.'
-				: 'Your certificate comes by email in the days after the hackathon.'));
+			card.querySelector('.act-text').appendChild(me.certificate
+				? doneLine('Your certificate is in your inbox.')
+				: el('p', 'act-done', 'Your certificate comes by email in the days after the hackathon.'));
 		}
 		var form = el('form', 'act-form');
 		form.noValidate = true;
@@ -971,12 +1265,15 @@
 	}
 
 	// for every challenge first, then each challenge's own; once their team has a challenge, only theirs
+	// for the teams from PREP_FROM on, as the resources; the organisers always
 	function renderChecklist() {
 		var box = $('check');
 		var mine = state.me && state.me.team ? state.me.team.challenge : '';
 		var list = section('checklist').filter(function (it) { return !it.challenge || !mine || it.challenge === mine; });
 		var done = ticked();
+		$('check-panel').hidden = !prepShown();
 		box.textContent = '';
+		prepNote(box);
 		if (!list.length) {
 			box.appendChild(el('p', 'empty', 'What to install, which accounts to make and what to pack: posted here before the event.'));
 			checkCount();
@@ -1108,14 +1405,16 @@
 
 		if (now < START) {
 			box.classList.add('is-before');
-			box.appendChild(block('live-now', 'The hackathon starts in', span(START - now), fmt.long.format(START) + ', ' + hm(START) + ' · ' + SCHEDULE[0].title + ' at the CAMPUS Research Institute'));
+			var first = block('live-now', 'The hackathon starts in', '', fmt.long.format(START) + ', ' + hm(START) + ' · ' + SCHEDULE[0].title + ' at the CAMPUS Research Institute');
+			first.replaceChild(bigSpan(START - now), first.querySelector('.live-title'));
+			box.appendChild(first);
 			box.appendChild(block('live-next kind-code', 'Then', SCHEDULE[1].title, hm(SCHEDULE[1].from) + ' on Saturday'));
 			box.appendChild(block('live-count', 'Coding stops', fmt.long.format(STOP) + ', ' + hm(STOP), 'Then judging and the awards'));
 			return;
 		}
 		if (now >= END) {
 			box.classList.add('is-after');
-			box.appendChild(block('live-now', 'That was the BreaQ 2026 Hackathon', 'Thank you, teams!', 'See you at the BreaQ Conference on 14 November.'));
+			box.appendChild(block('live-now', 'That was the BreaQ 2026 Hackathon', 'Thank you, teams.', 'See you at the BreaQ Conference on 14 November.'));
 			return;
 		}
 
@@ -1142,8 +1441,8 @@
 	function countdown(label, ms, sub) {
 		var b = el('div', 'live-block live-count');
 		b.appendChild(el('p', 'live-label', label));
-		var c = el('p', 'live-clock', ms > 86400000 ? span(ms) : clock(ms));
-		c.setAttribute('data-clock', '');
+		var c = ms > 86400000 ? bigSpan(ms) : el('p', 'live-clock', clock(ms));
+		if (ms <= 86400000) c.setAttribute('data-clock', '');
 		b.appendChild(c);
 		b.appendChild(el('p', 'live-sub', sub));
 		return b;
@@ -1185,8 +1484,13 @@
 			lastMinute = minute;
 			renderLive();
 			renderSchedule();
-			renderList('sub', 'submission', SUB_EMPTY, submissionLead);
+			renderSubmission();
+			// Friday 09:00 and Sunday 00:00: the Apps Script gives the sections that open from the next ask on, so ask now
+			var opened = [now >= PREP_FROM, now >= SUBMIT_FROM];
+			if (state.opened && (opened[0] && !state.opened[0] || opened[1] && !state.opened[1])) refresh(false);
+			state.opened = opened;
 			renderActRow();
+			renderHandin();
 			nudges(now);
 			return;
 		}

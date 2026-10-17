@@ -183,6 +183,9 @@
 		state.columns.forEach(function (c) {
 			for (var i = 0; i < regs.length; i++) if (regs[i].v[c]) { v[c] = regs[i].v[c]; return; }
 		});
+		// the university as written in the registration it is counted from: "n/a" in the newest does not stand for it
+		var counted = regs.filter(function (r) { return r.org; })[0];
+		if (counted) v['University or company'] = get(counted, 'University or company');
 		if (regs.length > 1) {
 			v['Emails'] = regs.filter(function (r) { return get(r, 'Emails'); }).map(function (r) {
 				return (EVENT_LABEL[r.event] || get(r, 'Attends')) + ': ' + get(r, 'Emails');
@@ -472,6 +475,32 @@
 		});
 	}
 
+	/* --- answers sent in translation ------------------------------------------ */
+
+	// The forms' options once went with the text shown, so a browser translating the page sent the translation
+	// ("Student la licență" for "Bachelor student", "Universitatea mea" for "My university"): each such answer counts
+	// as the option it translates, everywhere on the page. The forms now send the option itself.
+	var TRANSLATED = {
+		'Status': [[/\b(liceu|elev|eleva)\b/, 'High-school student'], [/\blicenta\b/, 'Bachelor student'], [/\bmaster/, 'Master student'],
+			[/\bdoctor/, 'PhD student'], [/\bcercetator/, 'Researcher'], [/\bindustrie\b/, 'Working in industry'], [/^(altele|altul|alta|altceva)$/, 'Other']],
+		'Experience': [[/^inca (nimic|niciuna|nicio)/, 'None yet, curious'], [/^incepator/, 'Beginner: a course or some tutorials'],
+			[/^intermediar/, 'Intermediate: built circuits or small projects'], [/^avansat/, 'Advanced: research or work in the field']],
+		'Heard from': [[/\b(universitatea|facultatea) mea\b/, 'My university'], [/\b(prieten|coleg)/, 'A friend or colleague'],
+			[/\bam fost la breaq\b/, 'I was at BreaQ 2025'], [/^(altele|altul|alta|altceva)$/, 'Other']]
+	};
+
+	function untranslate(records) {
+		records.forEach(function (r) {
+			Object.keys(TRANSLATED).forEach(function (col) {
+				var v = get(r, col);
+				var rules = TRANSLATED[col];
+				if (!v || rules.some(function (x) { return x[1] === v; })) return;
+				var f = fold(v).replace(/[^a-z0-9]+/g, ' ').trim();
+				for (var i = 0; i < rules.length; i++) if (rules[i][0].test(f)) { setCell(r, col, rules[i][1]); return; }
+			});
+		});
+	}
+
 	/* --- one name for each university or company ------------------------- */
 
 	// "University Politehinca Bucharest (UNSTPB)", "UNTSPB" and "Universitatea Națională de Știință și Tehnologie
@@ -522,7 +551,8 @@
 		return fold(s).replace(/[^a-z0-9]+/g, ' ').trim().split(' ').map(word).join(' ');
 	}
 
-	// in order: the specific before the general (Politehnica Timișoara before Politehnica, ASE before "Bucharest University");
+	// in order: the specific before the general (Politehnica Timișoara before Politehnica, ASE before "Bucharest University",
+	// a faculty on its own after every university by name);
 	// each with the city it is in, for the City breakdown and Edition in numbers
 	var INSTITUTIONS = [
 		['Universitatea Politehnica Timișoara (UPT)', /\bupt\b|\bpolitehnica\b.*\btimisoara\b|\btimisoara\b.*\bpolitehnica\b/, 'Timișoara'],
@@ -532,11 +562,8 @@
 		['UMF „Carol Davila” București', /carol davila/, 'București'],
 		['SNSPA', /\bsnspa\b|studii politice|political studies/, 'București'],
 		['POLITEHNICA București (UNSTPB)', /\b(unstpb|upb|acs|etti|fils|faima|fiir)\b|\bpolitehnica\b|nationala de stiinta si tehnologie|national universitatea of science and technology|science and technology\b.*\bbucuresti|stiinta si tehnologie\b.*\bbucuresti/, 'București'],
-		// its faculties written without the university, unless another city says it is elsewhere ("Automatică și
-		// Calculatoare" is also a faculty in Iași, Cluj and Timișoara)
-		['POLITEHNICA București (UNSTPB)', /^(?!.*\b(cluj|iasi|timisoara|craiova|brasov|galati|constanta|sibiu|suceava|oradea|pitesti|ploiesti)\b).*\b(automatica si calculatoare|automatic control and computer|electronica telecomunicatii|electronics telecommunications|inginerie aerospatiala|aerospace engineering)\b/, 'București'],
 		['Universitatea din București (UB)', /\b(ub|unibuc)\b|universitatea (din |of )?bucuresti|bucuresti universitatea|geologie si geofizica|geology and geophysics/, 'București'],
-		['Academia Tehnică Militară „Ferdinand I” (ATM)', /\b(atm|mta)\b|academia tehnica militara|military technical academy/, 'București'],
+		['Academia Tehnică Militară „Ferdinand I” (ATM)', /\b(atm|mta)\b|academia tehnica militara|(military technical|technical military) academy/, 'București'],
 		['Universitatea Babeș-Bolyai (UBB)', /\bubb\b|babes bolyai/, 'Cluj-Napoca'],
 		['Universitatea „Alexandru Ioan Cuza” din Iași (UAIC)', /\buaic\b|alexandru ioan cuza/, 'Iași'],
 		['Universitatea de Vest din Timișoara (UVT)', /\buvt\b|universitatea de vest|west universitatea/, 'Timișoara'],
@@ -551,7 +578,12 @@
 		['Universitatea Titu Maiorescu', /titu maiorescu/, 'București'],
 		['IFIN-HH', /\bifin\b|horia hulubei/, 'Măgurele'],
 		['ELI-NP', /\beli ?np\b|extreme light/, 'Măgurele'],
-		['INFLPR', /\binflpr\b|fizica laserilor|lasers plasma and radiation/, 'Măgurele']
+		['INFLPR', /\binflpr\b|fizica laserilor|lasers plasma and radiation/, 'Măgurele'],
+		// last, once no university is named: a faculty written on its own, in Bucharest unless another city says it is
+		// elsewhere ("Automatică și Calculatoare" is also in Iași, Cluj and Timișoara, "Matematică și Informatică" in
+		// Cluj, Iași and Timișoara)
+		['POLITEHNICA București (UNSTPB)', /^(?!.*\b(cluj|iasi|timisoara|craiova|brasov|galati|constanta|sibiu|suceava|oradea|pitesti|ploiesti)\b).*\b(automatica si calculatoare|automatic control (and )?computer|electronica telecomunicatii|electronics telecommunications|inginerie aerospatiala|aerospace engineering)\b/, 'București'],
+		['Universitatea din București (UB)', /^(?!.*\b(cluj|iasi|timisoara|craiova|brasov|galati|constanta|sibiu|suceava|oradea|pitesti|ploiesti)\b).*\b(matematica si informatica|mathematics and computer science|facultatea de fizica|faculty of physics)\b/, 'București']
 	];
 
 	var CITY = {};
@@ -587,18 +619,19 @@
 	// a company, for someone working in industry: all of them count as one
 	var INDUSTRY = 'Industry';
 
+	// "-", "n/a", "none", "nu": written in the box, but not an answer (the words as words() leaves them)
+	var NO_ANSWER = /^(n ?a|none|no|nope|nu|nimic|nicio|niciuna|x|null)?$/;
+
 	// sets r.org on every record: the merged name, or '' when the question was not answered
 	function groupOrgs(records) {
 		var keys = {};
 		records.forEach(function (r) {
 			var raw = get(r, 'University or company');
+			if (NO_ANSWER.test(words(raw))) raw = '';
 			r.org = raw ? institution(raw) : '';
 			if (raw && !r.org && get(r, 'Status') === 'Working in industry') r.org = INDUSTRY;
 			r.orgKey = raw && !r.org ? orgKey(raw) : '';
-			if (!r.orgKey) {
-				if (raw && !r.org) r.org = raw;   // nothing but punctuation ("-"): kept as written
-				return;
-			}
+			if (!r.orgKey) return;
 			var k = keys[r.orgKey] || (keys[r.orgKey] = { n: 0, spellings: {} });
 			k.n++;
 			k.spellings[raw] = (k.spellings[raw] || 0) + 1;
@@ -811,6 +844,7 @@
 		if ($('detail').open) $('detail').close();
 		if ($('send-dlg').open) $('send-dlg').close();
 		forgetLetters();
+		stopScan();
 		forEach(['tiles', 'days', 'breakdowns'], function (id) { $(id).textContent = ''; });
 		$('people').tBodies[0].textContent = '';
 		$('search').value = '';
@@ -954,11 +988,15 @@
 	function show(json) {
 		state.columns = json.columns.map(function (c) { return String(c).trim(); });
 		state.records = toRecords(state.columns, json.rows);
+		untranslate(state.records);
 		groupOrgs(state.records);
 		buildTeams(state.records);
 		state.sheet = json.sheet || '';
 		state.codes = json.codes || {};   // the dashboard code of each accepted participant, by email
 		state.teams = json.teams || [];
+		state.audience = json.audience || null;   // the audience award's vote (an older Apps Script: null)
+		state.screenKey = typeof json.screenKey === 'string' ? json.screenKey : null;   // the big screen's password
+		state.flash = json.flash === undefined ? undefined : json.flash;   // its live message (undefined: an older Apps Script)
 		state.mentors = json.mentors || null;
 		state.feedback = json.feedback || [];
 		state.activity = json.activity || null;
@@ -1239,13 +1277,14 @@
 		// with neither are left out)
 		{ id: 'team', col: 'Team', title: 'Alone or in a team', labels: TEAM_LABEL, order: [TEAM_LABEL.solo, TEAM_LABEL.team, TEAM_LABEL.match],
 			only: function (r) { return /quantum (ai|hacking)/i.test(get(r, 'Tracks')); } },
-		{ id: 'org', col: 'University or company', title: 'University or company', top: 8, merged: true },
+		{ id: 'org', col: 'University or company', title: 'University or company', top: 15, merged: true },
 		// the city of a known university (INSTITUTIONS); the others are not counted
 		{ id: 'city', title: 'City', value: function (r) { return r.city; }, top: 8 },
 		{ id: 'heard', col: 'Heard from', title: 'Heard about BreaQ from' }
 	];
 
-	function rawOf(r, b) { return b.value ? b.value(r) : get(r, b.col); }
+	// what a person answered for a breakdown; for the merged one, nothing when it was not an answer ("-", "n/a")
+	function rawOf(r, b) { return b.merged && !r.org ? '' : b.value ? b.value(r) : get(r, b.col); }
 
 	// the keys a person counts under in a breakdown, as tally makes them
 	function bdKey(label) { return fold(label).replace(/\s+/g, ' '); }
@@ -3321,6 +3360,7 @@
 	var VIEWS = ['regs', 'teams', 'checkin', 'board', 'after', 'numbers'];
 
 	function setView(view) {
+		if (view !== 'checkin') stopScan();   // the camera goes off with the Check-in view
 		state.view = view;
 		VIEWS.forEach(function (v) { $('view-' + v).hidden = v !== view; });
 		forEach($('f-view').querySelectorAll('button'), function (b) {
@@ -3335,7 +3375,7 @@
 	function renderView() {
 		if (state.view === 'teams') renderTeams();
 		else if (state.view === 'checkin') renderCheckin();
-		else if (state.view === 'board') { renderBoardAccess(); renderMentors(); }
+		else if (state.view === 'board') { renderBoardAccess(); renderMentors(); renderAudience(); renderScreenKey(); renderFlash(); }
 		else if (state.view === 'after') renderAfter();
 		else if (state.view === 'numbers') renderNumbers();
 	}
@@ -3677,7 +3717,8 @@
 			['Cannot come', n('no'), n('no') ? 'tile--warn' : ''],
 			['No answer yet', n('')],
 			['Teams', teams.length],
-			['Not in a team', loose.length, loose.length ? 'tile--warn' : '']
+			['Not in a team', loose.length, loose.length ? 'tile--warn' : ''],
+			['Handed in', teams.filter(function (x) { return x.t.repo; }).length + ' of ' + teams.length]
 		]);
 		$('teams-count').textContent = teams.length ? String(teams.length) : '';
 		$('loose-count').textContent = loose.length ? String(loose.length) : '';
@@ -3706,10 +3747,8 @@
 		if (t.award) tags.appendChild(el('span', 'btag btag-award', PLACE[t.award] || t.award));
 		head.appendChild(tags);
 		card.appendChild(head);
-		card.appendChild(el('p', 'tcard-facts', [
-			t.table ? 'Table ' + t.table : 'No table yet',
-			t.pitch ? 'Pitch ' + t.pitch + (t.room ? ' · ' + t.room : '') : 'No pitch time yet'
-		].join(' · ')));
+		card.appendChild(el('p', 'tcard-facts', t.pitch ? 'Pitch ' + t.pitch + (t.room ? ' · ' + t.room : '') : 'No pitch time yet'));
+		card.appendChild(handinBlock(t));
 		var ul = el('ul', 'tmembers');
 		members.forEach(function (x) {
 			var li = el('li');
@@ -3752,6 +3791,25 @@
 		return card;
 	}
 
+	// what the team handed in from its dashboard, for the jury: the links, the line, when and who; or that it has not
+	function handinBlock(t) {
+		var box = el('div', 'thandin' + (t.repo ? ' is-in' : ''));
+		if (!t.repo) {
+			box.appendChild(el('p', 'thandin-none', 'Not handed in yet'));
+			return box;
+		}
+		box.appendChild(el('p', 'thandin-when', '✓ Handed in' + (t.handedIn ? ' ' + fmtShort.format(new Date(t.handedIn)) : '') + (t.handedInBy ? ' by ' + t.handedInBy : '')));
+		var links = el('p', 'thandin-links');
+		[['Code', t.repo], ['Slides', t.slides], ['Video', t.video]].forEach(function (x) {
+			if (!x[1]) return;
+			if (links.childNodes.length) links.appendChild(document.createTextNode(' · '));
+			links.appendChild(link(x[1], x[0]));
+		});
+		box.appendChild(links);
+		if (t.about) box.appendChild(el('p', 'thandin-about', '“' + t.about + '”'));
+		return box;
+	}
+
 	function input(value, attrs) {
 		var i = el('input');
 		i.type = 'text';
@@ -3781,14 +3839,12 @@
 		form.noValidate = true;
 		var name = input(t.name, { maxlength: '60', placeholder: 'Qubits', 'aria-label': 'Team name' });
 		var challenge = select([['', 'No challenge yet']].concat(CHALLENGES.map(function (c) { return [c, c]; })), t.challenge);
-		var table = input(t.table, { maxlength: '30', placeholder: '12' });
 		var pitch = input(t.pitch, { maxlength: '20', placeholder: '10:15' });
 		var room = input(t.room, { maxlength: '40', placeholder: 'Room B' });
 		var award = select([['', 'None'], ['1st', 'First place'], ['2nd', 'Second place'], ['3rd', 'Third place']], t.award);
 		form.appendChild(labelled('Team name', name));
 		form.appendChild(labelled('Challenge', challenge));
 		var row = el('div', 'tform-row');
-		row.appendChild(labelled('Table', table));
 		row.appendChild(labelled('Pitch (Sunday)', pitch));
 		row.appendChild(labelled('Room', room));
 		form.appendChild(row);
@@ -3811,7 +3867,7 @@
 			save.disabled = true;
 			save.classList.add('is-busy');
 			save.textContent = 'Saving…';
-			var team = { was: t.name, name: name.value.trim(), challenge: challenge.value, table: table.value.trim(), pitch: pitch.value.trim(), room: room.value.trim(), award: award.value };
+			var team = { was: t.name, name: name.value.trim(), challenge: challenge.value, table: t.table || '', pitch: pitch.value.trim(), room: room.value.trim(), award: award.value };
 			post({ action: 'team-save', key: state.key, team: team }, 30000, function (json, e) {
 				if (json && json.denied) { lock(json.error); return; }
 				if (json && json.ok && json.teams) {
@@ -3962,7 +4018,8 @@
 			var isIn = !!get(x.h, 'Checked in');
 			if (checkinUi.filter === 'out' && isIn) return false;
 			if (checkinUi.filter === 'in' && !isIn) return false;
-			return !q || fold(x.p.name + ' ' + x.h.email + ' ' + teamOfH(x.h)).indexOf(q) !== -1;
+			var code = state.codes[x.h.email] || '';
+			return !q || fold(x.p.name + ' ' + x.h.email + ' ' + teamOfH(x.h) + ' ' + code + ' ' + code.replace(/-/g, '')).indexOf(q) !== -1;
 		});
 		var ul = $('checkin-list');
 		ul.textContent = '';
@@ -4045,6 +4102,291 @@
 
 	forEach($('checkin-filter').querySelectorAll('button'), function (b) {
 		b.addEventListener('click', function () { checkinUi.filter = b.getAttribute('data-f'); renderCheckin(); });
+	});
+
+	/* the passes: the QR code on each participant's dashboard (their personal code), read by the camera. Chrome reads
+	   them with its own reader (BarcodeDetector); Safari, and every browser on an iPhone, has none, so jsQR
+	   (assets/js/vendor, Apache 2.0) reads the camera's frames there, loaded the first time it is needed. */
+
+	var JSQR_SRC = 'assets/js/vendor/jsqr-1.4.0.js';
+	var scanUi = { stream: null, timer: null, read: null, last: '', lastAt: 0 };
+
+	function loadJsQr(done) {
+		if (window.jsQR) { done(true); return; }
+		var s = document.createElement('script');
+		s.src = JSQR_SRC;
+		s.onload = function () { done(!!window.jsQR); };
+		s.onerror = function () { done(false); };
+		document.head.appendChild(s);
+	}
+
+	// read(video) gives a promise of the text of the QR code in the frame, or ''; done(null) when there is no reader
+	function qrReader(done) {
+		if (scanUi.read) { done(scanUi.read); return; }
+		function withJsQr() {
+			loadJsQr(function (ok) {
+				if (!ok) { done(null); return; }
+				var canvas = document.createElement('canvas');
+				var ctx = canvas.getContext('2d', { willReadFrequently: true });
+				scanUi.read = function (video) {
+					var w = video.videoWidth, h = video.videoHeight;
+					if (!w || !h) return Promise.resolve('');
+					var scale = Math.min(1, 720 / Math.max(w, h));   // enough for a pass held up close, and quick on a phone
+					canvas.width = Math.round(w * scale);
+					canvas.height = Math.round(h * scale);
+					ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+					var img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+					var code = window.jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' });
+					return Promise.resolve(code ? code.data : '');
+				};
+				done(scanUi.read);
+			});
+		}
+		if (!('BarcodeDetector' in window)) { withJsQr(); return; }
+		window.BarcodeDetector.getSupportedFormats().then(function (formats) {
+			if (formats.indexOf('qr_code') === -1) { withJsQr(); return; }
+			var det = new window.BarcodeDetector({ formats: ['qr_code'] });
+			scanUi.read = function (video) {
+				return det.detect(video).then(function (codes) { return codes.length ? codes[0].rawValue : ''; });
+			};
+			done(scanUi.read);
+		}).catch(withJsQr);
+	}
+
+	function codeKeyOf(s) { return String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); }
+
+	// the accepted participant whose pass this is, or null
+	function byCode(raw) {
+		var key = codeKeyOf(raw);
+		if (key.length !== 8) return null;
+		var email = Object.keys(state.codes).filter(function (e) { return codeKeyOf(state.codes[e]) === key; })[0];
+		if (!email) return null;
+		return acceptedPeople().filter(function (x) { return x.h.email === email; })[0] || null;
+	}
+
+	function scanSay(cls, title, sub) {
+		var box = $('scan-result');
+		box.textContent = '';
+		box.className = 'scan-result ' + cls;
+		box.appendChild(el('p', 'scan-title', title));
+		if (sub) box.appendChild(el('p', 'scan-sub', sub));
+	}
+
+	function scanned(raw) {
+		var key = codeKeyOf(raw);
+		var now = Date.now();
+		if (key === scanUi.last && now - scanUi.lastAt < 5000) return;   // the same pass, still in front of the camera
+		scanUi.last = key;
+		scanUi.lastAt = now;
+		// the test pass, for trying the camera at the door before anyone comes: read, and nobody checked in
+		if (key === 'BREAQTEST') { scanSay('is-ok', '✓ Test pass', 'The camera reads the passes. Nobody was checked in.'); return; }
+		var x = byCode(raw);
+		if (!x) { scanSay('is-bad', 'Not a pass we know', 'Not an accepted participant’s code (' + raw.slice(0, 20) + '), or the page is older than their acceptance: press Refresh.'); return; }
+		var facts = [teamOfH(x.h) || 'No team', get(x.h, 'T-shirt') ? 'T-shirt ' + get(x.h, 'T-shirt') : '', get(x.h, 'Dietary')].filter(Boolean).join(' · ');
+		if (get(x.h, 'Checked in')) { scanSay('is-again', 'Already here: ' + x.p.name, 'Since ' + fmtClock.format(new Date(get(x.h, 'Checked in'))) + ' · ' + facts); return; }
+		scanSay('is-ok', '✓ ' + x.p.name, facts);
+		checkIn(x, false);
+	}
+
+	function scanLoop() {
+		scanUi.timer = window.setTimeout(function () {
+			if (!scanUi.stream) return;
+			scanUi.read($('scan-video')).then(function (raw) {
+				if (raw) scanned(raw);
+			}).catch(function () {}).then(scanLoop);
+		}, 250);
+	}
+
+	function stopScan() {
+		window.clearTimeout(scanUi.timer);
+		if (scanUi.stream) scanUi.stream.getTracks().forEach(function (t) { t.stop(); });
+		scanUi.stream = null;
+		$('scan-video').srcObject = null;
+		$('scan').hidden = true;
+		$('scan-open').hidden = false;
+	}
+
+	$('scan-open').addEventListener('click', function () {
+		if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+			viewError('checkin-err', 'This browser cannot open the camera here. Type the code under the pass in the search instead.');
+			return;
+		}
+		viewError('checkin-err', '');
+		var reader = null, stream = null, failed = false;
+		// the camera and the reader together; the scanning starts once both are there
+		function start() {
+			if (failed || !reader || !stream) return;
+			scanUi.stream = stream;
+			scanUi.read = reader;
+			var v = $('scan-video');
+			v.srcObject = stream;
+			var playing = v.play();
+			if (playing && playing.catch) playing.catch(function () {});
+			$('scan').hidden = false;
+			$('scan-open').hidden = true;
+			scanSay('', 'Ready', 'Hold a pass up to the camera: each one checks its owner in at once.');
+			scanLoop();
+		}
+		qrReader(function (read) {
+			if (!read) {
+				failed = true;
+				if (stream) stream.getTracks().forEach(function (t) { t.stop(); });
+				viewError('checkin-err', 'The QR reader did not load. Check the connection and press Scan passes again, or type the code under the pass in the search.');
+				return;
+			}
+			reader = read;
+			start();
+		});
+		navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false }).then(function (s) {
+			if (failed) { s.getTracks().forEach(function (t) { t.stop(); }); return; }
+			stream = s;
+			start();
+		}).catch(function (err) {
+			failed = true;
+			viewError('checkin-err', 'The camera did not open' + (err && err.name === 'NotAllowedError' ? ': allow it for roqteam.ro in the browser (on an iPhone: Settings, Safari, Camera), then press Scan passes again.' : '. Is another app using it?'));
+		});
+	});
+
+	$('scan-close').addEventListener('click', stopScan);
+
+	/* the big screen's live message: shown at once, for a few minutes, or taken down */
+
+	function renderFlash() {
+		var form = $('flash-form');
+		form.hidden = state.flash === undefined;   // an older Apps Script
+		if (form.hidden) return;
+		var f = state.flash && Date.now() < Date.parse(state.flash.until) ? state.flash : null;
+		$('flash-now').textContent = f ? 'On the screen until ' + fmtClock.format(new Date(f.until)) + ': “' + f.text + '”' : 'Nothing on the screen now: a message here goes up on it within a few seconds.';
+		$('flash-now').classList.toggle('is-on', !!f);
+		$('flash-off').hidden = !f;
+	}
+
+	forEach($('flash-presets').querySelectorAll('button'), function (b) {
+		b.addEventListener('click', function () {
+			$('flash-text').value = b.getAttribute('data-text');
+			$('flash-sub').value = b.getAttribute('data-sub');
+			$('flash-text').focus();
+		});
+	});
+
+	function sendFlash(body, done) {
+		$('flash-go').disabled = $('flash-off').disabled = true;
+		$('flash-note').textContent = 'Sending…';
+		body.action = 'screen-flash';
+		body.key = state.key;
+		post(body, 30000, function (json, err) {
+			$('flash-go').disabled = $('flash-off').disabled = false;
+			$('flash-note').textContent = '';
+			if (json && json.denied) { lock(json.error); return; }
+			if (json && json.ok) {
+				state.flash = json.flash;
+				viewError('board-err', '');
+				boardNote('flash-note', done(json));
+				if (json.posted) loadBoard();   // the announcement it also made
+			} else viewError('board-err', 'Nothing went up on the screen. ' + actionProblem(json, err, 'show a message on the big screen'));
+			renderFlash();
+		});
+	}
+
+	$('flash-form').addEventListener('submit', function (ev) {
+		ev.preventDefault();
+		var text = $('flash-text').value.trim();
+		if (!text) { $('flash-note').textContent = 'Write the message first.'; $('flash-text').focus(); return; }
+		sendFlash({ text: text, sub: $('flash-sub').value.trim(), minutes: Number($('flash-min').value), post: $('flash-post').checked }, function (json) {
+			$('flash-text').value = '';
+			$('flash-sub').value = '';
+			$('flash-post').checked = false;
+			return 'On the screen within a few seconds' + (json.posted ? ', and posted on the dashboards.' : '.');
+		});
+	});
+
+	$('flash-off').addEventListener('click', function () {
+		sendFlash({ text: '' }, function () { return 'Taken down: the screen is back within a few seconds.'; });
+	});
+
+	/* the big screen's password: set here, kept in the Apps Script (SCREEN_KEY) */
+
+	function renderScreenKey() {
+		var form = $('screen-key-form');
+		form.hidden = state.screenKey === null;   // an older Apps Script
+		if (form.hidden || document.activeElement === $('screen-key')) return;
+		$('screen-key').value = state.screenKey || '';
+	}
+
+	$('screen-key-form').addEventListener('submit', function (ev) {
+		ev.preventDefault();
+		var value = $('screen-key').value.trim();
+		$('screen-key-save').disabled = true;
+		$('screen-key-note').textContent = 'Saving…';
+		post({ action: 'screen-key', key: state.key, screenKey: value }, 30000, function (json, err) {
+			$('screen-key-save').disabled = false;
+			$('screen-key-note').textContent = '';
+			if (json && json.denied) { lock(json.error); return; }
+			if (json && json.ok) {
+				state.screenKey = json.screenKey;
+				viewError('board-err', '');
+				boardNote('screen-key-note', json.screenKey ? 'Saved: the screen opens with ' + json.screenKey + '.' : 'Cleared: only the admin key opens the screen.');
+			} else viewError('board-err', 'The password was not saved. ' + actionProblem(json, err, 'keep a password for the big screen'));
+		});
+	});
+
+	/* the audience award: the organisers open the vote at the awards, then close it and show the result */
+
+	var AUD_STATUS = {
+		'': 'Not open. Open it at the awards: each participant checked in at the door votes on their dashboard for one team, not their own, and the big screen counts the votes.',
+		open: 'Open: the dashboards show the teams, and the big screen the number of votes. Close it to show the result there and on the dashboards.',
+		shown: 'Closed: the result is on the big screen and on the dashboards.'
+	};
+
+	function renderAudience() {
+		var a = state.audience;
+		var panel = document.querySelector('.aud-panel');
+		panel.hidden = !a;   // an older Apps Script
+		if (!a) return;
+		$('aud-count').textContent = a.total ? plural(a.total, 'vote', 'votes') : '';
+		$('aud-status').textContent = AUD_STATUS[a.state] || '';
+		$('aud-open').hidden = a.state === 'open';
+		$('aud-open').textContent = a.state === 'shown' ? 'Open it again' : 'Open the vote';
+		$('aud-show').hidden = a.state !== 'open';
+		$('aud-back').hidden = !a.state;
+		$('aud-clear').hidden = !a.total || a.state === 'open';
+		var ol = $('aud-list');
+		ol.textContent = '';
+		(a.teams || []).filter(function (t) { return t.votes; }).forEach(function (t) {
+			var li = el('li');
+			li.appendChild(el('span', 'aud-name', t.name));
+			li.appendChild(el('span', 'aud-n', plural(t.votes, 'vote', 'votes')));
+			ol.appendChild(li);
+		});
+	}
+
+	function setAudience(next, clear, done) {
+		var buttons = ['aud-open', 'aud-show', 'aud-back', 'aud-clear'];
+		buttons.forEach(function (id) { $(id).disabled = true; });
+		$('aud-note').textContent = 'Saving…';
+		post({ action: 'audience-state', key: state.key, state: next, clear: !!clear }, 30000, function (json, err) {
+			buttons.forEach(function (id) { $(id).disabled = false; });
+			$('aud-note').textContent = '';
+			if (json && json.denied) { lock(json.error); return; }
+			if (json && json.ok && json.audience) {
+				state.audience = json.audience;
+				viewError('board-err', '');
+				$('aud-note').textContent = done || '';
+			} else viewError('board-err', 'The vote did not change. ' + actionProblem(json, err, 'run the audience award'));
+			renderAudience();
+		});
+	}
+
+	$('aud-open').addEventListener('click', function () { setAudience('open', false, 'The vote is open.'); });
+	$('aud-show').addEventListener('click', function () {
+		if (window.confirm('Close the vote, and show the result on the big screen and on every dashboard?')) setAudience('shown', false, 'Closed: the result is up.');
+	});
+	$('aud-back').addEventListener('click', function () {
+		if (window.confirm('Put the vote back as before it opened? The votes stay, and nothing shows on the dashboards or the big screen.')) setAudience('', false, 'Back as before.');
+	});
+	$('aud-clear').addEventListener('click', function () {
+		var a = state.audience || {};
+		if (window.confirm('Delete all ' + plural(a.total || 0, 'vote', 'votes') + '? For after a test: it cannot be undone.')) setAudience(a.state === 'shown' ? '' : a.state || '', true, 'The votes are cleared.');
 	});
 
 	/* the mentors' link */

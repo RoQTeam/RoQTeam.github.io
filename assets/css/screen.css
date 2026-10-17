@@ -1,0 +1,829 @@
+/*
+	BreaQ Hackathon: the big screen (screen.html), on top of team-board.css (the design system's tokens, fonts, chips,
+	traces and ghost layer). Sized by the screen's width, for a projector at 16:9: one view, nothing to scroll.
+*/
+
+.is-screen {
+	overflow: hidden;
+}
+
+	.is-screen.is-idle,
+	.is-screen.is-idle * {
+		cursor: none !important;
+	}
+
+.screen {
+	max-width: none;
+	height: 100vh;
+	padding: 0 3.2vw;
+}
+
+	.screen-traces {
+		position: absolute;
+		right: 0;
+		bottom: 3vw;
+		width: 36vw;
+		height: auto;
+	}
+
+		.screen-traces .tr {
+			stroke-width: 2.5;
+			stroke-opacity: 0.6;
+		}
+
+		.screen-traces .dot {
+			fill-opacity: 0.9;
+		}
+
+	.is-screen .ghost-top {
+		width: 46vw;
+		top: -12vw;
+		right: -10vw;
+	}
+
+	.is-screen .ghost-bottom {
+		width: 30vw;
+	}
+
+.wall {
+	display: flex;
+	flex-direction: column;
+	height: 100vh;
+}
+
+	.wall-top {
+		display: flex;
+		align-items: center;
+		gap: 1.6vw;
+		padding: 2vw 0 1.4vw 0;
+		border-bottom: 2px solid var(--line-white-soft);
+	}
+
+		.wall-logo {
+			width: auto;
+			height: 3.6vw;
+		}
+
+		.wall-top .vrule {
+			height: 2.6vw;
+		}
+
+		.wall-top .kicker {
+			color: var(--frost);
+			font-size: 1vw;
+		}
+
+		.wall-clock {
+			margin-left: auto;
+			color: var(--white);
+			font-size: 2.6vw;
+			font-weight: 800;
+			letter-spacing: -0.02em;
+			font-variant-numeric: lining-nums tabular-nums;
+		}
+
+	.wall-body {
+		display: grid;
+		flex: 1;
+		grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+		gap: 3vw;
+		min-height: 0;
+		padding: 3vw 0 2vw 0;
+	}
+
+	.wall-foot {
+		position: relative;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 2vw;
+		padding: 1.2vw 0 1.6vw 0;
+		border-top: 2px solid var(--line-white-soft);
+		color: var(--mist);
+		font-size: 1.15vw;
+		font-weight: 600;
+	}
+
+		.wall-foot b {
+			color: var(--gold);
+			font-weight: 800;
+		}
+
+		.wall-status {
+			font-size: 0.9vw;
+		}
+
+	/* above the footer, out of the way of its text; gone with the cursor */
+	.wall-full {
+		position: fixed;
+		right: 3.2vw;
+		bottom: 5.4vw;
+		z-index: 2;
+	}
+
+		.is-idle .wall-full {
+			opacity: 0;
+		}
+
+/* the stage: the moment, as big as it gets */
+.stage {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	gap: 1.4vw;
+	min-width: 0;
+}
+
+	.stage .kicker {
+		color: var(--gold);
+		font-size: 1.15vw;
+	}
+
+	.stage-title {
+		max-width: 16ch;
+		font-size: 6.4vw;
+		line-height: 0.9;
+		letter-spacing: -0.035em;
+		overflow-wrap: anywhere;
+	}
+
+	.stage-sub {
+		max-width: 46ch;
+		color: var(--frost);
+		font-size: 1.6vw;
+		font-weight: 600;
+		line-height: 1.35;
+	}
+
+	.stage-next {
+		color: var(--mist);
+		font-size: 1.6vw;
+		font-weight: 700;
+	}
+
+	.stage-bar {
+		width: min(100%, 44vw);
+		height: 0.5vw;
+		border-radius: 999px;
+		background: rgba(175, 199, 238, 0.18);
+		overflow: hidden;
+	}
+
+		.stage-bar i {
+			display: block;
+			height: 100%;
+			border-radius: inherit;
+			background: var(--gold);
+		}
+
+	.stage-count {
+		display: flex;
+		flex-direction: column;
+		gap: 0.6vw;
+		margin-top: 1.4vw;
+		padding-top: 1.8vw;
+		border-top: 2px solid var(--line-gold-rail);
+	}
+
+	/* the big numbers: gold, lining, tabular */
+	.big-clock {
+		color: var(--gold);
+		font-size: 10.5vw;
+		font-weight: 800;
+		line-height: 0.88;
+		letter-spacing: -0.035em;
+		font-variant-numeric: lining-nums tabular-nums;
+		white-space: nowrap;
+	}
+
+		.big-clock b {
+			font-weight: 800;
+		}
+
+		.big-clock small {
+			margin-left: 0.04em;
+			color: var(--mist);
+			font-size: 0.32em;
+			font-weight: 700;
+			letter-spacing: 0;
+		}
+
+	.stage.is-before .big-clock {
+		font-size: 13vw;
+	}
+
+	.stage.is-award .stage-title {
+		max-width: 18ch;
+		font-size: 5vw;
+	}
+
+	/* the audience's podium */
+	.podium {
+		display: flex;
+		flex-direction: column;
+		gap: 1vw;
+		margin: 1vw 0 0 0;
+		padding: 0;
+		list-style: none;
+	}
+
+		.podium li {
+			display: grid;
+			grid-template-columns: 5vw minmax(0, 1fr) auto;
+			align-items: center;
+			gap: 1.6vw;
+			padding: 1.2vw 1.8vw;
+			border: 2px solid var(--card-line);
+			border-radius: var(--radius-tile);
+			background: var(--card);
+		}
+
+		.podium .podium-1 {
+			border-color: var(--gold);
+			background: linear-gradient(to bottom right, rgba(250, 177, 6, 0.18), rgba(7, 29, 71, 0.85));
+		}
+
+		.podium-place {
+			color: var(--gold);
+			font-size: 4vw;
+			font-weight: 800;
+			line-height: 1;
+			font-variant-numeric: lining-nums;
+		}
+
+		.podium-name {
+			color: var(--white);
+			font-size: 2.6vw;
+			font-weight: 800;
+			letter-spacing: -0.02em;
+			overflow-wrap: anywhere;
+		}
+
+		.podium-1 .podium-name {
+			font-size: 3.4vw;
+		}
+
+		.podium-votes {
+			color: var(--mist);
+			font-size: 1.4vw;
+			font-weight: 700;
+			white-space: nowrap;
+		}
+
+/* the side: the mentors, the announcements, what comes up */
+.side {
+	display: flex;
+	flex-direction: column;
+	gap: 1.4vw;
+	min-width: 0;
+	min-height: 0;
+	overflow: hidden;
+}
+
+	/* opaque: the traces run in under them, as under a chip */
+	.side-card {
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		gap: 1vw;
+		padding: 1.6vw 1.8vw;
+		border: 1.5px solid var(--card-line);
+		border-radius: var(--radius-card);
+		background: var(--navy-900);
+	}
+
+		.side-card .kicker {
+			color: var(--frost);
+			font-size: 0.85vw;
+		}
+
+	.mentor-row {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 1.4vw;
+	}
+
+	.mentor-n {
+		display: flex;
+		flex-direction: column;
+		gap: 0.3vw;
+	}
+
+		.mentor-n b {
+			color: var(--gold);
+			font-size: 4vw;
+			font-weight: 800;
+			line-height: 0.9;
+			font-variant-numeric: lining-nums;
+		}
+
+		.mentor-n span {
+			color: var(--frost);
+			font-size: 1.05vw;
+			font-weight: 700;
+		}
+
+	.side-note {
+		color: var(--mist);
+		font-size: 0.95vw;
+		font-weight: 600;
+	}
+
+	.wall-ann {
+		display: flex;
+		flex-direction: column;
+		gap: 0.4vw;
+		padding-top: 1vw;
+		border-top: 1.5px solid var(--soft-line);
+	}
+
+		.wall-ann:first-of-type {
+			padding-top: 0;
+			border-top: 0;
+		}
+
+		.wall-ann.is-pinned h2 {
+			color: var(--gold);
+		}
+
+		.wall-ann h2 {
+			font-size: 1.5vw;
+			line-height: 1.15;
+			letter-spacing: -0.01em;
+		}
+
+		.wall-ann p {
+			display: -webkit-box;
+			-webkit-line-clamp: 3;
+			-webkit-box-orient: vertical;
+			overflow: hidden;
+			color: var(--frost);
+			font-size: 1.05vw;
+			font-weight: 600;
+			line-height: 1.4;
+		}
+
+		.wall-ann .wall-ann-time {
+			color: var(--mist);
+			font-size: 0.8vw;
+			font-weight: 700;
+			letter-spacing: 0.14em;
+		}
+
+	.side-up .sched li {
+		grid-template-columns: 5em minmax(0, 1fr);
+		font-size: 1.15vw;
+	}
+
+		.side-up .sched-time {
+			font-size: 1vw;
+		}
+
+/* a laptop screen that is not 16:9, or a window: the sizes follow the height too */
+@media (max-aspect-ratio: 4/3) {
+
+	.wall-body {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+}
+
+/* ------------------------------------------------------------------------------------------------------------ */
+/* the partners: every few minutes, over the wall, tier by tier                                                    */
+/* ------------------------------------------------------------------------------------------------------------ */
+
+.partners {
+	--t-gold: #FAB106;
+	--t-silver: #CDD5DF;
+	--t-bronze: #D9925B;
+	--t-supporter: #D5DDEA;
+	position: fixed;
+	inset: 0;
+	z-index: 10;
+	display: grid;
+	place-items: center;
+	overflow: hidden;
+	background:
+		radial-gradient(ellipse 60% 45% at 50% 34%, rgba(250, 177, 6, 0.1), transparent 70%),
+		linear-gradient(to bottom right, var(--navy-950) 0%, var(--navy-800) 55%, var(--navy-700) 100%);
+	opacity: 0;
+	transition: opacity 0.7s ease;
+}
+
+	.partners.is-on {
+		opacity: 1;
+	}
+
+	.partners.is-out {
+		opacity: 0;
+	}
+
+	/* the traces: drawn in from both edges, toward the gold row */
+	.partners-traces {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+	}
+
+		.partners-traces .tr {
+			stroke-width: 2.5;
+			stroke-opacity: 0.6;
+			stroke-dasharray: 1;
+			stroke-dashoffset: 1;
+		}
+
+		.partners-traces .dot {
+			opacity: 0;
+			transform-box: fill-box;
+			transform-origin: center;
+		}
+
+		@keyframes p-draw {
+			to { stroke-dashoffset: 0; }
+		}
+
+		@keyframes p-dot {
+			0%   { opacity: 0; transform: scale(0); }
+			70%  { opacity: 1; transform: scale(1.6); }
+			100% { opacity: 0.9; transform: scale(1); }
+		}
+
+		.partners.is-on .tr {
+			animation: p-draw 1.6s cubic-bezier(0.65, 0, 0.35, 1) 0.3s forwards;
+		}
+
+			.partners.is-on .pt-right .tr {
+				animation-delay: 0.45s;
+			}
+
+		.partners.is-on .dot {
+			animation: p-dot 0.5s ease-out 1.8s forwards;
+		}
+
+	.partners-body {
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 3.4vh;
+		width: min(92vw, 1500px);
+		text-align: center;
+	}
+
+		.partners-kicker {
+			color: var(--gold);
+			font-size: 1.1vw;
+		}
+
+		.partners-title {
+			margin-bottom: 1vh;
+			font-size: 4.6vw;
+			line-height: 0.92;
+			letter-spacing: -0.035em;
+		}
+
+	/* a tier: its chip, cut like the badges', in the tier's colour, then its logos */
+	.ptier {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 1.8vh;
+	}
+
+	.ptier-row {
+		display: flex;
+		justify-content: center;
+		gap: 9vw;
+	}
+
+	.pchip {
+		--c: 7px;
+		position: relative;
+		padding: 0.55em 1.1em 0.5em 1.3em;
+		clip-path: polygon(var(--c) 0, calc(100% - var(--c)) 0, 100% var(--c), 100% calc(100% - var(--c)), calc(100% - var(--c)) 100%, var(--c) 100%, 0 calc(100% - var(--c)), 0 var(--c));
+		background: var(--tier, var(--t-gold));
+		color: var(--navy-950);
+		font-size: 0.95vw;
+		font-weight: 800;
+		letter-spacing: 0.16em;
+		line-height: 1;
+		text-transform: uppercase;
+	}
+
+		.pchip::after {
+			content: "";
+			position: absolute;
+			left: 5px;
+			top: 5px;
+			width: 3px;
+			height: 3px;
+			border-radius: 50%;
+			background: currentColor;
+		}
+
+	.ptier-gold { --tier: var(--t-gold); }
+	.ptier-silver { --tier: var(--t-silver); }
+	.ptier-bronze { --tier: var(--t-bronze); }
+	.ptier-supporter { --tier: var(--t-supporter); }
+
+	.ptier-host .kicker {
+		color: var(--mist);
+		font-size: 0.85vw;
+	}
+
+	.plogos {
+		position: relative;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 6vw;
+	}
+
+		/* optically matched heights: the gold the biggest */
+		.plogos img {
+			display: block;
+			width: auto;
+			height: 6.2vh;
+			max-width: 22vw;
+			object-fit: contain;
+		}
+
+		.ptier-gold .plogos img { height: 11.5vh; max-width: 30vw; }
+		.ptier-gold .plogos img.is-wordmark { height: 7.4vh; }
+		.ptier-silver .plogos img,
+		.ptier-bronze .plogos img { height: 8.2vh; }
+		.ptier-host .plogos img { height: 6.4vh; }
+
+	/* everything rises in, out of a blur, tier after tier; the logos then float a little */
+	@keyframes p-rise {
+		from { opacity: 0; transform: translateY(3.2vh) scale(0.94); filter: blur(10px); }
+		to   { opacity: 1; transform: none; filter: none; }
+	}
+
+	@keyframes p-float {
+		0%, 100% { transform: translateY(0); }
+		50%      { transform: translateY(-0.6vh); }
+	}
+
+	/* the gold logos: a gold glint crossing each, cut to the logo's own shape (the logo is its mask), then again now
+	   and then; the first a moment before the second, like a wave */
+	.pglint {
+		position: relative;
+		display: block;
+		opacity: 0;
+	}
+
+		.ptier-gold .plogos .pglint img {
+			opacity: 1;
+		}
+
+		.pglint::after {
+			content: "";
+			position: absolute;
+			inset: 0;
+			/* gold, so it shows on a white logo too: the letters catch the light as it passes */
+			background: linear-gradient(112deg, transparent 36%, rgba(250, 177, 6, 0.55) 45%, rgba(255, 226, 150, 1) 50%, rgba(250, 177, 6, 0.55) 55%, transparent 64%) no-repeat;
+			background-size: 320% 100%;
+			background-position: 140% 0;
+			-webkit-mask-size: contain;
+			mask-size: contain;
+			-webkit-mask-repeat: no-repeat;
+			mask-repeat: no-repeat;
+			-webkit-mask-position: center;
+			mask-position: center;
+			pointer-events: none;
+		}
+
+		.pglint-fsas::after {
+			-webkit-mask-image: url("../../images/brand/partners/fsas.webp");
+			mask-image: url("../../images/brand/partners/fsas.webp");
+		}
+
+		.pglint-kinderpedia::after {
+			-webkit-mask-image: url("../../images/brand/partners/kinderpedia.svg");
+			mask-image: url("../../images/brand/partners/kinderpedia.svg");
+		}
+
+	@keyframes p-glint {
+		0%   { background-position: 140% 0; }
+		22%  { background-position: -40% 0; }
+		100% { background-position: -40% 0; }
+	}
+
+	.partners.is-on .pglint-fsas::after { animation: p-glint 6s ease-in-out 3s infinite; }
+	.partners.is-on .pglint-kinderpedia::after { animation: p-glint 6s ease-in-out 3.35s infinite; }
+
+	.partners-body > *,
+	.ptier .pchip,
+	.ptier .kicker,
+	.plogos img {
+		opacity: 0;
+	}
+
+	.partners.is-on .partners-kicker { animation: p-rise 0.8s ease-out 0.4s forwards; }
+	.partners.is-on .partners-title { animation: p-rise 0.9s ease-out 0.7s forwards; }
+	.partners.is-on .ptier,
+	.partners.is-on .ptier-row { opacity: 1; }
+
+	.partners.is-on .ptier-gold .pchip { animation: p-rise 0.7s ease-out 1.6s forwards; }
+	.partners.is-on .ptier-gold .pglint:nth-child(1) { animation: p-rise 1s ease-out 1.9s forwards, p-float 5s ease-in-out 3.2s infinite; }
+	.partners.is-on .ptier-gold .pglint:nth-child(2) { animation: p-rise 1s ease-out 2.25s forwards, p-float 5s ease-in-out 3.9s infinite; }
+
+	.partners.is-on .ptier-silver .pchip { animation: p-rise 0.7s ease-out 3.4s forwards; }
+	.partners.is-on .ptier-silver img { animation: p-rise 1s ease-out 3.6s forwards, p-float 5s ease-in-out 4.8s infinite; }
+	.partners.is-on .ptier-bronze .pchip { animation: p-rise 0.7s ease-out 3.75s forwards; }
+	.partners.is-on .ptier-bronze img { animation: p-rise 1s ease-out 3.95s forwards, p-float 5s ease-in-out 5.3s infinite; }
+
+	.partners.is-on .ptier-supporter .pchip { animation: p-rise 0.7s ease-out 5s forwards; }
+	.partners.is-on .ptier-supporter img:nth-child(1) { animation: p-rise 0.9s ease-out 5.25s forwards; }
+	.partners.is-on .ptier-supporter img:nth-child(2) { animation: p-rise 0.9s ease-out 5.45s forwards; }
+	.partners.is-on .ptier-supporter img:nth-child(3) { animation: p-rise 0.9s ease-out 5.65s forwards; }
+
+	.partners.is-on .ptier-host .kicker { animation: p-rise 0.7s ease-out 6.6s forwards; }
+	.partners.is-on .ptier-host img:nth-child(1) { animation: p-rise 0.9s ease-out 6.8s forwards; }
+	.partners.is-on .ptier-host img:nth-child(2) { animation: p-rise 0.9s ease-out 7s forwards; }
+
+	/* how long it stays: a gold line running out at the bottom */
+	.partners-timer {
+		position: absolute;
+		left: 0;
+		bottom: 0;
+		height: 0.5vh;
+		width: 0;
+		background: var(--gold);
+	}
+
+		@keyframes p-run {
+			from { width: 100%; }
+			to   { width: 0; }
+		}
+
+		.partners.is-on .partners-timer {
+			animation: p-run var(--p-ms, 22000ms) linear forwards;
+		}
+
+@media (prefers-reduced-motion: reduce) {
+
+	.partners,
+	.partners * {
+		animation: none !important;
+		transition: none !important;
+	}
+
+	.partners-body > *,
+	.ptier .pchip,
+	.ptier .kicker,
+	.plogos img,
+	.pglint,
+	.partners-traces .dot {
+		opacity: 1;
+	}
+
+	.partners-traces .tr {
+		stroke-dashoffset: 0;
+	}
+
+}
+
+
+/* ------------------------------------------------------------------------------------------------------------ */
+/* the live message: over everything, from the admin page                                                          */
+/* ------------------------------------------------------------------------------------------------------------ */
+
+.flash {
+	position: fixed;
+	inset: 0;
+	z-index: 20;
+	display: grid;
+	place-items: center;
+	overflow: hidden;
+	background:
+		radial-gradient(ellipse 70% 50% at 50% 45%, rgba(250, 177, 6, 0.12), transparent 70%),
+		linear-gradient(to bottom right, var(--navy-950) 0%, var(--navy-800) 55%, var(--navy-700) 100%);
+	opacity: 0;
+	transition: opacity 0.6s ease;
+}
+
+	.flash.is-on {
+		opacity: 1;
+	}
+
+	.flash-traces {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+	}
+
+		.flash-traces .tr {
+			stroke-width: 2.5;
+			stroke-opacity: 0.6;
+			stroke-dasharray: 1;
+			stroke-dashoffset: 1;
+		}
+
+		.flash-traces .dot {
+			opacity: 0;
+			transform-box: fill-box;
+			transform-origin: center;
+		}
+
+		.flash.is-on .tr {
+			animation: p-draw 1.4s cubic-bezier(0.65, 0, 0.35, 1) 0.2s forwards;
+		}
+
+		.flash.is-on .dot {
+			animation: p-dot 0.5s ease-out 1.5s forwards;
+		}
+
+	.flash-body {
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 3vh;
+		width: min(86vw, 1500px);
+		text-align: center;
+	}
+
+	.flash-kicker {
+		display: flex;
+		align-items: center;
+		gap: 0.9em;
+		color: var(--gold);
+		font-size: 1.2vw;
+		font-weight: 800;
+		letter-spacing: 0.26em;
+		text-transform: uppercase;
+	}
+
+		@keyframes flash-pulse {
+			0%   { box-shadow: 0 0 0 0 rgba(250, 177, 6, 0.6); }
+			70%  { box-shadow: 0 0 0 1.2vw rgba(250, 177, 6, 0); }
+			100% { box-shadow: 0 0 0 0 rgba(250, 177, 6, 0); }
+		}
+
+		.flash-live {
+			width: 0.9vw;
+			height: 0.9vw;
+			border-radius: 50%;
+			background: var(--gold);
+			animation: flash-pulse 1.8s ease-out infinite;
+		}
+
+	.flash-text {
+		max-width: 18ch;
+		font-size: clamp(3rem, 7.4vw, 9rem);
+		line-height: 0.92;
+		letter-spacing: -0.035em;
+		overflow-wrap: anywhere;
+	}
+
+	.flash-sub {
+		max-width: 40ch;
+		color: var(--frost);
+		font-size: 2.1vw;
+		font-weight: 600;
+		line-height: 1.3;
+	}
+
+		.flash-sub:empty {
+			display: none;
+		}
+
+	.flash.is-on .flash-kicker { animation: p-rise 0.8s ease-out 0.15s both; }
+	.flash.is-on .flash-text { animation: p-rise 1s ease-out 0.35s both; }
+	.flash.is-on .flash-sub { animation: p-rise 0.9s ease-out 0.7s both; }
+
+	/* how long it stays */
+	.flash-timer {
+		position: absolute;
+		left: 0;
+		bottom: 0;
+		height: 0.5vh;
+		width: 0;
+		background: var(--gold);
+	}
+
+		.flash.is-on .flash-timer {
+			animation: p-run var(--f-ms, 300000ms) linear forwards;
+		}
+
+@media (prefers-reduced-motion: reduce) {
+
+	.flash,
+	.flash * {
+		animation: none !important;
+		transition: none !important;
+	}
+
+	.flash-traces .tr {
+		stroke-dashoffset: 0;
+	}
+
+	.flash-traces .dot {
+		opacity: 1;
+	}
+
+}

@@ -6,12 +6,13 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="robots" content="noindex, nofollow" />
 		<meta name="referrer" content="no-referrer" />
+		<meta name="theme-color" content="#061A40" />
 		<!-- only its own files run, and it talks only to the Apps Script
 		     (script.google.com answers through a redirect to script.googleusercontent.com) -->
-		<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src https://script.google.com https://script.googleusercontent.com; base-uri 'none'; form-action 'none'" />
-		<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Raleway:700|Source+Sans+Pro:300,400,600&amp;display=swap" />
-		<link rel="stylesheet" href="assets/css/fontawesome-all.min.css" />
-		<link rel="stylesheet" href="assets/css/teams.css?v=20261014b" />
+		<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src https://script.google.com https://script.googleusercontent.com; base-uri 'none'; form-action 'none'" />
+		<link rel="preload" href="assets/fonts/raleway-800.woff2" as="font" type="font/woff2" crossorigin />
+		<link rel="preload" href="assets/fonts/raleway-600.woff2" as="font" type="font/woff2" crossorigin />
+		<link rel="stylesheet" href="assets/css/team-board.css?v=20261017d" />
 		<link rel="icon" type="image/png" href="images/favicon-2026.png">
 	</head>
 	<body>
@@ -25,23 +26,88 @@
 			here. Each participant also sees their own team, answers "are you coming?", asks for a mentor (the
 			mentors take it on mentors.html) and sends their feedback after the event. data-endpoint is the same web
 			app URL as on register.html and admin.html.
+			The look is the BreaQ 2026 design system's (assets/css/team-board.css): the navy ground, gold as the one
+			accent, Raleway, chamfered chips and fields, the circuit traces and the ghost layer, Lucide icons.
 		-->
+
+		<!-- the icons (Lucide, ISC licence), drawn in gold by the stylesheet -->
+		<svg class="sprite" aria-hidden="true" focusable="false">
+			<symbol id="i-bell" viewBox="0 0 24 24"><path d="M10.268 21a2 2 0 0 0 3.464 0" /><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326" /></symbol>
+			<symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M8 16H3v5" /></symbol>
+			<symbol id="i-external" viewBox="0 0 24 24"><path d="M15 3h6v6" /><path d="M10 14 21 3" /><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /></symbol>
+			<symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><path d="m16 17 5-5-5-5" /><path d="M21 12H9" /></symbol>
+			<symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></symbol>
+			<symbol id="i-megaphone" viewBox="0 0 24 24"><path d="m3 11 18-5v12L3 14v-3z" /><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6" /></symbol>
+			<symbol id="i-list-checks" viewBox="0 0 24 24"><path d="m3 17 2 2 4-4" /><path d="m3 7 2 2 4-4" /><path d="M13 6h8" /><path d="M13 12h8" /><path d="M13 18h8" /></symbol>
+			<symbol id="i-package" viewBox="0 0 24 24"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z" /><path d="M12 22V12" /><path d="m3.3 7 7.7 4.4a2 2 0 0 0 2 0L20.7 7" /><path d="m7.5 4.27 9 5.15" /></symbol>
+			<symbol id="i-flag" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" /><path d="M4 22v-7" /></symbol>
+			<symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><path d="M12 16v-4" /><path d="M12 8h.01" /></symbol>
+			<symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></symbol>
+			<symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 17v5" /><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" /></symbol>
+			<symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" /></symbol>
+			<symbol id="i-trophy" viewBox="0 0 24 24"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" /><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" /><path d="M4 22h16" /><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" /><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" /><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" /></symbol>
+			<symbol id="i-hourglass" viewBox="0 0 24 24"><path d="M5 22h14" /><path d="M5 2h14" /><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22" /><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2" /></symbol>
+			<symbol id="i-map-pin" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" /><circle cx="12" cy="10" r="3" /></symbol>
+			<symbol id="i-atom" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1" /><path d="M20.2 20.2c2.04-2.03.02-7.36-4.5-11.9-4.54-4.52-9.87-6.54-11.9-4.5-2.04 2.03-.02 7.36 4.5 11.9 4.54 4.52 9.87 6.54 11.9 4.5Z" /><path d="M15.7 15.7c4.52-4.54 6.54-9.87 4.5-11.9-2.03-2.04-7.36-.02-11.9 4.5-4.52 4.54-6.54 9.87-4.5 11.9 2.03 2.04 7.36.02 11.9-4.5Z" /></symbol>
+			<symbol id="i-user" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></symbol>
+			<symbol id="i-lock" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></symbol>
+			<symbol id="i-calendar" viewBox="0 0 24 24"><path d="M8 2v4" /><path d="M16 2v4" /><rect width="18" height="18" x="3" y="4" rx="2" /><path d="M3 10h18" /></symbol>
+		</svg>
+
+		<!-- the ground: the navy gradient, with the ghost layer (atom orbits and a constellation) at two corners -->
+		<div class="ground" aria-hidden="true">
+			<svg class="ghost-art ghost-top" viewBox="0 0 400 400" focusable="false">
+				<g class="ghost-line">
+					<ellipse cx="250" cy="150" rx="170" ry="58" transform="rotate(20 250 150)" />
+					<ellipse cx="250" cy="150" rx="170" ry="58" transform="rotate(80 250 150)" />
+					<ellipse cx="250" cy="150" rx="170" ry="58" transform="rotate(140 250 150)" />
+					<path d="M40,330L92,302M92,302L144,340M144,340L186,312M186,312L232,330" />
+				</g>
+				<g class="ghost-fill">
+					<circle cx="250" cy="150" r="7" /><circle cx="107" cy="76" r="5" /><circle cx="246" cy="300" r="5" /><circle cx="241" cy="229" r="5" />
+					<circle cx="40" cy="330" r="3.5" /><circle cx="92" cy="302" r="4.5" /><circle cx="144" cy="340" r="3.5" /><circle cx="186" cy="312" r="3.5" /><circle cx="232" cy="330" r="3.5" />
+				</g>
+			</svg>
+			<svg class="ghost-art ghost-bottom" viewBox="0 0 300 300" focusable="false">
+				<g class="ghost-line">
+					<ellipse cx="110" cy="190" rx="118" ry="40" transform="rotate(-18 110 190)" />
+					<ellipse cx="110" cy="190" rx="118" ry="40" transform="rotate(42 110 190)" />
+					<ellipse cx="110" cy="190" rx="118" ry="40" transform="rotate(102 110 190)" />
+				</g>
+				<g class="ghost-fill"><circle cx="110" cy="190" r="6" /><circle cx="204" cy="187" r="4" /><circle cx="120" cy="78" r="4" /></g>
+			</svg>
+		</div>
+
 		<main class="tm" id="teams"
 			data-endpoint="https://script.google.com/macros/s/AKfycbwLAgxidNtxQiuxIsLQPgdlOuFQRu_1cNSOj1Gs1kQ_O-Vq38CV9XRbViZb1qNrm_xW/exec">
 
-			<!-- Locked: the participant code -->
+			<!-- Locked: the participant code, on a card cut like the participant badge -->
 			<section class="lock" id="lock">
 				<form class="lock-card" id="lock-form" novalidate>
-					<img class="lock-logo" src="images/BreaQ_logo_2026-light.svg" alt="BreaQ 2026" />
-					<p class="eyebrow">BreaQ Hackathon · 24–25 October</p>
-					<h1>Team dashboard</h1>
-					<p class="muted">For the accepted teams of the BreaQ Hackathon: your team, the announcements, the schedule, the challenge resources, a mentor when you are stuck and how to submit. Your personal code is in your acceptance email.</p>
-					<label for="code">Your code</label>
+					<!-- the badge's traces: they come in from the top edge and stop short of the logo -->
+					<svg class="lock-traces" viewBox="0 0 397 112" aria-hidden="true" focusable="false">
+						<path class="tr mid" d="M178.5,-10L178.5,44.35L126.35,96.5L64,96.5" /><circle class="dot" cx="64" cy="96.5" r="2.6" />
+						<path class="tr mid" d="M171.5,-10L171.5,41.45L123.45,89.5L80,89.5" /><circle class="dot" cx="80" cy="89.5" r="2.6" />
+						<path class="tr thick" d="M164.5,-10L164.5,38.55L120.55,82.5L70,82.5" /><circle class="dot" cx="70" cy="82.5" r="3" />
+						<path class="tr thin" d="M157.5,-10L157.5,35.65L117.65,75.5L91.5,75.5" /><circle class="ring" cx="88" cy="75.5" r="3.2" />
+						<path class="tr mid" d="M205,-10L205,53.1L240.9,89L316,89" /><circle class="dot" cx="316" cy="89" r="2.6" />
+						<path class="tr thick" d="M198,-10L198,56L238,96L324.5,96" /><circle class="ring" cx="328" cy="96" r="3.2" />
+						<path class="tr mid" d="M191,-10L191,58.9L235.1,103L306,103" /><circle class="dot" cx="306" cy="103" r="2.6" />
+						<path class="tr thick" d="M407,33.5L301.45,33.5L283.45,51.5L249.5,51.5" /><circle class="ring" cx="246" cy="51.5" r="3.2" />
+						<path class="tr thin" d="M407,26.5L298.55,26.5L280.55,44.5L260,44.5" /><circle class="dot" cx="260" cy="44.5" r="2.2" />
+						<path class="tr mid" d="M-10,20.5L59.45,20.5L77.45,38.5L104,38.5" /><circle class="dot" cx="104" cy="38.5" r="2.6" />
+						<path class="tr mid" d="M-10,27.5L56.55,27.5L74.55,45.5L112,45.5" /><circle class="dot" cx="112" cy="45.5" r="2.6" />
+					</svg>
+					<img class="lock-logo" src="images/brand/breaq-horizontal.svg" alt="BreaQ" width="180" height="78" />
+					<p class="chip is-outline">Team dashboard</p>
+					<h1>Your hackathon, in one place.</h1>
+					<p class="lead">For the accepted teams of the BreaQ Hackathon: your team, the announcements, the schedule, the challenge resources, a mentor when you are stuck and how to submit. Your personal code is in your acceptance email.</p>
+					<label class="label" for="code"><svg class="ic" aria-hidden="true"><use href="#i-lock" /></svg>Your code</label>
 					<input type="text" id="code" name="code" placeholder="ABCD-EFGH" autocomplete="off" autocapitalize="characters" spellcheck="false" required />
 					<label class="check"><input type="checkbox" id="remember" checked /> Remember on this device</label>
 					<p class="err" id="lock-err" role="alert" hidden></p>
 					<button type="submit" class="btn primary" id="lock-btn">Open</button>
-					<p class="muted small">No code? The dashboard opens for accepted participants only; everything public is on <a href="breaq-hackathon.html">the hackathon page</a>. Organisers: the admin key opens it.</p>
+					<p class="fine">No code? The dashboard opens for accepted participants only; everything public is on <a href="breaq-hackathon.html">the hackathon page</a>. Organisers: the admin key opens it.</p>
 				</form>
 			</section>
 
@@ -49,31 +115,42 @@
 			<section class="dash" id="dash" hidden>
 
 				<header class="top">
-					<div>
-						<p class="eyebrow">BreaQ Hackathon · 24–25 October</p>
-						<h1>Team dashboard</h1>
-						<p class="who" id="who"></p>
-					</div>
+					<a class="brand" href="breaq-hackathon.html"><img src="images/brand/breaq-horizontal.svg" alt="BreaQ" width="92" height="40" /></a>
+					<span class="vrule" aria-hidden="true"></span>
+					<p class="kicker">Hackathon · 24–25 October</p>
 					<div class="top-actions">
 						<span class="meta" id="meta" aria-live="polite"></span>
-						<button type="button" class="btn small ghost notify" id="notify" aria-pressed="false" hidden><span class="icon solid fa-bell" aria-hidden="true"></span><span class="notify-label">Notify me</span></button>
-						<button type="button" class="btn small" id="refresh">Refresh</button>
-						<a class="btn small ghost" href="breaq-hackathon.html">Hackathon page</a>
-						<button type="button" class="btn small ghost" id="lock-now">Sign out</button>
+						<button type="button" class="btn small ghost notify" id="notify" aria-pressed="false" hidden><svg class="ic" aria-hidden="true"><use href="#i-bell" /></svg><span class="notify-label">Notify me</span></button>
+						<button type="button" class="btn small ghost" id="refresh"><svg class="ic" aria-hidden="true"><use href="#i-refresh" /></svg><span class="btn-label">Refresh</span></button>
+						<a class="btn small ghost" href="breaq-hackathon.html"><svg class="ic" aria-hidden="true"><use href="#i-external" /></svg>Hackathon page</a>
+						<button type="button" class="btn small ghost" id="lock-now"><svg class="ic" aria-hidden="true"><use href="#i-logout" /></svg>Sign out</button>
 					</div>
 				</header>
 
 				<p class="err" id="dash-err" role="alert" hidden></p>
 
-				<!-- where the hackathon is: now, next, and the countdown that matters -->
-				<section class="live" id="live" aria-label="Now"></section>
+				<!-- who is signed in, then where the hackathon is: now, next, and the countdown that matters -->
+				<section class="hero" aria-labelledby="hello">
+					<svg class="hero-traces" viewBox="0 0 520 170" aria-hidden="true" focusable="false">
+						<path class="tr" d="M540,30L400,30L350,80L300,80" /><circle class="dot" cx="300" cy="80" r="3.6" />
+						<path class="tr" d="M540,42L405,42L355,92L250,92" /><circle class="dot" cx="250" cy="92" r="3.6" />
+						<path class="tr" d="M540,54L410,54L360,104L282,104" /><circle class="dot" cx="282" cy="104" r="3.6" />
+						<path class="tr" d="M540,66L415,66L365,116L232,116" /><circle class="dot" cx="232" cy="116" r="3.6" />
+						<path class="tr" d="M540,78L420,78L370,128L266,128" /><circle class="dot" cx="266" cy="128" r="3.6" />
+						<path class="tr" d="M540,90L425,90L375,140L214,140" /><circle class="dot" cx="214" cy="140" r="3.6" />
+					</svg>
+					<p class="kicker">Team dashboard</p>
+					<h1 class="hello" id="hello">Team dashboard.</h1>
+					<p class="who" id="who"></p>
+					<div class="live" id="live" aria-label="Now"></div>
+				</section>
 
 				<!-- yours: what is up to you now ("are you coming?" before the day, "ask a mentor" during it, the feedback
 				     after) and your team, side by side on a wide screen -->
 				<div class="mine" id="mine" hidden>
 					<section class="act" id="act" aria-live="polite" hidden></section>
 					<section class="panel team-panel" id="team-panel" aria-labelledby="team-h" hidden>
-						<h2 id="team-h"><span class="icon solid fa-users" aria-hidden="true"></span>Your team</h2>
+						<h2 id="team-h"><svg class="ic" aria-hidden="true"><use href="#i-users" /></svg>Your team</h2>
 						<div id="team"></div>
 					</section>
 				</div>
@@ -83,53 +160,60 @@
 
 					<div class="board-main">
 
-					<section class="panel ann-panel" aria-labelledby="ann-h">
-						<div class="panel-head">
-							<h2 id="ann-h"><span class="icon solid fa-bullhorn" aria-hidden="true"></span>Announcements <span class="count" id="ann-count"></span></h2>
-						</div>
-						<div id="ann" aria-live="polite"></div>
-					</section>
+						<section class="panel ann-panel" aria-labelledby="ann-h">
+							<h2 id="ann-h"><svg class="ic" aria-hidden="true"><use href="#i-megaphone" /></svg>Announcements <span class="count" id="ann-count"></span></h2>
+							<div id="ann" aria-live="polite"></div>
+						</section>
 
-					<section class="panel check-panel" aria-labelledby="check-h">
-						<div class="panel-head">
-							<h2 id="check-h"><span class="icon solid fa-tasks" aria-hidden="true"></span>Before you come <span class="count" id="check-count"></span></h2>
-						</div>
-						<div id="check"></div>
-					</section>
+						<!-- the checklist and the resources: the teams see them from Friday 09:00 (PREP_FROM in teams.js), a day to
+						     get ready; the organisers always -->
+						<section class="panel check-panel" id="check-panel" aria-labelledby="check-h">
+							<h2 id="check-h"><svg class="ic" aria-hidden="true"><use href="#i-list-checks" /></svg>Before you come <span class="count" id="check-count"></span></h2>
+							<div id="check"></div>
+						</section>
 
-					<section class="panel res-panel" aria-labelledby="res-h">
-						<h2 id="res-h"><span class="icon solid fa-toolbox" aria-hidden="true"></span>Challenge resources</h2>
-						<div id="res"></div>
-					</section>
+						<section class="panel res-panel" id="res-panel" aria-labelledby="res-h">
+							<h2 id="res-h"><svg class="ic" aria-hidden="true"><use href="#i-package" /></svg>Challenge resources</h2>
+							<div id="res"></div>
+						</section>
 
 					</div>
 
 					<div class="board-side">
 
-					<section class="panel sub-panel" aria-labelledby="sub-h">
-						<h2 id="sub-h"><span class="icon solid fa-flag-checkered" aria-hidden="true"></span>Submission</h2>
-						<div id="sub"></div>
-					</section>
+						<!-- the teams see it from Sunday 00:00 (SUBMIT_FROM in teams.js); the organisers always -->
+						<section class="panel sub-panel" id="sub-panel" aria-labelledby="sub-h">
+							<h2 id="sub-h"><svg class="ic" aria-hidden="true"><use href="#i-flag" /></svg>Submission</h2>
+							<div id="sub"></div>
+							<div class="handin" id="handin" aria-live="polite"></div>
+						</section>
 
-					<section class="panel prac-panel" aria-labelledby="prac-h">
-						<h2 id="prac-h"><span class="icon solid fa-info-circle" aria-hidden="true"></span>Practical info</h2>
-						<div id="prac"></div>
-					</section>
+						<section class="panel sched-panel" aria-labelledby="sched-h">
+							<h2 id="sched-h"><svg class="ic" aria-hidden="true"><use href="#i-clock" /></svg>Schedule <span class="count">Bucharest time</span></h2>
+							<div id="sched"></div>
+						</section>
 
-					<section class="panel sched-panel" aria-labelledby="sched-h">
-						<h2 id="sched-h"><span class="icon solid fa-clock" aria-hidden="true"></span>Schedule <span class="count">Bucharest time</span></h2>
-						<div id="sched"></div>
-					</section>
+						<section class="panel prac-panel" aria-labelledby="prac-h">
+							<h2 id="prac-h"><svg class="ic" aria-hidden="true"><use href="#i-info" /></svg>Practical info</h2>
+							<div id="prac"></div>
+						</section>
 
 					</div>
 
 				</div>
+
+				<footer class="foot">
+					<span class="foot-brand"><img src="images/brand/roqteam.svg" alt="" width="28" height="28" />RoQTeam</span>
+					<a href="index.html">roqteam.ro</a>
+				</footer>
 
 			</section>
 
 		</main>
 
 		<script src="assets/js/notify.js?v=20261010"></script>
-		<script src="assets/js/teams.js?v=20261014"></script>
+		<script src="assets/js/schedule.js?v=20261017"></script>
+		<script src="assets/js/qr.js?v=20261017"></script>
+		<script src="assets/js/teams.js?v=20261017g"></script>
 	</body>
 </html>

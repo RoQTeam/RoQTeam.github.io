@@ -1,0 +1,480 @@
+/*
+	BreaQ Hackathon: the check-in at the door (door.html), on top of team-board.css (the design system's tokens,
+	fonts, chips and buttons). Made for a phone held at the door, like an app: one screen, nothing to scroll, the
+	camera across it, the iPhone's notch and home bar left clear (the safe areas).
+*/
+
+html,
+body.is-door {
+	height: 100%;
+	overflow: hidden;
+	overscroll-behavior: none;
+	-webkit-user-select: none;
+	user-select: none;
+	-webkit-tap-highlight-color: transparent;
+}
+
+.is-door {
+	background: linear-gradient(to bottom, var(--navy-700) 0%, var(--navy-950) 70%);
+}
+
+.door {
+	position: fixed;
+	inset: 0;
+}
+
+	.door input {
+		-webkit-user-select: text;
+		user-select: text;
+	}
+
+/* the key and the start: a card in the middle */
+.door-screen {
+	position: absolute;
+	inset: 0;
+	display: grid;
+	place-items: center;
+	padding: calc(env(safe-area-inset-top) + 24px) 22px calc(env(safe-area-inset-bottom) + 24px) 22px;
+	overflow-y: auto;
+}
+
+.door-card {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 14px;
+	width: 100%;
+	max-width: 400px;
+	text-align: center;
+}
+
+	.door-logo {
+		width: 150px;
+		height: auto;
+		margin-bottom: 6px;
+	}
+
+	.door-card .chip {
+		--fill: var(--navy-800);
+	}
+
+	.door-card h1 {
+		margin-top: 6px;
+		font-size: 2.1rem;
+		line-height: 0.95;
+		letter-spacing: -0.03em;
+	}
+
+	.door-lead,
+	.door-fine {
+		color: var(--frost);
+		font-size: 0.95rem;
+		font-weight: 600;
+	}
+
+	.door-fine {
+		margin-top: 8px;
+		color: var(--mist);
+		font-size: 0.8rem;
+	}
+
+	.door-count {
+		color: var(--gold);
+		font-size: 1.1rem;
+		font-weight: 800;
+		letter-spacing: 0.02em;
+	}
+
+	.door-card input[type="text"] {
+		--c: var(--chamfer-chip);
+		min-height: 56px;
+		margin-top: 6px;
+		font-size: 1.1rem;
+		text-align: center;
+	}
+
+	.door-card .btn {
+		width: 100%;
+	}
+
+	.door-go {
+		min-height: 64px;
+		margin-top: 12px;
+		font-size: 1.1rem;
+	}
+
+/* scanning: the camera across the screen */
+.cam {
+	position: absolute;
+	inset: 0;
+	background: #000;
+}
+
+	.cam video {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+
+	/* navy at the top and the bottom, for the bars; the middle clear */
+	.cam-shade {
+		position: absolute;
+		inset: 0;
+		background:
+			linear-gradient(to bottom, rgba(6, 26, 64, 0.85) 0%, rgba(6, 26, 64, 0) 22%, rgba(6, 26, 64, 0) 70%, rgba(6, 26, 64, 0.9) 100%);
+		pointer-events: none;
+	}
+
+	.cam-top {
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		padding: calc(env(safe-area-inset-top) + 14px) 18px 14px 18px;
+	}
+
+		.cam-top img {
+			height: 30px;
+			width: auto;
+		}
+
+		.cam-kicker {
+			color: var(--frost);
+			font-size: 0.7rem;
+			font-weight: 700;
+			letter-spacing: 0.22em;
+			text-transform: uppercase;
+		}
+
+		.cam-count {
+			margin-left: auto;
+			color: var(--gold);
+			font-size: 0.95rem;
+			font-weight: 800;
+			font-variant-numeric: lining-nums tabular-nums;
+			white-space: nowrap;
+		}
+
+	/* the viewfinder: four gold corners and a line of light going up and down */
+	.finder {
+		position: absolute;
+		left: 50%;
+		top: 46%;
+		width: min(68vw, 46vh, 340px);
+		aspect-ratio: 1 / 1;
+		transform: translate(-50%, -50%);
+	}
+
+		.finder i {
+			position: absolute;
+			width: 22%;
+			height: 22%;
+			border: 0 solid var(--gold);
+		}
+
+			.finder i:nth-child(1) { top: 0; left: 0; border-top-width: 4px; border-left-width: 4px; border-top-left-radius: 14px; }
+			.finder i:nth-child(2) { top: 0; right: 0; border-top-width: 4px; border-right-width: 4px; border-top-right-radius: 14px; }
+			.finder i:nth-child(3) { bottom: 0; right: 0; border-bottom-width: 4px; border-right-width: 4px; border-bottom-right-radius: 14px; }
+			.finder i:nth-child(4) { bottom: 0; left: 0; border-bottom-width: 4px; border-left-width: 4px; border-bottom-left-radius: 14px; }
+
+		@keyframes finder-sweep {
+			0%, 100% { top: 8%; }
+			50%      { top: 92%; }
+		}
+
+		.finder-line {
+			position: absolute;
+			left: 8%;
+			right: 8%;
+			top: 8%;
+			height: 2px;
+			border-radius: 2px;
+			background: linear-gradient(90deg, transparent, var(--gold), transparent);
+			animation: finder-sweep 2.4s ease-in-out infinite;
+		}
+
+	.cam-hint {
+		position: absolute;
+		left: 0;
+		right: 0;
+		top: calc(46% + min(34vw, 23vh, 170px) + 22px);
+		color: var(--white);
+		font-size: 1rem;
+		font-weight: 700;
+		text-align: center;
+		text-shadow: 0 1px 8px rgba(6, 26, 64, 0.9);
+	}
+
+	.cam-bottom {
+		position: absolute;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		display: flex;
+		gap: 10px;
+		padding: 14px 18px calc(env(safe-area-inset-bottom) + 18px) 18px;
+	}
+
+		.cam-bottom .btn {
+			flex: 1;
+			min-height: 54px;
+			border-color: rgba(255, 255, 255, 0.45);
+			background: rgba(6, 26, 64, 0.55);
+			color: var(--white);
+			-webkit-backdrop-filter: blur(8px);
+			backdrop-filter: blur(8px);
+		}
+
+/* a sheet over everything: the result of a pass, or the search */
+.sheet {
+	position: absolute;
+	inset: 0;
+	z-index: 5;
+	display: flex;
+	flex-direction: column;
+	padding: calc(env(safe-area-inset-top) + 24px) 22px calc(env(safe-area-inset-bottom) + 22px) 22px;
+	background: linear-gradient(to bottom, var(--navy-700) 0%, var(--navy-950) 75%);
+	animation: sheet-in 0.22s ease-out;
+}
+
+	@keyframes sheet-in {
+		from { opacity: 0; transform: translateY(24px); }
+		to   { opacity: 1; transform: none; }
+	}
+
+/* the result: a ring, who, their team and what to hand them */
+.result-body {
+	display: flex;
+	flex: 1;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 14px;
+	text-align: center;
+}
+
+	.result-ring {
+		display: grid;
+		place-items: center;
+		width: 112px;
+		height: 112px;
+		margin-bottom: 10px;
+		border-radius: 50%;
+		background: var(--gold);
+	}
+
+		.result-ring .ic {
+			width: 58px;
+			height: 58px;
+			stroke: var(--navy-950);
+			stroke-width: 3;
+		}
+
+	.result-kicker {
+		color: var(--gold);
+		font-size: 0.8rem;
+		font-weight: 800;
+		letter-spacing: 0.24em;
+		text-transform: uppercase;
+	}
+
+	.result-name {
+		max-width: 12ch;
+		font-size: clamp(2.4rem, 11vw, 3.6rem);
+		line-height: 0.92;
+		letter-spacing: -0.035em;
+		overflow-wrap: anywhere;
+	}
+
+	.result-team {
+		color: var(--frost);
+		font-size: 1.25rem;
+		font-weight: 700;
+	}
+
+	.result-facts {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+		gap: 8px;
+	}
+
+		.result-facts .tag {
+			font-size: 0.78rem;
+			min-height: 30px;
+		}
+
+	.result-note {
+		color: var(--mist);
+		font-size: 1rem;
+		font-weight: 600;
+		max-width: 26em;
+	}
+
+	/* here already: calm, in mist */
+	.result.is-again .result-ring {
+		background: transparent;
+		box-shadow: inset 0 0 0 4px var(--mist);
+	}
+
+		.result.is-again .result-ring .ic {
+			stroke: var(--mist);
+		}
+
+		.result.is-again .result-kicker {
+			color: var(--mist);
+		}
+
+	/* a problem: red, the only place it is */
+	.result.is-bad {
+		background: linear-gradient(to bottom, #5a1a2a 0%, var(--navy-950) 75%);
+	}
+
+		.result.is-bad .result-ring {
+			background: var(--bad);
+		}
+
+		.result.is-bad .result-kicker {
+			color: var(--bad);
+		}
+
+.result-actions {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+	.result-actions .btn {
+		min-height: 58px;
+		font-size: 1.05rem;
+	}
+
+/* a check-in's sheet goes by itself: a gold line running out at the bottom */
+.result-timer {
+	position: absolute;
+	left: 0;
+	bottom: 0;
+	height: 4px;
+	width: 0;
+	background: var(--gold);
+}
+
+	@keyframes result-run {
+		from { width: 100%; }
+		to   { width: 0; }
+	}
+
+	.result-timer.is-running {
+		animation: result-run 2.6s linear forwards;
+	}
+
+/* by hand */
+.find-sheet {
+	gap: 14px;
+}
+
+	.find-head {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
+
+		.find-head h2 {
+			font-size: 1.6rem;
+			letter-spacing: -0.02em;
+		}
+
+	.find-sheet input[type="search"] {
+		--c: var(--chamfer-chip);
+		--edge: var(--gold);
+		--fill: rgba(6, 26, 64, 0.6);
+		--edge-w: 1.5px;
+		width: 100%;
+		min-height: 56px;
+		padding: 0 16px;
+		border: var(--edge-w) solid var(--edge);
+		clip-path: polygon(var(--c) 0, calc(100% - var(--c)) 0, 100% var(--c), 100% calc(100% - var(--c)), calc(100% - var(--c)) 100%, var(--c) 100%, 0 calc(100% - var(--c)), 0 var(--c));
+		background:
+			linear-gradient(135deg, var(--edge) calc(50% + var(--edge-w)), transparent 0) left top / var(--c) var(--c) no-repeat border-box,
+			linear-gradient(225deg, var(--edge) calc(50% + var(--edge-w)), transparent 0) right top / var(--c) var(--c) no-repeat border-box,
+			linear-gradient(315deg, var(--edge) calc(50% + var(--edge-w)), transparent 0) right bottom / var(--c) var(--c) no-repeat border-box,
+			linear-gradient(45deg, var(--edge) calc(50% + var(--edge-w)), transparent 0) left bottom / var(--c) var(--c) no-repeat border-box,
+			var(--fill);
+		color: var(--white);
+		font-family: inherit;
+		font-size: 1.1rem;
+		font-weight: 600;
+		outline: 0;
+		-webkit-appearance: none;
+		appearance: none;
+	}
+
+	.find-list {
+		flex: 1;
+		margin: 0;
+		padding: 0;
+		overflow-y: auto;
+		list-style: none;
+		-webkit-overflow-scrolling: touch;
+	}
+
+		.find-row {
+			display: flex;
+			align-items: center;
+			gap: 12px;
+			padding: 14px 2px;
+			border-bottom: 1.5px solid var(--soft-line);
+		}
+
+			.find-row.is-in {
+				opacity: 0.6;
+			}
+
+		.find-main {
+			flex: 1;
+			min-width: 0;
+		}
+
+		.find-name {
+			color: var(--white);
+			font-size: 1.05rem;
+			font-weight: 800;
+			overflow-wrap: anywhere;
+		}
+
+		.find-sub {
+			color: var(--mist);
+			font-size: 0.85rem;
+			font-weight: 600;
+		}
+
+		.find-at {
+			color: var(--mist);
+			font-size: 0.8rem;
+			font-weight: 700;
+			white-space: nowrap;
+		}
+
+		.find-row .btn {
+			min-height: 44px;
+		}
+
+		.find-empty {
+			padding: 20px 2px;
+			color: var(--mist);
+			font-weight: 600;
+		}
+
+@media (prefers-reduced-motion: reduce) {
+
+	.finder-line,
+	.sheet {
+		animation: none;
+	}
+
+}

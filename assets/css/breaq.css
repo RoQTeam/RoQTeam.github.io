@@ -1423,6 +1423,412 @@
 	}
 
 /* ------------------------------------------------------------------ */
+/* Prizes (breaq-hackathon.html): a seal on the hero logo, then the    */
+/* pool counted up beside a podium                                      */
+/* ------------------------------------------------------------------ */
+
+	/* the seal: an orange coin with the pool, its words turning round it. The logo gives it room: a little smaller,
+	   in the top left of its box, the seal in the bottom right */
+	.ch-hero-art {
+		position: relative;
+	}
+
+		.ch-hero-art.has-seal img {
+			width: 76%;
+		}
+
+	@keyframes prize-turn {
+		to { transform: rotate(360deg); }
+	}
+
+	@keyframes prize-pop {
+		from { opacity: 0; transform: scale(0.4) rotate(-40deg); }
+		70%  { opacity: 1; transform: scale(1.08) rotate(6deg); }
+		to   { opacity: 1; transform: none; }
+	}
+
+	#wrapper a.prize-seal {
+		position: absolute;
+		right: -12%;
+		bottom: -8%;
+		width: 44%;
+		aspect-ratio: 1 / 1;
+		border: 0;
+		border-radius: 50%;
+		color: #ffffff;
+		text-align: center;
+		transition: transform 0.45s var(--bq-ease-out);
+	}
+
+		#wrapper a.prize-seal:hover {
+			transform: scale(1.07) rotate(-4deg);
+		}
+
+		#wrapper a.prize-seal:focus-visible {
+			outline: 2px solid var(--bq-hot);
+			outline-offset: 4px;
+		}
+
+		.prize-seal-ring {
+			position: absolute;
+			inset: 0;
+			width: 100%;
+			height: 100%;
+			overflow: visible;
+			animation: prize-turn 22s linear infinite;
+		}
+
+			.prize-seal-ring text {
+				font-family: Raleway, Helvetica, sans-serif;
+				font-size: 9.5px;
+				font-weight: 800;
+				letter-spacing: 0.12em;
+				fill: var(--bq-hot);
+			}
+
+		/* the coin: lit from the top left, with a glow under it */
+		.prize-seal-core {
+			position: absolute;
+			inset: 19%;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			gap: 0.15em;
+			border-radius: 50%;
+			background:
+				radial-gradient(circle at 32% 26%, rgba(255, 255, 255, 0.55), transparent 42%),
+				radial-gradient(circle at 50% 50%, #ffae3d 0%, #ff8c00 58%, #c96500 100%);
+			box-shadow: 0 0 0 3px rgba(46, 49, 65, 0.9), 0 0 0 4.5px rgba(255, 140, 0, 0.7), 0 12px 34px rgba(255, 140, 0, 0.45);
+			color: #1f2130;
+		}
+
+			.prize-seal-core b {
+				font-family: Raleway, Helvetica, sans-serif;
+				font-size: 1.15em;
+				font-weight: 800;
+				font-variant-numeric: lining-nums;
+				line-height: 1;
+				letter-spacing: 0.02em;
+			}
+
+			.prize-seal-core span {
+				font-family: Raleway, Helvetica, sans-serif;
+				font-size: 0.42em;
+				font-weight: 800;
+				letter-spacing: 0.16em;
+				line-height: 1.2;
+				text-transform: uppercase;
+			}
+
+	.page-motion a.prize-seal {
+		animation: prize-pop 0.9s var(--bq-ease-out) 1.25s both;
+	}
+
+	/* the section: the pool on the left, the podium on the right, on a card lit from below */
+	.prize {
+		position: relative;
+		display: grid;
+		grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+		align-items: center;
+		gap: 2.5em;
+		margin: 0 0 2em 0;
+		padding: 2.25em 2.5em 2em 2.5em;
+		border: 1px solid var(--bq-line);
+		border-radius: 8px;
+		overflow: hidden;
+		background:
+			radial-gradient(ellipse 55% 75% at 78% 105%, rgba(255, 140, 0, 0.2), transparent 70%),
+			radial-gradient(ellipse 45% 60% at 0% 0%, rgba(76, 92, 150, 0.35), transparent 70%),
+			rgba(255, 255, 255, 0.025);
+	}
+
+		.prize, .prize * {
+			text-align: left;
+		}
+
+		.prize p {
+			margin: 0;
+		}
+
+		.prize-k {
+			display: flex;
+			align-items: center;
+			gap: 0.8em;
+			font-family: Raleway, Helvetica, sans-serif;
+			font-size: 0.6em;
+			font-weight: 700;
+			letter-spacing: 0.25em;
+			text-transform: uppercase;
+			color: var(--bq-hot);
+		}
+
+		/* the sum: white into gold into orange, with a glow */
+		.prize-sum {
+			display: flex;
+			align-items: baseline;
+			flex-wrap: wrap;
+			gap: 0 0.3em;
+			margin: 0.15em 0 0.35em 0 !important;
+			font-family: Raleway, Helvetica, sans-serif;
+			font-weight: 800;
+			line-height: 1;
+		}
+
+			.prize-n {
+				font-size: clamp(3.4em, 8.5vw, 5.4em);
+				font-variant-numeric: lining-nums tabular-nums;
+				letter-spacing: -0.01em;
+				background: linear-gradient(100deg, #ffffff 0%, #ffe0b0 38%, #ffae3d 66%, #ff8c00 100%);
+				-webkit-background-clip: text;
+				background-clip: text;
+				color: transparent;
+				filter: drop-shadow(0 0 22px rgba(255, 140, 0, 0.35));
+			}
+
+			.prize-cur {
+				font-size: 1.35em;
+				letter-spacing: 0.2em;
+				color: var(--bq-hot);
+			}
+
+		.prize-sr {
+			position: absolute;
+			width: 1px;
+			height: 1px;
+			overflow: hidden;
+			clip: rect(0 0 0 0);
+			clip-path: inset(50%);
+			white-space: nowrap;
+		}
+
+		.prize-line {
+			max-width: 30em;
+			font-size: 0.95em;
+			line-height: 1.6;
+			color: #ffffff;
+		}
+
+		.prize-tracks {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 0.5em;
+			margin: 1.4em 0 0 0;
+			padding: 0;
+			list-style: none;
+		}
+
+			.prize-tracks li {
+				display: inline-flex;
+				align-items: center;
+				gap: 0.55em;
+				margin: 0;
+				padding: 0.45em 0.9em 0.4em 0.75em;
+				border: 1px solid var(--bq-line);
+				border-radius: 999px;
+				background: rgba(255, 255, 255, 0.03);
+				font-size: 0.72em;
+				letter-spacing: 0.04em;
+				line-height: 1.2;
+			}
+
+				.prize-tracks li::before {
+					content: "";
+					width: 0.5em;
+					height: 0.5em;
+					border-radius: 50%;
+					background: var(--bq-hot);
+					box-shadow: 0 0 8px rgba(255, 140, 0, 0.8);
+				}
+
+	/* the podium: 2, 1, 3, standing on a line of light */
+	.podium {
+		position: relative;
+		padding-top: 2.4em;
+	}
+
+		.podium-stage {
+			position: relative;
+			display: grid;
+			grid-template-columns: repeat(3, minmax(0, 1fr));
+			align-items: end;
+			gap: 0.55em;
+			height: 13em;
+		}
+
+			.podium-stage::after {
+				content: "";
+				position: absolute;
+				left: -8%;
+				right: -8%;
+				bottom: -1px;
+				height: 2px;
+				background: linear-gradient(90deg, transparent, var(--bq-hot) 20%, #ffd08a 50%, var(--bq-hot) 80%, transparent);
+				box-shadow: 0 0 18px rgba(255, 140, 0, 0.7);
+			}
+
+		.pod {
+			position: relative;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			gap: 0.35em;
+			padding-top: 0.75em;
+			border: 1px solid rgba(255, 140, 0, 0.32);
+			border-bottom: 0;
+			border-radius: 6px 6px 0 0;
+			background: linear-gradient(180deg, rgba(255, 140, 0, 0.26), rgba(255, 140, 0, 0.03) 88%);
+			overflow: visible;
+			transform-origin: bottom;
+		}
+
+			.pod-1 { height: 100%; }
+			.pod-2 { height: 74%; }
+			.pod-3 { height: 56%; }
+
+			.pod b {
+				font-family: Raleway, Helvetica, sans-serif;
+				font-size: 2.6em;
+				font-weight: 800;
+				font-variant-numeric: lining-nums;
+				line-height: 1;
+				color: #ffffff;
+			}
+
+			.pod span:not(.pod-cup) {
+				font-family: Raleway, Helvetica, sans-serif;
+				font-size: 0.55em;
+				font-weight: 700;
+				letter-spacing: 0.25em;
+				text-transform: uppercase;
+				color: var(--bq-fg-light);
+			}
+
+			/* first place: brighter, in gold, with the cup above it and light passing over it */
+			.pod-1 {
+				border-color: rgba(255, 174, 61, 0.75);
+				background: linear-gradient(180deg, rgba(255, 174, 61, 0.42), rgba(255, 140, 0, 0.05) 90%);
+				box-shadow: 0 -10px 40px rgba(255, 140, 0, 0.22);
+			}
+
+				.pod-1 b {
+					font-size: 3.4em;
+					background: linear-gradient(180deg, #ffffff, #ffc56b);
+					-webkit-background-clip: text;
+					background-clip: text;
+					color: transparent;
+				}
+
+				/* a band of light crossing it, drawn by its background so it stays inside the block (the cup does not) */
+				@keyframes prize-shine {
+					from { background-position: 160% 0; }
+					to   { background-position: -60% 0; }
+				}
+
+				.pod-1::after {
+					content: "";
+					position: absolute;
+					inset: 0;
+					border-radius: inherit;
+					background: linear-gradient(105deg, transparent 42%, rgba(255, 255, 255, 0.18) 50%, transparent 58%) no-repeat;
+					background-size: 250% 100%;
+					background-position: 160% 0;
+					animation: prize-shine 3.6s var(--bq-ease-inout) 2s infinite;
+					pointer-events: none;
+				}
+
+			@keyframes prize-float {
+				0%, 100% { transform: translate(-50%, 0); }
+				50%      { transform: translate(-50%, -5px); }
+			}
+
+			.pod-cup {
+				position: absolute;
+				left: 50%;
+				top: -2.1em;
+				font-size: 1.5em;
+				color: #ffae3d;
+				filter: drop-shadow(0 0 12px rgba(255, 140, 0, 0.8));
+				transform: translate(-50%, 0);
+				animation: prize-float 3.2s ease-in-out infinite;
+			}
+
+		.podium-x {
+			margin-top: 0.9em !important;
+			font-family: Raleway, Helvetica, sans-serif;
+			font-size: 0.6em;
+			font-weight: 700;
+			letter-spacing: 0.25em;
+			text-align: center !important;
+			text-transform: uppercase;
+			color: var(--bq-hot);
+		}
+
+	/* the entrance (breaq.js arms it, then sets is-in once in view): the blocks rise 3, 2, 1, the cup lands last */
+	.prize.is-armed .pod {
+		transform: scaleY(0);
+		transition: transform 0.9s var(--bq-ease-out);
+	}
+
+		.prize.is-armed .pod-3 { transition-delay: 0.1s; }
+		.prize.is-armed .pod-2 { transition-delay: 0.3s; }
+		.prize.is-armed .pod-1 { transition-delay: 0.5s; }
+
+		.prize.is-armed .pod > * {
+			opacity: 0;
+			transition: opacity 0.5s var(--bq-ease-out) 1.1s;
+		}
+
+		.prize.is-armed.is-in .pod {
+			transform: none;
+		}
+
+		.prize.is-armed.is-in .pod > * {
+			opacity: 1;
+		}
+
+	@media screen and (max-width: 980px) {
+
+		/* the logo goes above the text, small and whole: the seal beside it */
+		.ch-hero-art.has-seal img {
+			width: 100%;
+		}
+
+		#wrapper a.prize-seal {
+			left: calc(100% - 1.25em);
+			right: auto;
+			bottom: 2%;
+			width: 7em;
+		}
+
+	}
+
+	@media screen and (max-width: 736px) {
+
+		.prize {
+			grid-template-columns: minmax(0, 1fr);
+			gap: 1.75em;
+			padding: 1.75em 1.5em 1.5em 1.5em;
+		}
+
+			.podium-stage {
+				height: 10.5em;
+			}
+
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+
+		.prize-seal-ring,
+		.pod-1::after,
+		.pod-cup,
+		.page-motion a.prize-seal {
+			animation: none;
+		}
+
+	}
+
+/* ------------------------------------------------------------------ */
 /* About: the event at a glance                                        */
 /* ------------------------------------------------------------------ */
 

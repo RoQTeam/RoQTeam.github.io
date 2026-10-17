@@ -910,4 +910,34 @@
 		window.addEventListener('pagehide', stopAuto);
 	});
 
+
+	/* ------------------------------------------------------------ */
+	/* Prizes (hackathon page): the podium rises, the sum counts up  */
+	/* ------------------------------------------------------------ */
+
+	// Without motion (or the observer) it stays as written: 3,000 and the podium standing.
+	forEach(document.querySelectorAll('[data-prize]'), function (box) {
+		if (reduceMotion || !('IntersectionObserver' in window)) return;
+		var n = box.querySelector('[data-count-to]');
+		box.classList.add('is-armed');
+		var io = new IntersectionObserver(function (entries) {
+			if (!entries[0].isIntersecting) return;
+			io.disconnect();
+			box.classList.add('is-in');
+			if (!n) return;
+			var to = Number(n.getAttribute('data-count-to')) || 0;
+			var ms = 1700, start = null;
+			n.style.minWidth = n.offsetWidth + 'px';   // RON stays put while the digits grow
+			n.textContent = '0';
+			window.requestAnimationFrame(function step(t) {
+				if (start === null) start = t;
+				var k = Math.min(1, (t - start) / ms);
+				n.textContent = Math.round(to * (1 - Math.pow(1 - k, 3))).toLocaleString('en-US');
+				if (k < 1) window.requestAnimationFrame(step);
+				else n.style.minWidth = '';
+			});
+		}, { threshold: 0.35 });
+		io.observe(box);
+	});
+
 })();

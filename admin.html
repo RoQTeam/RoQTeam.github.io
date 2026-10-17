@@ -10,7 +10,7 @@
 		     (script.google.com answers through a redirect to script.googleusercontent.com) -->
 		<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src https://script.google.com https://script.googleusercontent.com; frame-src blob:; base-uri 'none'; form-action 'none'" />
 		<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Raleway:700|Source+Sans+Pro:300,400,600&amp;display=swap" />
-		<link rel="stylesheet" href="assets/css/admin.css?v=20261017a" />
+		<link rel="stylesheet" href="assets/css/admin.css?v=20261017d" />
 		<link rel="icon" type="image/png" href="images/favicon-2026.png">
 	</head>
 	<body>
@@ -164,7 +164,7 @@
 
 				</div>
 
-				<!-- The hackathon's teams: who is in which (the "Hackathon team" column), each team's challenge, table, pitch
+				<!-- The hackathon's teams: who is in which (the "Hackathon team" column), each team's challenge, pitch
 				     and place (the sheet's "Teams" tab), and who said they are coming (the "Coming" column, answered on
 				     the team dashboard). The "team-save", "team-delete" and "team-assign" actions of the Apps Script. -->
 				<div class="view" id="view-teams" hidden>
@@ -184,7 +184,7 @@
 									<button type="button" class="btn small primary" id="team-new">New team</button>
 								</div>
 							</div>
-							<p class="muted teams-help">Each participant sees their team on the dashboard: its name, challenge, table, teammates and pitch time. <b>Make teams from the registrations</b> puts the accepted people who registered together into a team each. The place (1st, 2nd, 3rd in its challenge) goes on the certificates, and the team sees it after the awards.</p>
+							<p class="muted teams-help">Each participant sees their team on the dashboard: its name, challenge, teammates and pitch time. <b>Make teams from the registrations</b> puts the accepted people who registered together into a team each. The place (1st, 2nd, 3rd in its challenge) goes on the certificates, and the team sees it after the awards.</p>
 							<div class="tgrid" id="teams-list"></div>
 						</section>
 
@@ -207,11 +207,24 @@
 
 					<section class="panel" aria-label="Check-in">
 						<div class="checkin-bar">
-							<input type="search" id="checkin-search" placeholder="Name, email or team…" aria-label="Find someone" autocomplete="off" spellcheck="false" />
+							<input type="search" id="checkin-search" placeholder="Name, email, team or code…" aria-label="Find someone" autocomplete="off" spellcheck="false" />
+							<button type="button" class="btn small primary" id="scan-open">Scan passes</button>
+							<a class="btn small ghost" href="door.html" target="_blank" rel="noopener" title="The check-in as an app, for a phone at the door: roqteam.ro/door">On a phone: roqteam.ro/door</a>
 							<div class="seg" role="group" aria-label="Who" id="checkin-filter">
 								<button type="button" data-f="out" aria-pressed="true">Not here yet <span class="n"></span></button>
 								<button type="button" data-f="in" aria-pressed="false">Here <span class="n"></span></button>
 								<button type="button" data-f="all" aria-pressed="false">Everyone <span class="n"></span></button>
+							</div>
+						</div>
+						<!-- the camera, reading the passes (the QR code on each participant's dashboard) -->
+						<div class="scan" id="scan" hidden>
+							<div class="scan-cam">
+								<video id="scan-video" playsinline muted></video>
+								<span class="scan-frame" aria-hidden="true"></span>
+							</div>
+							<div class="scan-side">
+								<div class="scan-result" id="scan-result" aria-live="assertive"><p class="muted">Hold a pass up to the camera: each one checks its owner in at once.</p></div>
+								<button type="button" class="btn small ghost" id="scan-close">Stop scanning</button>
 							</div>
 						</div>
 						<ul class="clist" id="checkin-list"></ul>
@@ -250,6 +263,79 @@
 								<button type="button" class="btn small ghost" id="mentor-renew">New key</button>
 							</div>
 						</div>
+					</section>
+
+					<!-- the big screen (screen.html) and the audience award (the "audience-state" action) -->
+					<section class="panel board-access" aria-labelledby="screen-h">
+						<div class="panel-head">
+							<div>
+								<h2 id="screen-h">Big screen</h2>
+								<p class="muted">For the smart board or the laptop on the projector, at <a href="screen.html" target="_blank" rel="noopener">roqteam.ro/screen</a>: what is on now and next, the countdown to the end of coding, the newest announcements, how many teams wait for a mentor and, at the awards, the audience vote. It opens with its own password, so the admin key need not go on a shared screen; the password shows the screen and nothing else. The button on it, or F, makes it full screen.</p>
+								<!-- a live message on the screen (the "screen-flash" action), at once, for a few minutes -->
+								<form class="flash-form bform" id="flash-form" novalidate hidden>
+									<p class="flash-now" id="flash-now" aria-live="polite"></p>
+									<div class="flash-presets" id="flash-presets">
+										<button type="button" class="btn small ghost" data-text="Food is served: come and eat." data-sub="In the hall on the ground floor.">Food</button>
+										<button type="button" class="btn small ghost" data-text="The workshop starts now." data-sub="">Workshop</button>
+										<button type="button" class="btn small ghost" data-text="Coding stops in 15 minutes." data-sub="Push your code and hand in on your dashboard.">15 minutes left</button>
+										<button type="button" class="btn small ghost" data-text="Group photo: everyone to the stage." data-sub="">Photo</button>
+										<button type="button" class="btn small ghost" data-text="The awards start now." data-sub="Everyone to the main room.">Awards</button>
+									</div>
+									<label class="bform-field">
+										<span>Message on the screen <em>up to 80 letters</em></span>
+										<input type="text" id="flash-text" maxlength="80" placeholder="Food is served: come and eat." autocomplete="off" />
+									</label>
+									<label class="bform-field">
+										<span>A line under it <em>optional</em></span>
+										<input type="text" id="flash-sub" maxlength="140" placeholder="In the hall on the ground floor." autocomplete="off" />
+									</label>
+									<div class="flash-row">
+										<label class="bform-field flash-min">
+											<span>For</span>
+											<select id="flash-min">
+												<option value="2">2 minutes</option>
+												<option value="5" selected>5 minutes</option>
+												<option value="10">10 minutes</option>
+												<option value="15">15 minutes</option>
+												<option value="30">30 minutes</option>
+											</select>
+										</label>
+										<label class="check"><input type="checkbox" id="flash-post" /> Also post it on the team dashboards</label>
+									</div>
+									<div class="bform-actions">
+										<button type="submit" class="btn primary" id="flash-go">Show it on the screen</button>
+										<button type="button" class="btn ghost" id="flash-off" hidden>Take it down</button>
+										<span class="note" id="flash-note" aria-live="polite"></span>
+									</div>
+								</form>
+								<form class="screen-key" id="screen-key-form" novalidate hidden>
+									<label for="screen-key">Its password</label>
+									<input type="text" id="screen-key" maxlength="40" placeholder="a word for the screen" autocomplete="off" autocapitalize="off" spellcheck="false" />
+									<button type="submit" class="btn small" id="screen-key-save">Save</button>
+									<span class="note" id="screen-key-note" aria-live="polite"></span>
+								</form>
+							</div>
+							<div class="panel-actions">
+								<a class="btn small" href="screen.html" target="_blank" rel="noopener">Open the big screen</a>
+							</div>
+						</div>
+					</section>
+
+					<section class="panel board-access aud-panel" aria-labelledby="aud-h">
+						<div class="panel-head">
+							<div>
+								<h2 id="aud-h">Audience award <span class="count" id="aud-count"></span></h2>
+								<p class="muted" id="aud-status"></p>
+							</div>
+							<div class="panel-actions">
+								<span class="note" id="aud-note" aria-live="polite"></span>
+								<button type="button" class="btn small primary" id="aud-open">Open the vote</button>
+								<button type="button" class="btn small primary" id="aud-show">Close it and show the result</button>
+								<button type="button" class="btn small ghost" id="aud-back">Put it back as before</button>
+								<button type="button" class="btn small ghost" id="aud-clear">Clear the votes</button>
+							</div>
+						</div>
+						<ol class="aud-list" id="aud-list"></ol>
 					</section>
 
 					<div class="board-cols">
@@ -422,6 +508,6 @@
 
 		</main>
 
-		<script src="assets/js/admin.js?v=20261017a"></script>
+		<script src="assets/js/admin.js?v=20261017j"></script>
 	</body>
 </html>
