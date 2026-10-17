@@ -9,7 +9,9 @@
 	- every PARTNERS_EVERY, for PARTNERS_MS, the partners take the screen, tier by tier (P plays it now); not in the
 	  last minutes before coding stops, nor while the audience vote is up
 	- the organisers' live message (the admin page's "Show it on the screen"), asked for every FLASH_MS ("flash"):
-	  over everything until it runs out or is taken down
+	  over everything until it runs out or is taken down; an announcement posted while the screen is up comes the same
+	  way for NEWS_MS, and stays "New" on the side for NEW_FOR. Each comes in with a gold band across the screen and a
+	  chime (once someone has touched the screen: browsers keep a page quiet until then)
 	- the schedule is assets/js/schedule.js, as on the dashboard; every time in Bucharest time
 */
 
@@ -36,8 +38,13 @@
 	var PARTNERS_EVERY = 4 * 60000;
 	var PARTNERS_MS = 22000;
 	var FLASH_MS = 6000;
+	var NEWS_MS = 25000;
+	var NEW_FOR = 10 * 60000;
+	var ANN_EVERY = 9000;   // the announcements on the side take turns, one at a time
+	var ANN_MAX = 6;        // the newest few
 
-	var state = { key: '', items: [], audience: null, queue: null, at: 0, failing: false, drawn: '', partnersAt: 0, partnersOn: false, flash: null };
+	var state = { key: '', items: [], audience: null, queue: null, at: 0, failing: false, drawn: '', partnersAt: 0, partnersOn: false,
+		flash: null, news: null, shown: '', seen: null, fresh: {}, annIndex: 0, annNext: 0 };
 
 	function $(id) { return document.getElementById(id); }
 
@@ -175,6 +182,51 @@
 		});
 	}
 
+	function isNew(it, now) { return now - (state.fresh[it.id] || 0) < NEW_FOR; }
+
+	// the announcements on the side, in turn: the ones posted while the screen is up first, then the pinned, then the
+	// newest; the card keeps its height (the space the mentors and what comes up leave), whichever is showing
+	function rotation(now) {
+		var all = announcements();
+		return all.filter(function (it) { return isNew(it, now); })
+			.concat(all.filter(function (it) { return !isNew(it, now); }))
+			.slice(0, ANN_MAX);
+	}
+
+	// turning: the next one comes in, and the card glows if it is a new one
+	function annCard(now, list, turning) {
+		state.annIndex %= list.length;
+		var it = list[state.annIndex];
+		var fresh = isNew(it, now);
+		var card = el('section', 'side-card side-ann' + (turning && fresh ? ' has-new' : ''));
+		var head = el('div', 'ann-head');
+		head.appendChild(kicker('Announcements'));
+		if (list.length > 1) {
+			var dots = el('span', 'ann-dots');
+			list.forEach(function (x, i) { dots.appendChild(el('i', i === state.annIndex ? 'is-on' : null)); });
+			head.appendChild(dots);
+		}
+		card.appendChild(head);
+		var art = el('article', 'wall-ann' + (it.pinned ? ' is-pinned' : '') + (fresh ? ' is-new' : '') + (turning ? ' is-in' : ''));
+		var meta = el('p', 'wall-ann-time');
+		if (fresh) meta.appendChild(el('span', 'chip', 'New'));
+		if (it.posted) meta.appendChild(el('span', null, hm(it.posted)));
+		if (meta.childNodes.length) art.appendChild(meta);
+		if (it.title) art.appendChild(el('h2', null, it.title));
+		if (it.text) art.appendChild(el('p', 'wall-ann-text', it.text.replace(/\s*\n+\s*/g, ' ')));
+		card.appendChild(art);
+		return card;
+	}
+
+	function turnAnnouncements(now) {
+		state.annNext = now + ANN_EVERY;
+		var old = document.querySelector('.side-ann');
+		var list = rotation(now);
+		if (!old || list.length < 2) return;
+		state.annIndex = (state.annIndex + 1) % list.length;
+		old.parentNode.replaceChild(annCard(now, list, true), old);
+	}
+
 	function renderSide(now) {
 		var box = $('side');
 		box.textContent = '';
@@ -195,21 +247,11 @@
 			m.appendChild(el('p', 'side-note', 'Stuck? “Ask a mentor” on your dashboard.'));
 			box.appendChild(m);
 		}
-		var list = announcements().slice(0, box.childNodes.length ? 2 : 3);   // fewer beside the mentors
-		if (list.length) {
-			var ann = el('section', 'side-card side-ann');
-			ann.appendChild(kicker('Announcements'));
-			list.forEach(function (it) {
-				var art = el('article', 'wall-ann' + (it.pinned ? ' is-pinned' : ''));
-				if (it.title) art.appendChild(el('h2', null, it.title));
-				if (it.text) art.appendChild(el('p', null, it.text.replace(/\s*\n+\s*/g, ' ')));
-				if (it.posted) art.appendChild(el('p', 'wall-ann-time', hm(it.posted)));
-				ann.appendChild(art);
-			});
-			box.appendChild(ann);
-		}
-		var up = upcoming(now, 4).filter(function (s) { return s.title !== 'Coding time'; }).slice(0, 3);
-		if (up.length && now < AWARDS && box.childNodes.length < 2) {   // when there is room
+		var list = rotation(now);
+		if (list.length) box.appendChild(annCard(now, list, false));
+		// always, until the awards: two beside the mentors, else three
+		var up = upcoming(now, 4).filter(function (s) { return s.title !== 'Coding time'; }).slice(0, box.querySelector('.side-mentors') ? 2 : 3);
+		if (up.length && now < AWARDS) {
 			var u = el('section', 'side-card side-up');
 			u.appendChild(kicker('Coming up'));
 			var ol = el('ol', 'sched');
@@ -232,7 +274,9 @@
 	}
 
 	function renderStatus() {
-		$('status').textContent = state.at ? (state.failing ? 'Could not update · last ' : 'Updated ') + hm(state.at) : '';
+		var s = state.at ? (state.failing ? 'Could not update · last ' : 'Updated ') + hm(state.at) : '';
+		if (canSound() && !soundOn()) s += (s ? ' · ' : '') + 'Touch the screen once for the chime';
+		$('status').textContent = s;
 	}
 
 	/* --- the data ---------------------------------------------------------------------- */
@@ -262,11 +306,13 @@
 
 	function take(json) {
 		state.items = (json.items || []).map(function (it) {
-			return { section: it.section, title: it.title || '', text: it.text || '', pinned: !!it.pinned, posted: it.posted ? Date.parse(it.posted) || 0 : 0 };
+			return { id: String(it.id || ''), section: it.section, title: it.title || '', text: it.text || '', pinned: !!it.pinned, posted: it.posted ? Date.parse(it.posted) || 0 : 0 };
 		});
 		state.audience = json.audience || null;
 		state.queue = json.queue || null;
-		if (json.flash !== undefined) showFlash(json.flash);
+		if (json.flash !== undefined) state.flash = json.flash || null;
+		spot();
+		paint();
 		state.at = Date.now();
 		state.failing = false;
 	}
@@ -348,7 +394,7 @@
 
 	function playPartners() {
 		var p = $('partners');
-		if (state.partnersOn || state.flash) return;   // a live message keeps the screen
+		if (state.partnersOn || state.shown) return;   // a live message keeps the screen
 		state.partnersOn = true;
 		p.style.setProperty('--p-ms', PARTNERS_MS + 'ms');
 		p.classList.remove('is-on', 'is-out');
@@ -378,27 +424,114 @@
 
 	// f: { id, text, sub, at, until } while it is up, or null
 	function showFlash(f) {
+		state.flash = f || null;
+		paint();
+	}
+
+	// an announcement posted since the screen opened takes the screen for NEWS_MS (the newest, when several came at
+	// once); the ones there when it opened do not. One posted along with a live message is that message: not twice.
+	function spot() {
+		var list = announcements();
+		if (!state.seen) {
+			state.seen = {};
+			list.forEach(function (it) { state.seen[it.id] = true; });
+			return;
+		}
+		var now = Date.now();
+		var news = list.filter(function (it) { return !state.seen[it.id]; });
+		news.forEach(function (it) { state.seen[it.id] = true; state.fresh[it.id] = now; });
+		if (!news.length) return;
+		state.annIndex = 0;
+		state.annNext = now + NEWS_MS + ANN_EVERY;
+		var it = news.sort(function (a, b) { return (b.posted || 0) - (a.posted || 0); })[0];
+		var f = state.flash;
+		if (f && (it.title === f.text || it.text === f.text)) return;
+		var text = it.title || it.text.replace(/\s*\n+\s*/g, ' ');
+		state.news = { id: 'news-' + it.id, kind: 'New announcement', text: text, sub: it.title ? it.text.replace(/\s*\n+\s*/g, ' ') : '', at: it.posted || now, until: now + NEWS_MS };
+	}
+
+	// what the overlay shows: the live message first, else a new announcement; when neither, it goes
+	function paint() {
+		var now = Date.now();
+		var f = state.flash && now < Date.parse(state.flash.until) ? state.flash : null;
+		if (state.news && now >= state.news.until) state.news = null;
+		var show = f ? { id: f.id, kind: 'Live', text: f.text, sub: f.sub || '', at: Date.parse(f.at), until: Date.parse(f.until) } : state.news;
 		var box = $('flash');
-		var live = f && Date.now() < Date.parse(f.until) ? f : null;
-		if (!live) {
-			if (state.flash) {
-				state.flash = null;
-				box.classList.remove('is-on');
-				window.setTimeout(function () { if (!state.flash) box.hidden = true; }, 600);
+		if (!show) {
+			if (state.shown) {
+				state.shown = '';
+				box.classList.add('is-out');
+				window.setTimeout(function () {
+					if (state.shown) return;
+					box.hidden = true;
+					box.classList.remove('is-on', 'is-out');
+				}, 600);
 			}
 			return;
 		}
-		if (state.flash && state.flash.id === live.id) return;   // the same one: it carries on as it is
-		state.flash = live;
+		if (state.shown === show.id) return;   // the same one: it carries on as it is
+		state.shown = show.id;
 		stopPartners();
-		$('flash-text').textContent = live.text;
-		$('flash-sub').textContent = live.sub || '';
-		$('flash-at').textContent = hm(Date.parse(live.at));
-		box.style.setProperty('--f-ms', Math.max(1000, Date.parse(live.until) - Date.now()) + 'ms');
-		box.classList.remove('is-on');
+		$('flash-kind').textContent = show.kind;
+		$('flash-text').textContent = show.text;
+		$('flash-sub').textContent = show.sub;
+		$('flash-at').textContent = hm(show.at);
+		box.classList.toggle('is-long', show.text.length > 34);
+		box.style.setProperty('--f-ms', Math.max(1000, show.until - now - 1600) + 'ms');
+		box.classList.remove('is-on', 'is-out');
 		box.hidden = false;
 		void box.offsetWidth;   // so the animations start from the top
 		box.classList.add('is-on');
+		chime();
+	}
+
+	/* --- the chime: a bright rising arpeggio as the band comes in, as before an announcement at a station. Browsers
+	   let a page make a sound only once someone has touched it: the first touch, click or key turns it on. --- */
+
+	var audio = null;
+
+	function canSound() { return !!(window.AudioContext || window.webkitAudioContext); }
+	function soundOn() { return !!audio && audio.state === 'running'; }
+
+	function unlockSound() {
+		if (!canSound()) return;
+		try {
+			if (!audio) {
+				audio = new (window.AudioContext || window.webkitAudioContext)();
+				audio.onstatechange = renderStatus;
+			}
+			if (audio.state === 'suspended') audio.resume().then(renderStatus, function () {});
+		} catch (e) {}
+	}
+
+	['pointerdown', 'touchend', 'keydown'].forEach(function (type) {
+		document.addEventListener(type, unlockSound, true);
+	});
+
+	function chime() {
+		if (!soundOn()) return;
+		var t0 = audio.currentTime + 0.05;
+		var out = audio.createGain();
+		out.gain.value = 0.55;
+		out.connect(audio.destination);
+		// E, G sharp, B and the E above: each a sine with a little of its octave, struck and dying away
+		[659.25, 830.61, 987.77, 1318.51].forEach(function (hz, i) {
+			var t = t0 + i * 0.13;
+			var ring = i === 3 ? 2.2 : 1.4;
+			[[1, 0.5], [2, 0.1]].forEach(function (part) {
+				var o = audio.createOscillator();
+				var g = audio.createGain();
+				o.type = 'sine';
+				o.frequency.value = hz * part[0];
+				g.gain.setValueAtTime(0.0001, t);
+				g.gain.exponentialRampToValueAtTime(part[1], t + 0.012);
+				g.gain.exponentialRampToValueAtTime(0.0001, t + ring);
+				o.connect(g);
+				g.connect(out);
+				o.start(t);
+				o.stop(t + ring + 0.05);
+			});
+		});
 	}
 
 	var flashTimer = null;
@@ -421,7 +554,9 @@
 		if ($('wall').hidden) return;
 		var now = Date.now();
 		$('clock').textContent = hm(now);
-		if (state.flash && now >= Date.parse(state.flash.until)) showFlash(null);
+		if (state.shown) paint();   // the message or the announcement ran out
+		if (!state.annNext) state.annNext = now + ANN_EVERY;
+		else if (now >= state.annNext) turnAnnouncements(now);
 		// the partners: a minute after the screen opens, then every PARTNERS_EVERY
 		if (!state.partnersAt) state.partnersAt = now + 60000;
 		if (now >= state.partnersAt) {

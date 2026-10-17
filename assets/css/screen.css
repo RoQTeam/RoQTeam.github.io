@@ -113,12 +113,13 @@
 			font-size: 0.9vw;
 		}
 
-	/* above the footer, out of the way of its text; gone with the cursor */
+	/* in the footer's middle, between its two lines; gone with the cursor */
 	.wall-full {
 		position: fixed;
-		right: 3.2vw;
-		bottom: 5.4vw;
+		left: 50%;
+		bottom: 1vw;
 		z-index: 2;
+		transform: translateX(-50%);
 	}
 
 		.is-idle .wall-full {
@@ -329,45 +330,110 @@
 		font-weight: 600;
 	}
 
+	/* the announcements fill what the mentors and what comes up leave, one at a time, taking turns: the same height
+	   whichever is showing, so what comes up stays put */
+	.side-ann {
+		flex: 1 1 0;
+		min-height: 0;
+		overflow: hidden;
+	}
+
+		.ann-head {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 1vw;
+		}
+
+		/* which one of how many: the one showing a gold pill */
+		.ann-dots {
+			display: flex;
+			align-items: center;
+			gap: 0.45vw;
+		}
+
+			.ann-dots i {
+				width: 0.5vw;
+				height: 0.5vw;
+				border-radius: 0.25vw;
+				background: rgba(255, 255, 255, 0.25);
+				transition: width 0.4s ease, background-color 0.4s ease;
+			}
+
+			.ann-dots i.is-on {
+				width: 1.5vw;
+				background: var(--gold);
+			}
+
 	.wall-ann {
 		display: flex;
 		flex-direction: column;
-		gap: 0.4vw;
-		padding-top: 1vw;
-		border-top: 1.5px solid var(--soft-line);
+		gap: 0.5vw;
+		min-height: 0;
 	}
-
-		.wall-ann:first-of-type {
-			padding-top: 0;
-			border-top: 0;
-		}
 
 		.wall-ann.is-pinned h2 {
 			color: var(--gold);
 		}
 
 		.wall-ann h2 {
-			font-size: 1.5vw;
+			display: -webkit-box;
+			-webkit-line-clamp: 2;
+			-webkit-box-orient: vertical;
+			overflow: hidden;
+			font-size: 1.6vw;
 			line-height: 1.15;
 			letter-spacing: -0.01em;
 		}
 
-		.wall-ann p {
+		.wall-ann .wall-ann-text {
 			display: -webkit-box;
-			-webkit-line-clamp: 3;
+			-webkit-line-clamp: 4;
 			-webkit-box-orient: vertical;
 			overflow: hidden;
 			color: var(--frost);
-			font-size: 1.05vw;
+			font-size: 1.1vw;
 			font-weight: 600;
 			line-height: 1.4;
 		}
 
 		.wall-ann .wall-ann-time {
+			display: flex;
+			align-items: center;
+			gap: 0.7vw;
 			color: var(--mist);
 			font-size: 0.8vw;
 			font-weight: 700;
 			letter-spacing: 0.14em;
+		}
+
+		/* posted while the screen is up: "New" for ten minutes, in gold, the card glowing as its turn comes */
+		.wall-ann .chip {
+			min-height: 0;
+			font-size: 0.72vw;
+		}
+
+		.wall-ann.is-new h2 {
+			color: var(--gold);
+		}
+
+		@keyframes ann-in {
+			from { opacity: 0; transform: translateY(1.2vw); filter: blur(6px); }
+			to   { opacity: 1; transform: none; filter: none; }
+		}
+
+		.wall-ann.is-in {
+			animation: ann-in 0.7s ease-out both;
+		}
+
+		@keyframes ann-glow {
+			0%, 100% { box-shadow: 0 0 0 0 rgba(250, 177, 6, 0); }
+			50%      { box-shadow: 0 0 0 0.45vw rgba(250, 177, 6, 0.35); }
+		}
+
+		.side-ann.has-new {
+			border-color: var(--gold);
+			animation: ann-glow 1.6s ease-in-out 2;
 		}
 
 	.side-up .sched li {
@@ -698,16 +764,30 @@
 	display: grid;
 	place-items: center;
 	overflow: hidden;
-	background:
-		radial-gradient(ellipse 70% 50% at 50% 45%, rgba(250, 177, 6, 0.12), transparent 70%),
-		linear-gradient(to bottom right, var(--navy-950) 0%, var(--navy-800) 55%, var(--navy-700) 100%);
-	opacity: 0;
 	transition: opacity 0.6s ease;
 }
 
-	.flash.is-on {
-		opacity: 1;
+	.flash.is-out {
+		opacity: 0;
 	}
+
+	/* the ground comes in under the band, once it covers the screen: the wall is never seen fading */
+	.flash-ground {
+		position: absolute;
+		inset: 0;
+		background:
+			radial-gradient(ellipse 70% 50% at 50% 45%, rgba(250, 177, 6, 0.12), transparent 70%),
+			linear-gradient(to bottom right, var(--navy-950) 0%, var(--navy-800) 55%, var(--navy-700) 100%);
+		opacity: 0;
+	}
+
+		@keyframes f-show {
+			to { opacity: 1; }
+		}
+
+		.flash.is-on .flash-ground {
+			animation: f-show 0.01s linear 0.5s forwards;
+		}
 
 	.flash-traces {
 		position: absolute;
@@ -730,11 +810,11 @@
 		}
 
 		.flash.is-on .tr {
-			animation: p-draw 1.4s cubic-bezier(0.65, 0, 0.35, 1) 0.2s forwards;
+			animation: p-draw 1.4s cubic-bezier(0.65, 0, 0.35, 1) 1.3s forwards;
 		}
 
 		.flash.is-on .dot {
-			animation: p-dot 0.5s ease-out 1.5s forwards;
+			animation: p-dot 0.5s ease-out 2.6s forwards;
 		}
 
 	.flash-body {
@@ -772,16 +852,34 @@
 			animation: flash-pulse 1.8s ease-out infinite;
 		}
 
+	/* white, and now and then a gold glint across it (the text is its mask) */
 	.flash-text {
 		max-width: 18ch;
 		font-size: clamp(3rem, 7.4vw, 9rem);
 		line-height: 0.92;
 		letter-spacing: -0.035em;
 		overflow-wrap: anywhere;
+		background: linear-gradient(105deg, var(--white) 40%, var(--gold) 46.5%, #FFE6A0 50%, var(--gold) 53.5%, var(--white) 60%) no-repeat;
+		background-size: 260% 100%;
+		background-position: 100% 0;
+		-webkit-background-clip: text;
+		background-clip: text;
+		color: transparent;
+		-webkit-text-fill-color: transparent;
 	}
 
+		/* an announcement's title can be longer than a live message */
+		.flash.is-long .flash-text {
+			max-width: 26ch;
+			font-size: clamp(2.4rem, 5vw, 6rem);
+		}
+
 	.flash-sub {
+		display: -webkit-box;
+		-webkit-line-clamp: 4;
+		-webkit-box-orient: vertical;
 		max-width: 40ch;
+		overflow: hidden;
 		color: var(--frost);
 		font-size: 2.1vw;
 		font-weight: 600;
@@ -792,9 +890,38 @@
 			display: none;
 		}
 
-	.flash.is-on .flash-kicker { animation: p-rise 0.8s ease-out 0.15s both; }
-	.flash.is-on .flash-text { animation: p-rise 1s ease-out 0.35s both; }
-	.flash.is-on .flash-sub { animation: p-rise 0.9s ease-out 0.7s both; }
+	@keyframes f-glint {
+		0%        { background-position: 100% 0; }
+		6%, 100%  { background-position: 0% 0; }
+	}
+
+	.flash.is-on .flash-kicker { animation: p-rise 0.8s ease-out 1.2s both; }
+	.flash.is-on .flash-text { animation: p-rise 1s ease-out 1.35s both, f-glint 40s ease-in-out 2.6s infinite; }
+	.flash.is-on .flash-sub { animation: p-rise 0.9s ease-out 1.7s both; }
+
+	/* the frame: gold around the screen's edge, lit twice as the message lands, then again every 40 seconds, for the
+	   corner of an eye that missed it */
+	.flash-frame {
+		position: absolute;
+		inset: 0;
+		box-shadow:
+			inset 0 0 0 0.7vw var(--gold),
+			inset 0 0 7vw rgba(250, 177, 6, 0.45);
+		opacity: 0;
+		pointer-events: none;
+	}
+
+		@keyframes f-frame {
+			0%        { opacity: 0; }
+			1.5%      { opacity: 1; }
+			3.5%      { opacity: 0.15; }
+			5.5%      { opacity: 1; }
+			9%, 100%  { opacity: 0; }
+		}
+
+		.flash.is-on .flash-frame {
+			animation: f-frame 40s ease-in-out 1.6s infinite;
+		}
 
 	/* how long it stays */
 	.flash-timer {
@@ -807,7 +934,81 @@
 	}
 
 		.flash.is-on .flash-timer {
-			animation: p-run var(--f-ms, 300000ms) linear forwards;
+			animation: p-run var(--f-ms, 300000ms) linear 1.6s forwards;
+		}
+
+	/* the way in: a gold band, slanted, sweeps across the whole screen from the left (a lighter one just ahead of
+	   it), holds with the word, and goes on out to the right */
+	.sting {
+		position: absolute;
+		inset: 0;
+		pointer-events: none;
+	}
+
+		.sting-lead,
+		.sting-band {
+			position: absolute;
+			top: -10vh;
+			bottom: -10vh;
+			left: -15vw;
+			right: -15vw;
+			transform: translateX(-125%) skewX(-14deg);
+		}
+
+		.sting-lead {
+			background: #FFD86B;
+		}
+
+		.sting-band {
+			display: grid;
+			place-items: center;
+			background:
+				linear-gradient(to bottom, rgba(255, 255, 255, 0.18), transparent 40%),
+				var(--gold);
+		}
+
+		@keyframes f-band {
+			0%   { transform: translateX(-125%) skewX(-14deg); animation-timing-function: cubic-bezier(0.2, 0.8, 0.25, 1); }
+			26%  { transform: translateX(0) skewX(-14deg); }
+			66%  { transform: translateX(0) skewX(-14deg); animation-timing-function: cubic-bezier(0.7, 0, 0.85, 0.3); }
+			100% { transform: translateX(125%) skewX(-14deg); }
+		}
+
+		.flash.is-on .sting-lead { animation: f-band 1.7s linear forwards; }
+		.flash.is-on .sting-band { animation: f-band 1.7s linear 0.07s both; }
+
+		/* upright on the slanted band, drifting a little while it holds */
+		.sting-word {
+			display: flex;
+			align-items: center;
+			gap: 0.3em;
+			color: var(--navy-950);
+			font-size: 7.6vw;
+			font-weight: 800;
+			line-height: 1;
+			letter-spacing: -0.03em;
+			text-transform: uppercase;
+			transform: skewX(14deg);
+		}
+
+			@keyframes f-word {
+				from { transform: skewX(14deg) translateX(5vw); }
+				to   { transform: skewX(14deg) translateX(-5vw); }
+			}
+
+			.flash.is-on .sting-word {
+				animation: f-word 1.7s linear 0.07s both;
+			}
+
+		.sting-ic {
+			flex: none;
+			width: 0.9em;
+			height: 0.9em;
+			fill: none;
+			stroke: var(--navy-950);
+			stroke-width: 2.2;
+			stroke-linecap: round;
+			stroke-linejoin: round;
 		}
 
 @media (prefers-reduced-motion: reduce) {
@@ -818,12 +1019,17 @@
 		transition: none !important;
 	}
 
+	.flash-ground,
+	.flash-traces .dot {
+		opacity: 1;
+	}
+
 	.flash-traces .tr {
 		stroke-dashoffset: 0;
 	}
 
-	.flash-traces .dot {
-		opacity: 1;
+	.sting {
+		display: none;
 	}
 
 }

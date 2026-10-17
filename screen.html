@@ -10,7 +10,7 @@
 		<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src https://script.google.com https://script.googleusercontent.com; base-uri 'none'; form-action 'none'" />
 		<link rel="preload" href="assets/fonts/raleway-800.woff2" as="font" type="font/woff2" crossorigin />
 		<link rel="stylesheet" href="assets/css/team-board.css?v=20261017b" />
-		<link rel="stylesheet" href="assets/css/screen.css?v=20261017e" />
+		<link rel="stylesheet" href="assets/css/screen.css?v=20261017g" />
 		<link rel="icon" type="image/png" href="images/favicon-2026.png">
 	</head>
 	<body class="is-screen">
@@ -20,7 +20,8 @@
 			now and next, the countdown to the end of coding, the newest announcements, how many teams wait for a
 			mentor and, at the awards, the audience award's vote and its result. It reads the same "board" action as
 			the team dashboard, with the admin key (the organisers' view: the mentor queue in numbers and the votes),
-			every half minute; the schedule is assets/js/schedule.js. Full screen: the button, or F. It opens with its own
+			every half minute; the schedule is assets/js/schedule.js. Full screen: the button, or F. The chime of a new
+			announcement plays once someone has touched the screen (browsers keep a page quiet until then). It opens with its own
 			password (SCREEN_KEY, set on the admin page: Team dashboard, Big screen), so the admin key need not go on a
 			shared screen; the admin key opens it too.
 		-->
@@ -96,8 +97,11 @@
 			</section>
 
 			<!-- the organisers' live message ("Food is served: come and eat."), sent from the admin page: over everything
-			     until it runs out or is taken down -->
+			     until it runs out or is taken down; an announcement posted while the screen is up comes the same way, for a
+			     little while. Each comes in with a gold band across the whole screen and a chime, so a room heads-down in
+			     its code looks up, and the frame lights up again now and then while it stays. -->
 			<section class="flash" id="flash" hidden aria-live="assertive" role="alert">
+				<span class="flash-ground" aria-hidden="true"></span>
 				<svg class="flash-traces" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
 					<path class="tr" pathLength="1" d="M-20,760L240,760L300,700L520,700" /><circle class="dot" cx="520" cy="700" r="5" />
 					<path class="tr" pathLength="1" d="M-20,778L232,778L292,718L470,718" /><circle class="dot" cx="470" cy="718" r="5" />
@@ -107,11 +111,22 @@
 					<path class="tr" pathLength="1" d="M1620,176L1375,176L1315,236L1105,236" /><circle class="dot" cx="1105" cy="236" r="5" />
 				</svg>
 				<div class="flash-body">
-					<p class="flash-kicker"><span class="flash-live" aria-hidden="true"></span>Live · <span id="flash-at"></span></p>
+					<p class="flash-kicker"><span class="flash-live" aria-hidden="true"></span><span id="flash-kind">Live</span> · <span id="flash-at"></span></p>
 					<h2 class="flash-text" id="flash-text"></h2>
 					<p class="flash-sub" id="flash-sub"></p>
 				</div>
+				<span class="flash-frame" aria-hidden="true"></span>
 				<span class="flash-timer" id="flash-timer" aria-hidden="true"></span>
+				<!-- the way in: a gold band sweeps across with the word on it, and lets the message through -->
+				<div class="sting" aria-hidden="true">
+					<span class="sting-lead"></span>
+					<div class="sting-band">
+						<p class="sting-word">
+							<svg class="sting-ic" viewBox="0 0 24 24" focusable="false"><path d="M11 6a13 13 0 0 0 8.4-2.8A1 1 0 0 1 21 4v12a1 1 0 0 1-1.6.8A13 13 0 0 0 11 14H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z" /><path d="M6 14a12 12 0 0 0 2.4 7.2 2 2 0 0 0 3.2-2.4A8 8 0 0 1 10 14" /><path d="M8 6v8" /></svg>
+							<span>Announcement</span>
+						</p>
+					</div>
+				</div>
 			</section>
 
 			<!-- every few minutes, for a little while: the partners, tier by tier, the traces drawing in from the edges
@@ -174,6 +189,6 @@
 		</main>
 
 		<script src="assets/js/schedule.js?v=20261017"></script>
-		<script src="assets/js/screen.js?v=20261017d"></script>
+		<script src="assets/js/screen.js?v=20261017f"></script>
 	</body>
 </html>
