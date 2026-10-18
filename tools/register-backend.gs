@@ -62,6 +62,10 @@
  * Rows from before this existed: pick "findDuplicates" in the editor's function list and press Run to see in
  * the log what would be merged, then "mergeDuplicates" to merge them. It first copies the tab as a backup,
  * sends no emails and deletes the rows it merged into an earlier one.
+ * Two rows of the same person that nothing matched (another email, the name written another way): in the sheet,
+ * BreaQ -> Merge two rows of the same person… asks for the two row numbers, shows both and merges them once you
+ * say yes: the later row's answers go into the earlier one, which keeps the grades and the decision it has, and
+ * the later row is deleted. (After pasting this script, reload the sheet for the BreaQ menu to show.)
  *
  * Votes (hackathon only): each of the VOTERS grades registrations from 1 to 10, on the admin page. Opened with
  * the shared admin key, the page asks who you are and votes as the one picked (sharedAs_): only the five have the
@@ -224,6 +228,18 @@ var NOT_ANSWERS = [
   "Decision",
   "Decision email",
   "Team answered",
+  "Hackathon team",
+  "Coming",
+  "Coming answered",
+  "Checked in",
+  "Certificate",
+].concat(VOTE_COLUMNS, NOTE_COLUMNS);
+
+// what the organisers and the dashboard write in a row: a merge keeps the earlier row's, the later one's only fills
+// a gap (a second application never has any; two rows graded apart may)
+var ORGANISER_COLUMNS = [
+  "Decision",
+  "Decision email",
   "Hackathon team",
   "Coming",
   "Coming answered",
@@ -1008,6 +1024,97 @@ function mergeAll_(apply) {
   } finally {
     lock.releaseLock();
   }
+}
+
+// the sheet's own menu, for what is done by hand in it (Google runs onOpen when the sheet is opened)
+function onOpen() {
+  SpreadsheetApp.getUi()
+    .createMenu("BreaQ")
+    .addItem("Merge two rows of the same person…", "mergeRowsByHand")
+    .addToUi();
+}
+
+// BreaQ -> Merge two rows of the same person…: two rows nothing matched (another email, the name written another
+// way), merged as a second application is (merge_): the later row's answers into the earlier one, which keeps its
+// grades and decision, and the later row deleted. Nothing is held while the dialogs wait for an answer: the rows
+// are read again before merging, and left alone if they changed meanwhile.
+function mergeRowsByHand() {
+  var ui = SpreadsheetApp.getUi();
+  var asked = ui.prompt(
+    "Merge two rows of the same person",
+    "The two row numbers in the " + SHEET_NAME + " tab, e.g. 23 276:",
+    ui.ButtonSet.OK_CANCEL,
+  );
+  if (asked.getSelectedButton() !== ui.Button.OK) return;
+  var rows = (asked.getResponseText().match(/\d+/g) || []).map(Number).sort(function (a, b) {
+    return a - b;
+  });
+  if (rows.length !== 2 || rows[0] === rows[1]) {
+    ui.alert("Give two different row numbers, e.g. 23 276.");
+    return;
+  }
+  var sheet = sheet_();
+  var read = function () {
+    var values = sheet.getDataRange().getValues();
+    var header = header_(values);
+    if (rows[0] < 2 || rows[1] > values.length) return null;
+    return {
+      header: header,
+      older: toRecord_(header, values[rows[0] - 1]),
+      newer: toRecord_(header, values[rows[1] - 1]),
+    };
+  };
+  var line = function (n, r) {
+    return (
+      "Row " + n + ": " + String(r["First name"] + " " + r["Last name"]).trim() + " <" + r["Email"] + ">, " +
+      eventKey_(r["Attends"]) +
+      (r["Timestamp"] instanceof Date
+        ? ", registered " + Utilities.formatDate(r["Timestamp"], Session.getScriptTimeZone(), "d MMM HH:mm")
+        : "")
+    );
+  };
+  var seen = read();
+  if (!seen) {
+    ui.alert("The registrations are in rows 2 to " + sheet.getLastRow() + ".");
+    return;
+  }
+  if (eventKey_(seen.older["Attends"]) !== eventKey_(seen.newer["Attends"])) {
+    ui.alert(
+      "These stay apart",
+      line(rows[0], seen.older) + "\n" + line(rows[1], seen.newer) +
+        "\n\nOne is for the hackathon and the other for the conference: someone at both has a row for each.",
+      ui.ButtonSet.OK,
+    );
+    return;
+  }
+  var sure = ui.alert(
+    "Merge these two?",
+    line(rows[1], seen.newer) + "\ninto\n" + line(rows[0], seen.older) +
+      "\n\nRow " + rows[1] + "'s answers replace row " + rows[0] + "'s where it has them (the Merged column keeps the " +
+      "earlier ones), both emails stay, the grades and the decision row " + rows[0] + " has stay, and row " + rows[1] +
+      " is deleted.",
+    ui.ButtonSet.YES_NO,
+  );
+  if (sure !== ui.Button.YES) return;
+  var lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    var now = read();
+    var same = function (a, b) {
+      return String(a["Email"]) === String(b["Email"]) && String(a["Last name"]) === String(b["Last name"]);
+    };
+    if (!now || !same(now.older, seen.older) || !same(now.newer, seen.newer)) {
+      ui.alert("The rows moved while you were deciding (a registration came in, or rows were deleted). Nothing was merged: try again.");
+      return;
+    }
+    var merge = merge_(now.header, now.older, now.newer, "hand");
+    writeMerged_(sheet, rows[0], now.header, now.older, merge.rec);
+    sheet.deleteRow(rows[1]);
+    rosterChanged_(); // the dashboard's access follows the merged row's emails and decision
+  } finally {
+    lock.releaseLock();
+  }
+  ui.alert("Merged: row " + rows[1] + " is now part of row " + rows[0] + ".");
 }
 
 /* --- decision emails ------------------------------------------- */
@@ -2496,12 +2603,17 @@ function unique_(list) {
 
 // a second application on top of the row already there: { rec, changed }. See "Applying twice" at the top.
 function merge_(header, older, newer, by) {
+  var has = function (v) {
+    return v !== undefined && v !== null && v !== "";
+  };
   var rec = {};
   header.forEach(function (col) {
-    var v = newer[col];
-    rec[col] = v === undefined || v === null || v === "" ? older[col] : v;
+    var keep = ORGANISER_COLUMNS.indexOf(col) !== -1 && has(older[col]);
+    rec[col] = has(newer[col]) && !keep ? newer[col] : older[col];
   });
   rec["Timestamp"] = older["Timestamp"] || newer["Timestamp"];
+  // what each was emailed, the earlier row's first
+  if (has(newer["Emails"])) rec["Emails"] = emailsWith_(String(older["Emails"] || ""), String(newer["Emails"]));
   // the same name written another way ("ana maria POPESCU") keeps the first spelling
   if (
     nameKey_(older["First name"], older["Last name"]) ===
@@ -2530,17 +2642,29 @@ function merge_(header, older, newer, by) {
       before.push(col + ": " + was);
   });
 
+  // the later row's grades or decision where the earlier row has its own: logged, not lost
+  var aside = ORGANISER_COLUMNS.filter(function (col) {
+    return has(newer[col]) && String(newer[col]) !== String(rec[col]);
+  }).map(function (col) {
+    return col + ": " + newer[col];
+  });
+
   var when = newer["Timestamp"] instanceof Date ? newer["Timestamp"] : new Date();
   var entry =
     Utilities.formatDate(when, Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm") +
     " · applied again" +
-    (by === "name"
-      ? " as " + newer["Email"] + " (same name, another email)"
-      : " (same email)") +
-    (before.length ? " · before: " + before.join("; ") : "");
+    (by === "hand"
+      ? " as " + newer["Email"] + " (merged by hand)"
+      : by === "name"
+        ? " as " + newer["Email"] + " (same name, another email)"
+        : " (same email)") +
+    (before.length ? " · before: " + before.join("; ") : "") +
+    (aside.length ? " · its own, set aside for the earlier row's: " + aside.join("; ") : "");
   rec["Merged"] = [older["Merged"], newer["Merged"], entry]
     .filter(Boolean)
     .join("\n");
+  // the same name kept apart as maybe someone else (⚠): settled, once merged as one person
+  if (by !== "email") rec["Merged"] = rec["Merged"].replace(/^⚠ /gm, "");
   return { rec: rec, changed: changed, by: by, before: before };
 }
 

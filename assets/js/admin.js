@@ -125,6 +125,8 @@
 	// (none sent, in a flood of registrations)
 	function mailOf(text) {
 		if (!text) return '';
+		// a confirmation that went out later (sendConfirmations, the admin page, a merge) settles a failed or held one
+		if (/confirmation sent/i.test(text)) return 'sent';
 		if (/failed/i.test(text)) return 'failed';
 		return /^emails held/i.test(text) ? 'held' : 'sent';
 	}
