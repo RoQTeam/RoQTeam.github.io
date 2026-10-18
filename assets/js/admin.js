@@ -763,16 +763,18 @@
 		});
 	}
 
-	// for a save that can go twice and change nothing more (a vote sets the same vote and note again): when Google
-	// does not answer, or answers with its error page, it is tried again, three times in all, as the list is. Not
-	// after a time-out: the first one may still be at work.
+	// for a save that can go twice and change nothing more (a vote sets the same vote and note again) and for a
+	// reading (a letter): when Google does not answer, answers with its error page or could not read just then
+	// (temporary, only ever said of a reading), it is tried again, three times in all, as the list is. Not after a
+	// time-out: the first one may still be at work.
 	function postAgain(body, timeout, done) {
 		var started = Date.now();
 		var tries = 0;
 		(function attempt() {
 			tries++;
 			post(body, timeout, function (json, err) {
-				if (!json && err && err.name !== 'AbortError' && tries < 3 && Date.now() - started < 40000) window.setTimeout(attempt, tries * 1500);
+				var again = json ? !!json.temporary : err && err.name !== 'AbortError';
+				if (again && tries < 3 && Date.now() - started < 40000) window.setTimeout(attempt, tries * 1500);
 				else done(json, err);
 			});
 		})();
@@ -2735,7 +2737,7 @@
 			if (rv.letters[old] && rv.letters[old].url) URL.revokeObjectURL(rv.letters[old].url);
 			delete rv.letters[old];
 		}
-		post({ action: 'letter', key: state.key, email: h.email }, 90000, function (json, err) {
+		postAgain({ action: 'letter', key: state.key, email: h.email }, 90000, function (json, err) {
 			if (rv.letters[h.email] !== L) return;   // let go meanwhile
 			L.loading = false;
 			if (json && json.denied) { lock(json.error); return; }
@@ -2751,6 +2753,14 @@
 		return L;
 	}
 
+	// a letter that did not come is asked for again the next time it is shown, or at "Try again"
+	function forgetFailed(h) {
+		var L = rv.letters[h.email];
+		if (!L || !L.error) return;
+		delete rv.letters[h.email];
+		rv.order = rv.order.filter(function (email) { return email !== h.email; });
+	}
+
 	function renderReview() {
 		var q = reviewQueue();
 		var total = rv.done + q.length;
@@ -2760,10 +2770,12 @@
 		$('rv-msg').hidden = !$('rv-main').hidden;
 		if (rv.resting) return renderPause();
 		if (!rv.current) return renderDone();
+		// the next two come while this one is read
+		var next = q.filter(function (h) { return h !== rv.current; }).slice(0, 2);
+		[rv.current].concat(next).forEach(forgetFailed);
 		renderLetter(rv.current);
 		renderCard(rv.current);
-		// the next two come while this one is read
-		q.filter(function (h) { return h !== rv.current; }).slice(0, 2).forEach(loadLetter);
+		next.forEach(loadLetter);
 	}
 
 	$('rv-letter').addEventListener('mouseleave', function () {
@@ -2789,6 +2801,16 @@
 			tab.href = L.url;
 			tab.target = '_blank';
 			links.appendChild(tab);
+		}
+		if (L.error) {
+			var retry = el('a', null, 'Try again');
+			retry.href = '#';
+			retry.addEventListener('click', function (e) {
+				e.preventDefault();
+				forgetFailed(h);
+				renderLetter(h);
+			});
+			links.appendChild(retry);
 		}
 		if (isUrl(get(h, 'Motivation letter'))) links.appendChild(link(get(h, 'Motivation letter'), 'Open in Drive'));
 		if (links.childNodes.length) box.appendChild(links);
