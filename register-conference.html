@@ -13,7 +13,7 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
 		<link rel="stylesheet" href="assets/css/main.css" />
 		<link rel="stylesheet" href="assets/css/breaq.css?v=20261014" />
-		<link rel="stylesheet" href="assets/css/register.css?v=20261009" />
+		<link rel="stylesheet" href="assets/css/register.css?v=20261018" />
 		<link rel="icon" type="image/png" href="images/favicon-2026.png">
 		<noscript><link rel="stylesheet" href="assets/css/noscript.css" /></noscript>
 	</head>
@@ -73,6 +73,13 @@
 										data-fallback="https://forms.gle/o1wqxXgzeF2QGtxC7">
 
 										<p class="reg-fallback" hidden>Online registration on this page is not switched on yet. <a href="https://forms.gle/o1wqxXgzeF2QGtxC7" target="_blank" rel="noopener">Register with the current form</a> instead.</p>
+
+										<!-- for now: with the rush of registrations the confirmation emails wait until 13:00; take this out
+										     (and the two lines below that say so) once they go again -->
+										<div class="reg-notice" role="note">
+											<span class="icon solid fa-exclamation-triangle" aria-hidden="true"></span>
+											<p><b>Our confirmation emails are delayed.</b> So many of you registered that we cannot send confirmation emails until 13:00 today. Your registration is saved all the same: we keep every confirmation in a queue and send it after 13:00.</p>
+										</div>
 
 										<input type="hidden" name="attend" value="conference" />
 
@@ -159,13 +166,13 @@
 										<div class="reg-foot">
 											<p class="reg-err" role="alert" hidden></p>
 											<button type="submit" class="button primary">Send my registration</button>
-											<span class="reg-note">You get a confirmation email right away.</span>
+											<span class="reg-note">Your confirmation email follows after 13:00 today.</span>
 										</div>
 									</form>
 
 									<div class="reg-done" id="reg-done" hidden>
 										<h3 class="major">You are registered</h3>
-										<p>Thanks, <b data-name>friend</b>. You are in for the BreaQ Conference, and a confirmation is on its way to <b data-email>your inbox</b>. The practical details follow closer to the date.</p>
+										<p>Thanks, <b data-name>friend</b>. You are in for the BreaQ Conference, and your confirmation email reaches <b data-email>your inbox</b> after 13:00 today. The practical details follow closer to the date.</p>
 										<p>Hacking too? The hackathon on 24–25 October has <a href="register.html">its own registration</a>.</p>
 										<p class="next-actions"><a href="breaq-2026-conference.ics" class="button primary" type="text/calendar">Add to calendar</a> <a href="breaq-conference.html" class="button">Back to the conference</a></p>
 									</div>
