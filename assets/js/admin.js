@@ -561,6 +561,9 @@
 		['ASE București', /\base\b|academia de studii economice|economic studies/, 'București'],
 		['UMF „Carol Davila” București', /carol davila/, 'București'],
 		['SNSPA', /\bsnspa\b|studii politice|political studies/, 'București'],
+		// abroad, before Politehnica: "National Polytechnic School" reads as politehnica. On its own, the École nationale
+		// polytechnique is the one in Algiers; Oran and Constantine have theirs
+		['École Nationale Polytechnique d’Alger (ENP)', /^(?!.*\b(oran|constantine)\b).*(ecole nationale polytechnique|national politehnica school|\benp\b.*\b(alger|algiers)\b)/, 'Alger'],
 		['POLITEHNICA București (UNSTPB)', /\b(unstpb|upb|acs|etti|fils|faima|fiir)\b|\bpolitehnica\b|nationala de stiinta si tehnologie|national universitatea of science and technology|science and technology\b.*\bbucuresti|stiinta si tehnologie\b.*\bbucuresti/, 'București'],
 		['Universitatea din București (UB)', /\b(ub|unibuc)\b|universitatea (din |of )?bucuresti|bucuresti universitatea|geologie si geofizica|geology and geophysics/, 'București'],
 		['Academia Tehnică Militară „Ferdinand I” (ATM)', /\b(atm|mta)\b|academia tehnica militara|(military technical|technical military) academy/, 'București'],
