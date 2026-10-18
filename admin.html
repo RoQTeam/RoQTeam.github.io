@@ -10,7 +10,7 @@
 		     (script.google.com answers through a redirect to script.googleusercontent.com) -->
 		<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src https://script.google.com https://script.googleusercontent.com; frame-src blob:; base-uri 'none'; form-action 'none'" />
 		<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Raleway:700|Source+Sans+Pro:300,400,600&amp;display=swap" />
-		<link rel="stylesheet" href="assets/css/admin.css?v=20261017d" />
+		<link rel="stylesheet" href="assets/css/admin.css?v=20261018" />
 		<link rel="icon" type="image/png" href="images/favicon-2026.png">
 	</head>
 	<body>
@@ -452,6 +452,17 @@
 
 				</div>
 
+				<!-- the people picked with the boxes in the table, kept through the views, the filters, the search and a
+				     reload of this tab (admin.js, "picked") -->
+				<div class="pickbar" id="pickbar" role="region" aria-label="Selected people" hidden>
+					<span class="pick-count" id="pick-count" aria-live="polite"></span>
+					<span class="note" id="pick-note" aria-live="polite"></span>
+					<button type="button" class="btn small ghost" id="pick-only" aria-pressed="false">Show only them</button>
+					<button type="button" class="btn small ghost" id="pick-copy">Copy emails</button>
+					<button type="button" class="btn small ghost" id="pick-clear">Clear</button>
+					<button type="button" class="btn small primary" id="pick-mail">Email them…</button>
+				</div>
+
 			</section>
 
 			<dialog class="detail" id="detail" aria-labelledby="detail-name">
@@ -459,6 +470,7 @@
 					<div>
 						<p class="eyebrow" id="detail-event"></p>
 						<h2 id="detail-name"></h2>
+						<label class="check detail-pick"><input type="checkbox" id="detail-pick" /> Selected for an email</label>
 					</div>
 					<button type="button" class="btn ghost small" id="detail-close">Close</button>
 				</div>
@@ -477,6 +489,58 @@
 				<div id="send-body" aria-live="polite"></div>
 				<div class="send-actions">
 					<button type="button" class="btn primary" id="send-go" hidden>Send</button>
+				</div>
+			</dialog>
+
+			<!-- an email to the people picked: which one, how it reads, who gets it (the "mail" action of the Apps Script) -->
+			<dialog class="detail send-dlg mail-dlg" id="mail-dlg" aria-labelledby="mail-dlg-h">
+				<div class="detail-head">
+					<div>
+						<p class="eyebrow" id="mail-who"></p>
+						<h2 id="mail-dlg-h">Email the selected</h2>
+					</div>
+					<button type="button" class="btn ghost small" id="mail-close">Close</button>
+				</div>
+				<form class="bform mail-form" id="mail-form" novalidate>
+					<div class="bform-field">
+						<span>Which email</span>
+						<div class="seg mail-kinds" role="group" aria-label="Which email" id="mail-kind">
+							<button type="button" data-kind="accepted" aria-pressed="true">Accepted</button>
+							<button type="button" data-kind="waitlist" aria-pressed="false">Waiting list</button>
+							<button type="button" data-kind="denied" aria-pressed="false">Denied</button>
+							<button type="button" data-kind="confirmation" aria-pressed="false">Confirmation</button>
+							<button type="button" data-kind="custom" aria-pressed="false">Your own</button>
+						</div>
+						<p class="muted mail-help" id="mail-help"></p>
+					</div>
+					<div class="bform" id="mail-custom" hidden>
+						<label class="bform-field">
+							<span>Subject</span>
+							<input type="text" id="mail-subject" maxlength="150" placeholder="BreaQ Hackathon: a place for you" autocomplete="off" />
+						</label>
+						<label class="bform-field">
+							<span>Message <em>a blank line between paragraphs</em></span>
+							<textarea id="mail-text" maxlength="5000" placeholder="A place opened up at the BreaQ Hackathon, and it is yours if you still want it…"></textarea>
+						</label>
+						<label class="bform-field">
+							<span>Sign-off</span>
+							<input type="text" id="mail-sign" maxlength="60" value="Best regards," autocomplete="off" />
+						</label>
+					</div>
+					<label class="bform-field" id="mail-note-field">
+						<span>A paragraph of your own <em>optional, after the usual text</em></span>
+						<textarea id="mail-note" class="mail-note" maxlength="5000" placeholder="We moved you up from the waiting list: a place opened up."></textarea>
+					</label>
+					<p class="muted mail-help" id="mail-fill">In what you write, <code>{first name}</code>, <code>{name}</code> and <code>{dashboard}</code> (their team dashboard link, which opens for the accepted only) become each person’s own.</p>
+					<label class="check" id="mail-mates-field"><input type="checkbox" id="mail-mates" checked /> Name their registered teammates who get the same decision (the team version)</label>
+					<label class="check"><input type="checkbox" id="mail-again" /> Also to those who already had this email</label>
+					<div class="bform-actions">
+						<button type="submit" class="btn" id="mail-check">Check who gets it</button>
+					</div>
+				</form>
+				<div id="mail-body" aria-live="polite"></div>
+				<div class="send-actions">
+					<button type="button" class="btn primary" id="mail-go" hidden>Send</button>
 				</div>
 			</dialog>
 
@@ -508,6 +572,6 @@
 
 		</main>
 
-		<script src="assets/js/admin.js?v=20261018b"></script>
+		<script src="assets/js/admin.js?v=20261018c"></script>
 	</body>
 </html>

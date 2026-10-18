@@ -92,6 +92,12 @@
  * The wording is in decisionEmail_. Someone whose registered teammates got the same decision gets the team
  * version naming them. After changing the wording, deploy a new version for the admin page's button.
  *
+ * Emails to the people picked (mail_): on the admin page a box on each row (and on each team) picks people, kept
+ * while one looks around; the bar at the bottom emails them the one chosen there: a decision email (accepted,
+ * waitlist, denied, which also sets their Decision, so the regular send counts it as sent), the confirmation again,
+ * or one written on the page in the same look. It first shows who gets it and the email as the first of them reads
+ * it, and stops at the day's emails as sendDecisions does.
+ *
  * On their own or in a team: the "Team" column is solo, team (with the names in "Team name and members") or
  * match (the organisers put them in a team). The form asks with Quantum AI or Quantum Hacking ticked. Quantum
  * Hacking became a team challenge after people had registered for it, so one email asks each of them, from the
@@ -547,6 +553,7 @@ function doPost(e) {
     "letter",
     "decide",
     "decisions",
+    "mail",
     "board-admin",
     "board-save",
     "board-delete",
@@ -570,6 +577,7 @@ function doPost(e) {
       if (data.action === "letter") return json_(letter_(data));
       if (data.action === "decide") return json_(decide_(data));
       if (data.action === "decisions") return json_(decisions_(!!data.send));
+      if (data.action === "mail") return json_(mail_(data));
       if (data.action === "board-admin") return json_(boardAdmin_());
       if (data.action === "board-save") return json_(boardSave_(data));
       if (data.action === "board-delete") return json_(boardDelete_(data));
@@ -867,10 +875,7 @@ function confirmations_(send) {
         note = "confirmation FAILED again " + stamp() + ": " + err;
         failed++;
       }
-      // the cell keeps 500 characters (clean_): the newest note is the one to keep, so this one is not sent twice
-      var text = d.had + "; " + note;
-      if (text.length > 500) text = "…" + text.slice(-499);
-      sheet.getRange(d.row, col).setValue(cellFor_("Emails", text));
+      sheet.getRange(d.row, col).setValue(cellFor_("Emails", emailsWith_(d.had, note)));
       Logger.log("Row " + d.row + " · " + d.name + " <" + d.email + "> · " + note);
     });
     var waiting = due.length - sent - failed;
@@ -896,6 +901,13 @@ function confirmations_(send) {
   } finally {
     if (lock) lock.releaseLock();
   }
+}
+
+// "Emails" with a note added after what it says. The cell keeps 500 characters (clean_): past that the oldest part
+// goes, as the newest note is the one the sends look for (so an email is not sent twice)
+function emailsWith_(had, note) {
+  var text = (had ? had + "; " : "") + note;
+  return text.length > 500 ? "…" + text.slice(-499) : text;
 }
 
 /* ---------------------------------------------------------------- */
@@ -1214,6 +1226,258 @@ function reserve_() {
   return Date.now() < Date.parse(REGISTRATION_CLOSES) ? DECISION_RESERVE : 0;
 }
 
+/* --- emails to the people picked on the admin page ------------------------------- */
+
+// what the admin page can send the people picked in it: the decision emails (which set the Decision too, so the
+// dashboard, the regular send and the page agree), the registration's confirmation again, or one written there
+var MAIL_KINDS = ["accepted", "waitlist", "denied", "confirmation", "custom"];
+var MAIL_TEXT_MAX = 5000;
+var MAIL_SUBJECT_MAX = 150;
+
+// admin.html: { emails, kind, note, mates, again, subject, text, sign, send }. note: a paragraph of the organisers'
+// own after a decision email's text; mates: a decision email names the registered teammates with the same decision
+// (or picked for it now), else it is the personal one; again: also to those who had this email already; subject,
+// text and sign: the custom email. Without send: who would get it (items) and the email as the first of them reads
+// it (sample). Stops as decisions_ does, at the day's emails and well before Apps Script's 6 minutes.
+function mail_(data) {
+  var kind = String(data.kind || "");
+  if (MAIL_KINDS.indexOf(kind) === -1)
+    return { ok: false, action: "mail", error: "Choose which email to send." };
+  var emails = emailsOf_({ Email: "", "Other emails": [].concat(data.emails || []).join(",") });
+  if (!emails.length) return { ok: false, action: "mail", error: "Pick at least one person." };
+  var text = function (v) {
+    return String(v || "").replace(/\r\n?/g, "\n").trim().slice(0, MAIL_TEXT_MAX);
+  };
+  var opts = {
+    note: text(data.note),
+    subject: clean_(data.subject).slice(0, MAIL_SUBJECT_MAX),
+    body: text(data.text),
+    sign: clean_(data.sign).slice(0, 60) || "Best regards,",
+    mates: data.mates !== false,
+    again: !!data.again,
+  };
+  if (kind === "custom" && (!opts.subject || !opts.body))
+    return { ok: false, action: "mail", error: "Write the subject and the message first." };
+  // two organisers pressing Send at once must not email anyone twice
+  var lock = data.send ? LockService.getDocumentLock() : null;
+  if (lock && !lock.tryLock(2000))
+    return {
+      ok: false,
+      action: "mail",
+      error: "Someone else is sending emails from this script right now. Wait a minute, then try again.",
+    };
+  try {
+    return mailLocked_(kind, emails, opts, !!data.send);
+  } finally {
+    if (lock) lock.releaseLock();
+  }
+}
+
+function mailLocked_(kind, emails, opts, send) {
+  var started = Date.now();
+  var sheet = sheet_();
+  var values = sheet.getDataRange().getValues();
+  var header = header_(values);
+  var decision = DECISIONS.indexOf(kind) !== -1;
+  var stamp = function () {
+    return Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm");
+  };
+  // each email's registrations, the hackathon's first
+  var rowsOf = {};
+  for (var i = 1; i < values.length; i++) {
+    var r = toRecord_(header, values[i]);
+    var x = { row: i + 1, r: r, ev: eventKey_(r["Attends"]) };
+    emailsOf_(r).forEach(function (e) {
+      (rowsOf[e] = rowsOf[e] || [])[x.ev === "hackathon" ? "unshift" : "push"](x);
+    });
+  }
+  var picked = {};
+  emails.forEach(function (e) {
+    picked[e] = true;
+  });
+
+  // one item per email to send: { email, name, what (the event, for a confirmation), status, note, warn }, with the
+  // row it is for and, for a decision email, the person (person_)
+  var items = [];
+  var add = function (email, x, what) {
+    var it = {
+      email: email,
+      name: x ? String(x.r["First name"] + " " + x.r["Last name"]).trim() : "",
+      what: what || "",
+      status: "to send",
+      note: "",
+      warn: false,
+      x: x,
+    };
+    items.push(it);
+    return it;
+  };
+  emails.forEach(function (email) {
+    var rows = rowsOf[email] || [];
+    if (!rows.length) {
+      var gone = add(email, null);
+      gone.status = "missing";
+      gone.note = "not in the sheet any more: refresh the page";
+      return;
+    }
+    if (decision) {
+      var it = add(email, rows[0]);
+      if (rows[0].ev !== "hackathon") {
+        it.status = "skipped";
+        it.note = "registered for the conference only, which has no decision emails";
+        return;
+      }
+      var r = rows[0].r;
+      var p = person_(values, header, r);
+      // the team as it will be: the teammates picked here get this same decision
+      var team = teamOf_(values, header, p.mates, r).map(function (t) {
+        return picked[t.email] ? { name: t.name, decision: kind, email: t.email } : t;
+      });
+      p.mates = opts.mates
+        ? team
+            .filter(function (t) {
+              return t.decision === kind;
+            })
+            .map(function (t) {
+              return t.name;
+            })
+        : [];
+      it.p = p;
+      var now = String(r["Decision"]).trim().toLowerCase();
+      it.note = [now && now !== kind ? "decided " + now + " until now" : "", teamLine_(team, kind)].filter(String).join(" · ");
+      it.warn = it.note.indexOf("⚠") !== -1;
+      if (!opts.again && String(r["Decision email"]).indexOf(kind + ": sent") === 0) it.status = "sent before";
+      return;
+    }
+    if (kind === "confirmation") {
+      // one for each event they registered for
+      rows.forEach(function (x) {
+        var c = add(email, x, x.ev);
+        if (!opts.again && String(x.r["Emails"]).indexOf("confirmation sent") !== -1) c.status = "sent before";
+      });
+      return;
+    }
+    var mine = add(email, rows[0]);
+    if (!opts.again && String(rows[0].r["Emails"]).indexOf("email “" + opts.subject + "” sent") !== -1)
+      mine.status = "sent before";
+  });
+
+  var mailFor = function (it) {
+    var r = it.x.r;
+    var first = String(r["First name"]).trim();
+    if (decision) {
+      var t = decisionEmail_(kind, it.p);
+      if (opts.note) t.paras = t.paras.concat(paras_(fill_(opts.note, r)));
+      return renderEmail_(first, t);
+    }
+    if (kind === "confirmation") return confirmationEmail_({ first_name: first, attend: String(r["Attends"]).trim() }, null);
+    return renderEmail_(first, {
+      subject: fill_(opts.subject, r),
+      heading: "Hi " + first + ",",
+      paras: paras_(fill_(opts.body, r)),
+      button: null,
+      sign: opts.sign,
+    });
+  };
+
+  var reserve = reserve_();
+  var stopped = "";
+  var changed = false;
+  var col = function (name) {
+    return header.indexOf(name) + 1;
+  };
+  if (send)
+    items.forEach(function (it) {
+      if (it.status !== "to send" || stopped) return;
+      var left = emailsLeft_();
+      if (left !== null && left <= reserve) stopped = "quota";
+      else if (Date.now() - started > 4.5 * 60 * 1000) stopped = "time";
+      if (stopped) return;
+      var r = it.x.r;
+      // the decision first: the email says it, and the dashboard opens for the accepted only
+      if (decision && String(r["Decision"]).trim().toLowerCase() !== kind) {
+        sheet.getRange(it.x.row, col("Decision")).setValue(kind);
+        r["Decision"] = kind;
+        changed = true;
+      }
+      var how;
+      try {
+        var mail = mailFor(it);
+        how = " sent " + stamp() + " via " + send_({
+          to: String(r["Email"]).trim(),
+          subject: mail.subject,
+          body: mail.text,
+          htmlBody: mail.html,
+          name: SENDER_NAME,
+          replyTo: REPLY_TO,
+        });
+        it.status = "sent";
+      } catch (err) {
+        how = " FAILED " + stamp() + ": " + err;
+        it.status = "failed";
+        it.note = (it.note ? it.note + " · " : "") + String(err);
+      }
+      how += ", from the admin page";
+      // as the regular sends write it, so that they count it
+      if (decision) sheet.getRange(it.x.row, col("Decision email")).setValue(cellFor_("Decision email", kind + ":" + how));
+      else {
+        var had = String(r["Emails"]).trim();
+        r["Emails"] = emailsWith_(had, (kind === "confirmation" ? "confirmation" : "email “" + opts.subject + "”") + how);
+        sheet.getRange(it.x.row, col("Emails")).setValue(cellFor_("Emails", r["Emails"]));
+      }
+    });
+  if (changed) rosterChanged_(); // the dashboard's access follows the decision at once
+
+  // the email as the first one due reads it (or the first who had it already)
+  var sample = null;
+  var first = items.filter(function (it) {
+    return it.status === "to send" || it.status === "sent before";
+  })[0];
+  if (!send && first) {
+    var m = mailFor(first);
+    sample = { name: first.name, email: first.email, subject: m.subject, html: m.html };
+  }
+  return {
+    ok: true,
+    action: "mail",
+    kind: kind,
+    sent: send,
+    stopped: stopped,
+    items: items.map(function (it) {
+      return { email: it.email, name: it.name, what: it.what, status: it.status, note: it.note, warn: it.warn };
+    }),
+    sample: sample,
+    emailsLeft: emailsLeft_(),
+    reserve: reserve,
+  };
+}
+
+// {first name}, {name} and {dashboard} (the link with their code) in what the organisers write, each person's own
+function fill_(s, r) {
+  var email = String(r["Email"]).trim().toLowerCase();
+  var put = function (v) {
+    return function () {
+      return v;
+    };
+  };
+  return String(s)
+    .replace(/\{first name\}/gi, put(String(r["First name"]).trim()))
+    .replace(/\{name\}/gi, put(String(r["First name"] + " " + r["Last name"]).trim()))
+    .replace(/\{dashboard\}/gi, function () {
+      return TEAMS_PAGE + "#code=" + dashboardCode_(email);
+    });
+}
+
+// paragraphs: a blank line between them
+function paras_(s) {
+  return String(s)
+    .split(/\n\s*\n/)
+    .map(function (p) {
+      return p.trim();
+    })
+    .filter(String);
+}
+
 // the Decision column as a dropdown of DECISIONS
 function decisionColumn_(sheet, header) {
   var c = header.indexOf("Decision") + 1;
@@ -1281,7 +1545,7 @@ function teammates_(text) {
 }
 
 // the teammates r named, each with the decision in their own row, found by name among the hackathon
-// registrations: { name, decision } ("" not decided yet, null not registered under that name). A name written
+// registrations: { name, decision, email } ("" not decided yet, null not registered under that name). A name written
 // another way than its registration still finds it (similarMates_); several run together without a comma come
 // back one by one, each under the name they registered with.
 function teamOf_(values, header, mates, r) {
@@ -1295,12 +1559,12 @@ function teamOf_(values, header, mates, r) {
   mates.forEach(function (m) {
     var key = nameKey_(m, "");
     for (var i = 0; i < people.length; i++)
-      if (people[i].key === key) return team.push({ name: m, decision: people[i].decision });
+      if (people[i].key === key) return team.push({ name: m, decision: people[i].decision, email: people[i].email });
     var found = similarMates_(m, people, namer);
     found.found.forEach(function (p) {
-      team.push({ name: found.found.length === 1 && !found.left ? m : p.name, decision: p.decision });
+      team.push({ name: found.found.length === 1 && !found.left ? m : p.name, decision: p.decision, email: p.email });
     });
-    if (found.left) team.push({ name: found.left, decision: null });
+    if (found.left) team.push({ name: found.left, decision: null, email: "" });
   });
   return team;
 }
@@ -1616,7 +1880,7 @@ function renderEmail_(name, t) {
     "</h2>" +
     t.paras
       .map(function (s) {
-        return "<p>" + linked(s) + "</p>";
+        return "<p>" + linked(s).replace(/\n/g, "<br>") + "</p>"; // a line break typed on the admin page
       })
       .join("") +
     (t.button
@@ -4211,6 +4475,19 @@ function event_(attend) {
 
 // merge: set when this application updated a registration already there (merge_)
 function sendConfirmation_(email, data, merge) {
+  var mail = confirmationEmail_(data, merge);
+  return send_({
+    to: email,
+    subject: mail.subject,
+    body: mail.text,
+    htmlBody: mail.html,
+    name: SENDER_NAME,
+    replyTo: REPLY_TO,
+  });
+}
+
+// the confirmation as { subject, text, html }, for sendConfirmation_ and the admin page's preview (mail_)
+function confirmationEmail_(data, merge) {
   var name = clean_(data.first_name);
   var ev = event_(data.attend);
   var subject = merge
@@ -4262,14 +4539,7 @@ function sendConfirmation_(email, data, merge) {
     ev.page +
     "</a><br>Questions? Just reply to this email.</p>" +
     "<p>See you there,<br>RoQTeam</p></div>";
-  return send_({
-    to: email,
-    subject: subject,
-    body: text,
-    htmlBody: html,
-    name: SENDER_NAME,
-    replyTo: REPLY_TO,
-  });
+  return { subject: subject, text: text, html: html };
 }
 
 function sendNotice_(email, data, letterUrl, merge, row, namesake) {

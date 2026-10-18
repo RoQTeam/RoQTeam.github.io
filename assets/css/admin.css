@@ -2800,3 +2800,117 @@ input[type="checkbox"] {
 		.flash-min {
 			min-width: 10em;
 		}
+
+/* --- picked for an email: the boxes in the table, the bar at the bottom, the email --------------------------------- */
+
+.people .c-pick {
+	width: 1%;
+	padding-right: 0;
+}
+
+	.people td.c-pick label {
+		display: flex;
+		align-items: center;
+		min-height: 22px;
+		cursor: pointer;
+	}
+
+	.people tbody tr.is-picked {
+		background: rgba(76, 92, 150, 0.22);
+	}
+
+		.people tbody tr.is-picked:hover {
+			background: rgba(76, 92, 150, 0.32);
+		}
+
+.pickbar {
+	position: fixed;
+	left: 50%;
+	bottom: 16px;
+	z-index: 40;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 6px 8px;
+	width: max-content;
+	max-width: calc(100vw - 32px);
+	padding: 8px 10px 8px 18px;
+	border: solid 1px var(--line);
+	border-radius: 10px;
+	background: var(--raised);
+	box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+	transform: translateX(-50%);
+}
+
+	.pick-count {
+		margin-right: 6px;
+		font-weight: 600;
+		font-variant-numeric: tabular-nums;
+	}
+
+		.pick-count em {
+			font-style: normal;
+			font-weight: 400;
+			color: var(--fg-light);
+		}
+
+	.pickbar .btn[aria-pressed="true"] {
+		background: var(--accent);
+		color: var(--fg);
+	}
+
+	/* the last rows stay clear of the bar */
+	.dash.has-picks {
+		padding-bottom: 104px;
+	}
+
+.detail-pick {
+	margin-top: 10px;
+	font-size: 0.9em;
+}
+
+.mail-dlg {
+	width: min(760px, calc(100vw - 32px));
+}
+
+	.mail-form {
+		margin-bottom: 18px;
+	}
+
+	.mail-kinds {
+		flex-wrap: wrap;
+	}
+
+	.mail-help {
+		margin: 0;
+		font-size: 0.9em;
+	}
+
+	.bform textarea.mail-note {
+		min-height: 5em;
+	}
+
+	#mail-body.is-stale {
+		opacity: 0.45;
+	}
+
+	.send-note.warn {
+		color: var(--warn-text);
+	}
+
+	.mail-sample {
+		margin-top: 22px;
+	}
+
+		.mail-subject {
+			font-weight: 600;
+		}
+
+		.mail-frame {
+			display: block;
+			width: 100%;
+			height: 420px;
+			border: 0;
+			border-radius: 6px;
+			background: #fff;
+		}

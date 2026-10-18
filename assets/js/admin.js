@@ -5,6 +5,7 @@
 	- keeps the key for the tab, or on the device when asked; the registrations stay in memory only
 	- counts, registrations per day and breakdowns for the chosen event; the table filters by event and search
 	- copies the shown emails, downloads the shown rows as CSV, opens one registration in full
+	- picks people with the boxes in the table, kept while one looks around, and emails them the one chosen ("mail")
 	- the Teams view: who is in which team, each team's challenge, table, pitch and place, who said they are
 	  coming ("team-save", "team-delete", "team-assign"; the sheet's "Teams" tab and "Hackathon team" column)
 	- the Check-in view, at the door: "checkin" fills the "Checked in" column
@@ -63,6 +64,8 @@
 		majority: 0,              // this many grades, and their average sets the Decision
 		grades: null,             // { min, max, accept, waitlist }: the averages that accept and put on the waiting list
 		handOpen: false,          // "Decide by hand" open in the full view
+		picked: {},               // email -> true: the people picked for an email (kept in sessionStorage)
+		onlyPicked: false,        // the table shows only them
 		people: [],               // the chosen event's registrations, one entry per person
 		shown: []
 	};
@@ -848,6 +851,11 @@
 		state.detail = null;
 		if ($('detail').open) $('detail').close();
 		if ($('send-dlg').open) $('send-dlg').close();
+		if ($('mail-dlg').open) $('mail-dlg').close();
+		state.picked = {};
+		state.onlyPicked = false;
+		keepPicked();
+		renderPickBar();
 		forgetLetters();
 		stopScan();
 		forEach(['tiles', 'days', 'breakdowns'], function (id) { $(id).textContent = ''; });
@@ -996,6 +1004,7 @@
 		untranslate(state.records);
 		groupOrgs(state.records);
 		buildTeams(state.records);
+		prunePicked();
 		state.sheet = json.sheet || '';
 		state.codes = json.codes || {};   // the dashboard code of each accepted participant, by email
 		state.teams = json.teams || [];
@@ -1500,6 +1509,7 @@
 
 	// everything that filters the table, the chart and the bars; skip: a breakdown whose own bars do not count
 	function passes(p, skip) {
+		if (state.onlyPicked && !isPicked(p)) return false;
 		if (state.query && p.text.indexOf(state.query) === -1) return false;
 		if (state.problems && !p.problem) return false;
 		if (!inTabs(p)) return false;
@@ -1536,6 +1546,7 @@
 	}
 
 	function clearFilters() {
+		state.onlyPicked = false;
 		state.facets = {};
 		state.extra = {};
 		state.from = state.to = '';
@@ -1550,6 +1561,7 @@
 		var box = $('chips');
 		box.textContent = '';
 		var chips = [];
+		if (state.onlyPicked) chips.push(['Only the selected', function () { state.onlyPicked = false; renderFiltered(); }]);
 		BREAKDOWNS.forEach(function (b) {
 			(state.facets[b.id] || []).forEach(function (o) {
 				chips.push([b.title + ': ' + o.label, function () { toggleFacet(b, [o]); }]);
@@ -1635,6 +1647,16 @@
 	function cellText(text, cls) { var td = el('td', cls, text); return td; }
 
 	var COLUMNS = [
+		// picked for an email; in the head, everyone the table shows
+		{ key: 'pick', label: '', always: true, cls: 'c-pick',
+			head: function (rs) { return pickBox(rs, 'Select everyone in the list'); },
+			cell: function (r, i) {
+				var td = el('td', 'c-pick');
+				var label = el('label');
+				label.appendChild(pickBox([r], 'Select ' + (r.name || r.email), i));
+				td.appendChild(label);
+				return td;
+			} },
 		// on a phone the decision buttons need the room more than the date
 		{ key: 'time', label: 'Registered', always: true, cls: 'c-time hide-sm',
 			sort: function (r) { return r.time ? r.time.getTime() : 0; },
@@ -1785,6 +1807,11 @@
 		var headRow = el('tr');
 		cols.forEach(function (c) {
 			var th = el('th', c.cls || null);
+			if (c.head) {
+				th.appendChild(c.head(rs));
+				headRow.appendChild(th);
+				return;
+			}
 			var b = el('button', 'sort-btn', typeof c.label === 'function' ? c.label() : c.label);
 			b.type = 'button';
 			b.setAttribute('data-sort', c.key);
@@ -1802,7 +1829,7 @@
 				lastTeam = hackReg(r).team;
 				body.appendChild(teamRow(lastTeam, cols));
 			}
-			var tr = el('tr');
+			var tr = el('tr', isPicked(r) ? 'is-picked' : null);
 			tr.setAttribute('data-i', i);
 			cols.forEach(function (c) {
 				tr.appendChild(c.cell ? c.cell(r, i) : cellText(get(r, c.col), c.cls || null));
@@ -1821,6 +1848,7 @@
 		$('empty').hidden = rs.length > 0;
 		$('copy-emails').disabled = $('download').disabled = !rs.length;
 		renderTabs();
+		renderPickBar();
 	}
 
 	// the Who and Decision tabs, with how many people each holds (the decisions within the Who tab chosen)
@@ -1865,6 +1893,7 @@
 		// one cell per column before the decision, so a column hidden on a small screen is hidden here too
 		cols.slice(0, at).forEach(function (c, j) {
 			var td = el('td', c.cls || null);
+			if (c.key === 'pick') td.appendChild(pickBox(team.members, 'Select the whole team'));
 			if (j === at - 1) td.appendChild(el('span', 'team-size', 'Team of ' + size));
 			tr.appendChild(td);
 		});
@@ -1894,7 +1923,7 @@
 	});
 
 	$('people').tBodies[0].addEventListener('click', function (ev) {
-		if (ev.target.closest('a')) return;
+		if (ev.target.closest('a, .c-pick')) return;
 		var tr = ev.target.closest('tr[data-i]');
 		if (tr) openDetail(state.shown[+tr.getAttribute('data-i')]);
 	});
@@ -1915,6 +1944,7 @@
 		state.detail = p;
 		renderDetailDecision(p);
 		$('detail-name').textContent = p.name || '(no name)';
+		$('detail-pick').checked = isPicked(p);
 		$('detail-event').textContent = p.event === 'both' ? 'Hackathon + Conference' : EVENT_LABEL[p.event] || get(p, 'Attends');
 		var box = $('detail-fields');
 		box.textContent = '';
@@ -3358,6 +3388,324 @@
 		window.setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
 		note('Downloaded ' + plural(lines.length - 1, 'registration', 'registrations'));
 	});
+
+	/* --- picked: people chosen for an email ------------------------------------------- */
+
+	// A box on each row (and on each team) picks people, as in a basket: they stay picked through the views, the
+	// filters, the search, a Refresh and a reload of this tab (sessionStorage), until Clear, Lock or the email that
+	// goes to them. The bar at the bottom counts them, shows only them, copies their emails and emails them.
+	var PICK_STORE = 'breaq-2026-admin-picked';
+	var lastPick = null;   // the row clicked last, for a Shift-click from there
+
+	function loadPicked() {
+		try {
+			JSON.parse(window.sessionStorage.getItem(PICK_STORE) || '[]').forEach(function (e) { state.picked[e] = true; });
+		} catch (e) {}
+	}
+
+	function keepPicked() {
+		try {
+			var list = Object.keys(state.picked);
+			if (list.length) window.sessionStorage.setItem(PICK_STORE, JSON.stringify(list));
+			else window.sessionStorage.removeItem(PICK_STORE);
+		} catch (e) {}
+	}
+
+	// someone no longer in the sheet (or under another email now) is no longer picked
+	function prunePicked() {
+		var have = {};
+		state.records.forEach(function (r) { if (r.email) have[r.email] = true; });
+		Object.keys(state.picked).forEach(function (e) { if (!have[e]) delete state.picked[e]; });
+		if (!Object.keys(state.picked).length) state.onlyPicked = false;
+		keepPicked();
+	}
+
+	function isPicked(r) { return !!(r.email && state.picked[r.email]); }
+
+	// the people picked, every event's
+	function pickedPeople() {
+		return people(state.records).filter(isPicked);
+	}
+
+	function pick(rs, on) {
+		rs.forEach(function (r) {
+			if (!r.email) return;
+			if (on) state.picked[r.email] = true;
+			else delete state.picked[r.email];
+		});
+		if (!Object.keys(state.picked).length) state.onlyPicked = false;
+		keepPicked();
+		// the table again, with the focus back on the box pressed
+		var a = document.activeElement;
+		var key = a && a.getAttribute ? a.getAttribute('data-pick') : null;
+		if (state.onlyPicked) renderFiltered();
+		else renderTable();
+		if (dialog.open && state.detail) $('detail-pick').checked = isPicked(state.detail);
+		if (key === null) return;
+		forEach($('people').querySelectorAll('[data-pick]'), function (b) { if (b.getAttribute('data-pick') === key) b.focus(); });
+	}
+
+	// a box for one person (i: their row in the table, for Shift-click) or for several (a team, everyone shown)
+	function pickBox(rs, label, i) {
+		var box = el('input', 'pick');
+		box.type = 'checkbox';
+		box.setAttribute('aria-label', label);
+		box.setAttribute('data-pick', rs.map(function (r) { return r.email; }).join(' '));
+		var n = rs.filter(isPicked).length;
+		box.checked = n > 0 && n === rs.length;
+		box.indeterminate = n > 0 && n < rs.length;
+		box.addEventListener('click', function (ev) {
+			ev.stopPropagation();   // a click here does not open the registration
+			var range = rs;
+			if (ev.shiftKey && i !== undefined && lastPick !== null && state.shown[lastPick])
+				range = state.shown.slice(Math.min(i, lastPick), Math.max(i, lastPick) + 1);
+			if (i !== undefined) lastPick = i;
+			pick(range, box.checked);
+		});
+		return box;
+	}
+
+	function renderPickBar() {
+		var ps = pickedPeople();
+		$('pickbar').hidden = !ps.length;
+		$('dash').classList.toggle('has-picks', ps.length > 0);
+		if (!ps.length) return;
+		var shown = {};
+		state.shown.forEach(function (p) { shown[p.email] = true; });
+		var away = ps.filter(function (p) { return !shown[p.email]; }).length;
+		var count = $('pick-count');
+		count.textContent = plural(ps.length, 'person', 'people') + ' selected';
+		if (away && state.view === 'regs') count.appendChild(el('em', null, ' · ' + away + ' not in this list'));
+		$('pick-only').setAttribute('aria-pressed', String(state.onlyPicked));
+	}
+
+	var pickTimer = null;
+	function pickNote(msg) {
+		$('pick-note').textContent = msg;
+		window.clearTimeout(pickTimer);
+		pickTimer = window.setTimeout(function () { $('pick-note').textContent = ''; }, 4000);
+	}
+
+	$('pick-only').addEventListener('click', function () {
+		state.onlyPicked = !state.onlyPicked;
+		if (state.view !== 'regs') setView('regs');
+		renderFiltered();
+	});
+
+	$('pick-copy').addEventListener('click', function () {
+		var list = pickedPeople().map(function (p) { return p.email; });
+		copyText(list.join(', '), function (ok) {
+			pickNote(ok ? 'Copied ' + plural(list.length, 'address', 'addresses') : 'Could not copy: your browser blocked it');
+		});
+	});
+
+	$('pick-clear').addEventListener('click', function () {
+		var n = pickedPeople().length;
+		if (n > 3 && !window.confirm('Clear the ' + n + ' people selected?')) return;
+		state.picked = {};
+		pick([], false);
+	});
+
+	$('detail-pick').addEventListener('change', function () {
+		if (state.detail) pick([state.detail], $('detail-pick').checked);
+	});
+
+	loadPicked();
+
+	/* --- emailing the people picked ------------------------------------------------------ */
+
+	var mailDlg = $('mail-dlg');
+	var mailBody = $('mail-body');
+	var mailGo = $('mail-go');
+	var mailKind = 'accepted';
+
+	var MAIL_HELP = {
+		accepted: 'Sets their hackathon decision to Accepted and sends the acceptance: their team dashboard link and code, and the ask to say there that they are coming. The regular Send then counts them as emailed.',
+		waitlist: 'Sets their hackathon decision to Waitlist and sends the waiting-list email.',
+		denied: 'Sets their hackathon decision to Denied and sends it. Those registered for the conference read that we look forward to seeing them there; the others are invited to register for it.',
+		confirmation: 'The “You are registered” email again, one for each event they registered for.',
+		custom: 'Your own email, in the look of ours: “Hi” and their first name at the top, your sign-off and RoQTeam at the end. Links starting with https:// can be clicked.'
+	};
+
+	function mailLine(cls, text) { mailBody.appendChild(el('p', cls, text)); }
+
+	function mailList(title, items, help) {
+		if (!items.length) return;
+		var box = el('div', 'send-list');
+		box.appendChild(el('h3', null, title + ' · ' + items.length));
+		if (help) box.appendChild(el('p', 'muted', help));
+		var ul = el('ul');
+		items.forEach(function (it) {
+			var li = el('li');
+			li.appendChild(el('span', 'send-who', (it.name || it.email) + (it.what ? ' · ' + EVENT_LABEL[it.what] : '')));
+			if (it.note) li.appendChild(el('span', 'send-note' + (it.warn ? ' warn' : ''), it.note));
+			ul.appendChild(li);
+		});
+		box.appendChild(ul);
+		mailBody.appendChild(box);
+	}
+
+	function withStatus(items, status) {
+		return items.filter(function (it) { return status.indexOf(it.status) !== -1; });
+	}
+
+	function renderMailForm() {
+		var decision = DECISIONS.indexOf(mailKind) !== -1;
+		forEach($('mail-kind').querySelectorAll('button'), function (b) {
+			b.setAttribute('aria-pressed', String(b.getAttribute('data-kind') === mailKind));
+		});
+		$('mail-help').textContent = MAIL_HELP[mailKind];
+		$('mail-custom').hidden = mailKind !== 'custom';
+		$('mail-note-field').hidden = $('mail-mates-field').hidden = !decision;
+		$('mail-fill').hidden = mailKind === 'confirmation';
+	}
+
+	// what the preview showed no longer holds once the form changes: check again before sending
+	function mailStale() {
+		mailGo.hidden = true;
+		if (mailBody.childNodes.length) mailBody.classList.add('is-stale');
+	}
+
+	function mailRequest(send) {
+		return {
+			action: 'mail',
+			key: state.key,
+			send: send,
+			kind: mailKind,
+			emails: pickedPeople().map(function (p) { return p.email; }),
+			note: $('mail-note').value,
+			mates: $('mail-mates').checked,
+			again: $('mail-again').checked,
+			subject: $('mail-subject').value,
+			text: $('mail-text').value,
+			sign: $('mail-sign').value
+		};
+	}
+
+	function openMail() {
+		var n = pickedPeople().length;
+		if (!n) return;
+		$('mail-who').textContent = plural(n, 'person', 'people') + ' selected';
+		renderMailForm();
+		mailBody.textContent = '';
+		mailBody.classList.remove('is-stale');
+		mailLine('muted', 'Choose the email, then Check who gets it: you see the list and the email before anything goes out.');
+		mailGo.hidden = true;
+		if (typeof mailDlg.showModal === 'function') mailDlg.showModal();
+		else mailDlg.setAttribute('open', '');
+	}
+
+	function closeMail() {
+		if (typeof mailDlg.close === 'function') mailDlg.close();
+		else mailDlg.removeAttribute('open');
+	}
+
+	forEach($('mail-kind').querySelectorAll('button'), function (b) {
+		b.addEventListener('click', function () {
+			mailKind = b.getAttribute('data-kind');
+			renderMailForm();
+			mailStale();
+		});
+	});
+
+	$('mail-form').addEventListener('input', mailStale);
+	$('mail-form').addEventListener('change', mailStale);
+
+	$('mail-form').addEventListener('submit', function (ev) {
+		ev.preventDefault();
+		if (mailKind === 'custom' && (!$('mail-subject').value.trim() || !$('mail-text').value.trim())) {
+			mailBody.textContent = '';
+			mailBody.classList.remove('is-stale');
+			mailLine('err', 'Write the subject and the message first.');
+			($('mail-subject').value.trim() ? $('mail-text') : $('mail-subject')).focus();
+			return;
+		}
+		var check = $('mail-check');
+		check.disabled = true;
+		mailBody.textContent = '';
+		mailBody.classList.remove('is-stale');
+		mailLine('muted', 'Checking who gets it…');
+		mailGo.hidden = true;
+		post(mailRequest(false), 60000, function (json, err) {
+			check.disabled = false;
+			if (json && json.ok && json.action === 'mail') mailPreview(json);
+			else mailFailed(json, err, false);
+		});
+	});
+
+	// before sending: how many, who has it already, who is left out and why, and the email as the first one reads it
+	function mailPreview(json) {
+		var items = json.items || [];
+		var due = withStatus(items, ['to send']);
+		var can = typeof json.emailsLeft === 'number' ? Math.max(0, json.emailsLeft - json.reserve) : due.length;
+		mailBody.textContent = '';
+		mailLine('send-big', due.length ? plural(due.length, 'email', 'emails') + ' to send' : 'Nothing to send');
+		if (due.length > can)
+			mailLine('send-warn', 'Google allows ' + json.emailsLeft + ' more emails today' + (json.reserve ? ' and ' + json.reserve + ' stay free for new registrations' : '') + ', so ' +
+				(can ? 'the first ' + can + ' go today. Send again tomorrow for the other ' + (due.length - can) + ': they stay selected.' : 'none can go out today. Try again tomorrow.'));
+		var changing = due.filter(function (it) { return / until now/.test(it.note); }).length;
+		if (changing) mailLine('send-warn', plural(changing, 'decision changes', 'decisions change') + ' with this email (“until now” below).');
+		mailList('To send', due, due.some(function (it) { return it.warn; }) ? 'The ones marked go out as they are: check their teams first.' : '');
+		mailList('Had it already', withStatus(items, ['sent before']), 'Tick “Also to those who already had this email” to send it again.');
+		mailList('Left out', withStatus(items, ['skipped', 'missing']));
+		if (json.sample) {
+			var box = el('div', 'mail-sample');
+			box.appendChild(el('h3', null, 'As ' + (json.sample.name || json.sample.email) + ' reads it'));
+			box.appendChild(el('p', 'mail-subject', 'Subject: ' + json.sample.subject));
+			var frame = el('iframe', 'mail-frame');
+			frame.setAttribute('sandbox', '');   // our own HTML, shown without running anything or following its links
+			frame.title = 'The email as ' + (json.sample.name || json.sample.email) + ' reads it';
+			frame.srcdoc = json.sample.html;
+			box.appendChild(frame);
+			mailBody.appendChild(box);
+		}
+		mailGo.hidden = !due.length || !can;
+		mailGo.disabled = false;
+		mailGo.textContent = 'Send ' + plural(Math.min(due.length, can), 'email', 'emails');
+	}
+
+	mailGo.addEventListener('click', function () {
+		mailGo.disabled = true;
+		mailGo.classList.add('is-busy');
+		mailGo.textContent = 'Sending…';
+		$('mail-check').disabled = true;
+		mailLine('muted', 'Sending. This can take a few minutes; the page waits for the Apps Script to finish.');
+		post(mailRequest(true), 6.5 * 60 * 1000, function (json, err) {
+			mailGo.classList.remove('is-busy');
+			mailGo.hidden = true;
+			$('mail-check').disabled = false;
+			if (json && json.ok && json.action === 'mail') mailSent(json);
+			else mailFailed(json, err, true);
+			if (!(json && json.denied)) refresh();
+		});
+	});
+
+	// after: those who got it are no longer picked; the rest stay, for another try
+	function mailSent(json) {
+		var items = json.items || [];
+		var done = withStatus(items, ['sent']);
+		pick(done, false);
+		var left = pickedPeople().length;
+		mailBody.textContent = '';
+		mailLine('send-big', done.length ? plural(done.length, 'email', 'emails') + ' sent' : 'No email sent');
+		if (done.length) mailLine('muted', 'Those who got it are no longer selected' + (left ? '; the other ' + left + ' still are.' : '.'));
+		if (json.stopped === 'quota') mailLine('send-warn', (json.reserve ? 'Stopped with ' + json.reserve + ' of today’s emails left for new registrations.' : 'Today’s emails are used up.') + ' Send again tomorrow for the rest: they stay selected.');
+		if (json.stopped === 'time') mailLine('send-warn', 'Stopped before the Apps Script’s time limit. Send again for the rest: they stay selected.');
+		mailList('Failed', withStatus(items, ['failed']), 'They stay selected: send again to try once more.');
+	}
+
+	function mailFailed(json, err, sending) {
+		if (json && json.denied) { closeMail(); lock(json.error); return; }
+		mailBody.textContent = '';
+		var msg = actionProblem(json, err, 'email the selected');
+		if (sending && !(json && json.action)) msg += ' Some emails may have gone out: the table shows who was emailed once the page has refreshed.';
+		mailLine('err', msg);
+		mailGo.hidden = true;
+	}
+
+	$('pick-mail').addEventListener('click', openMail);
+	$('mail-close').addEventListener('click', closeMail);
+	mailDlg.addEventListener('click', function (ev) { if (ev.target === mailDlg) closeMail(); });
 
 	/* --- the team dashboard (teams.html): the code and what the teams see ------ */
 
