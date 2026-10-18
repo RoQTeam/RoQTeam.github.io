@@ -74,7 +74,8 @@
 									<form id="reg" class="reg" method="post" action="#" novalidate
 										data-draft="breaq-2026-hackathon"
 										data-endpoint="https://script.google.com/macros/s/AKfycbwLAgxidNtxQiuxIsLQPgdlOuFQRu_1cNSOj1Gs1kQ_O-Vq38CV9XRbViZb1qNrm_xW/exec"
-										data-fallback="https://forms.gle/o1wqxXgzeF2QGtxC7">
+										data-fallback="https://forms.gle/o1wqxXgzeF2QGtxC7"
+										data-closes="2026-10-19T00:00:00+03:00">
 
 										<p class="reg-fallback" hidden>Online registration on this page is not switched on yet. <a href="https://forms.gle/o1wqxXgzeF2QGtxC7" target="_blank" rel="noopener">Register with the current form</a> instead.</p>
 
@@ -239,6 +240,16 @@
 										<p class="next-actions"><a href="breaq-2026-hackathon.ics" class="button primary" type="text/calendar">Add to calendar</a> <a href="breaq-hackathon.html" class="button">Back to the hackathon</a></p>
 									</div>
 
+									<!-- from data-closes on, register.js shows this instead of the form (the Apps Script refuses
+									     what comes later anyway: REGISTRATION_CLOSES) -->
+									<div class="reg-done" id="reg-closed" hidden>
+										<h3 class="major">Registration is closed</h3>
+										<p>Registration for the BreaQ Hackathon closed at the end of 18 October. Registered already? Our decision reaches you by email.</p>
+										<p>Think we can still fit you in? Write to us at <a href="mailto:registrations@roqteam.ro">registrations@roqteam.ro</a>.</p>
+										<p>The <a href="breaq-conference.html">BreaQ Conference</a> on 14 November is still open, with <a href="register-conference.html">its own registration</a>.</p>
+										<p class="next-actions"><a href="breaq-hackathon.html" class="button">Back to the hackathon</a></p>
+									</div>
+
 								</div>
 							</div>
 
@@ -269,6 +280,6 @@
 			<script src="assets/js/main.js"></script>
 			<script src="assets/js/script.js"></script>
 			<script src="assets/js/breaq.js?v=20261014"></script>
-			<script src="assets/js/register.js?v=20261018"></script>
+			<script src="assets/js/register.js?v=20261018b"></script>
 	</body>
 </html>

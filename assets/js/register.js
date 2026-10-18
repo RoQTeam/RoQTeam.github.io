@@ -22,8 +22,27 @@
 	// one draft per form: register.html (hackathon) and register-conference.html
 	var DRAFT_KEY = form.getAttribute('data-draft') || 'breaq-2026-registration';
 	var LETTER_MAX = 5 * 1024 * 1024;   // the motivation letter; tools/register-backend.gs has the same limit
+	var closesAt = Date.parse(form.getAttribute('data-closes') || '');   // NaN without one: never closes
+	var closedBox = document.getElementById('reg-closed');
 
 	function forEach(list, fn) { Array.prototype.forEach.call(list, fn); }
+
+	/* --- closing ---------------------------------------------------- */
+
+	// at data-closes the form gives way to #reg-closed, on a page left open past it too (the Apps Script refuses
+	// what comes later anyway)
+	function isClosed() { return Date.now() >= closesAt; }
+
+	function closeForm() {
+		// a send under way past the hour: its answer decides
+		if (!closedBox || (done && !done.hidden) || submitBtn.disabled) return;
+		form.hidden = true;
+		closedBox.hidden = false;
+		forEach(document.querySelectorAll('.reg-lede'), function (p) { p.hidden = true; });
+	}
+
+	if (isClosed()) closeForm();
+	else if (closesAt - Date.now() < 2147483647) window.setTimeout(closeForm, closesAt - Date.now() + 1000);
 
 	/* --- conditional fields --------------------------------------- */
 
@@ -161,6 +180,7 @@
 
 	form.addEventListener('submit', function (ev) {
 		ev.preventDefault();
+		if (isClosed()) return closeForm();
 		if (!validate()) return;
 		setError('');
 		var data = collect();
