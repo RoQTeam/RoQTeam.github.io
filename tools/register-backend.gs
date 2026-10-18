@@ -5,7 +5,8 @@
  *   - receives the JSON that register.html (the hackathon) and register-conference.html post;
  *     the "attend" field says which: "hackathon" or "conference"
  *   - appends one row per registration to a Google Sheet (tab "Registrations")
- *   - saves the hackathon's motivation letter (a PDF) in the Drive folder LETTERS_FOLDER and links it in the row
+ *   - saves the hackathon's motivation letter (a PDF, which it requires) in the Drive folder LETTERS_FOLDER and links
+ *     it in the row
  *   - sends a confirmation email to the participant and a short notice to the team
  *   - ignores obvious bots (honeypot field, forms submitted in under 3 seconds), takes only names that are names,
  *     and nothing after the deadlines (REGISTRATION_CLOSES, CONFERENCE_CLOSES)
@@ -38,6 +39,13 @@
  * Emails not arriving: the "Emails" column says, per registration, whether the confirmation and the notice went
  * out or why not. To test sending on its own, pick "checkEmail" in the editor's function list and press Run:
  * the log shows the sending account, the quota left today and the result of the test emails.
+ *
+ * Confirmations owed: a registration whose confirmation failed (the day's emails ran out) or was held (past
+ * MAILS_PER_HOUR) has no "confirmation sent" in "Emails". From the editor's function list:
+ *   - previewConfirmations: logs who is owed one. Sends nothing.
+ *   - sendConfirmations: sends each of them the confirmation, once, oldest first, without the notice to NOTIFY.
+ *     It stops when the day's emails run out, as sendDecisions does: run it again the next day for the rest.
+ * Left out: rows with nothing in "Emails" (from before it was recorded) and anyone who has a decision email.
  *
  * The admin page: admin.html reads every registration through this script, for whoever has the admin key or their own (voterKeys).
  * Pick "adminKey" in the editor's function list and press Run: the log shows the key (made on the first run).
@@ -80,7 +88,7 @@
  *     The accepted go first, then the waiting list, then the denied, so a day's emails reach the people who have
  *     something to do. It stops when the day's emails run out (while registration is open, with
  *     DECISION_RESERVE left for new registrations): send again the next day for the rest.
- *   - sendDecisionSamples: sends you one of each email, personal and team, to read before anyone else does.
+ *   - sendDecisionSamples: sends you (and SAMPLES_TO) one of each email, personal and team, to read before anyone else does.
  * The wording is in decisionEmail_. Someone whose registered teammates got the same decision gets the team
  * version naming them. After changing the wording, deploy a new version for the admin page's button.
  *
@@ -92,7 +100,7 @@
  *   - sendHackingTeams: emails every hackathon registration with the Quantum Hacking track, once (HACKING_SENT in
  *     the "Emails" column), the denied left out. It stops when the day's emails run out, as sendDecisions does:
  *     run it again the next day for the rest.
- *   - sendHackingTeamsSample: sends you the email, to read first.
+ *   - sendHackingTeamsSample: sends you (and SAMPLES_TO) the email, to read first.
  * The email links to team-choice.html with the person's code (the dashboard's, which opens the dashboard only once
  * they are accepted): there they choose, and the answer goes in "Team" and "Team name and members", with what it
  * replaced logged in "Merged" and when in "Team answered" (each time, the same answer again included, so the
@@ -102,7 +110,7 @@
  *   - previewTeammatesReminder: logs who would get it and which teammates are missing. Sends nothing.
  *   - sendTeammatesReminder: emails each of them, once (MATES_SENT in the "Emails" column), the denied left out,
  *     and stops at the day's emails as sendHackingTeams does.
- *   - sendTeammatesReminderSample: sends you the email, to read first.
+ *   - sendTeammatesReminderSample: sends you (and SAMPLES_TO) the email, to read first.
  * Its button opens the same team page, to correct a name written differently or change the answer. The wording is
  * in teammatesReminderEmail_.
  *
@@ -136,6 +144,7 @@
 var SHEET_NAME = "Registrations";
 var NOTIFY = "registrations@roqteam.ro"; // where the "new registration" notices go; '' to disable
 var REPLY_TO = "registrations@roqteam.ro";
+var SAMPLES_TO = "alexionita46@gmail.com"; // the [sample] emails go here too, besides the account running the script; '' for that account only
 var SENDER_NAME = "RoQTeam · BreaQ 2026";
 var SITE = "https://roqteam.ro";
 var LETTERS_FOLDER = "BreaQ 2026 motivation letters"; // Drive folder, created on first use (or by setup)
@@ -657,6 +666,10 @@ function doPost(e) {
       });
     }
   }
+  // no hackathon registration without its letter: register.js asks for it, this stops what gets past it (an empty
+  // file, a phone's cloud file not downloaded yet, a request sent by hand)
+  if (ev === "hackathon" && !letter)
+    return json_({ ok: false, error: "Please attach your motivation letter as a PDF." });
   var letterUrl = "";
   var merge = null; // set when this application updates a row already there
   var namesake = null; // the row with the same name and another email, which this one stays apart from
@@ -695,13 +708,16 @@ function doPost(e) {
     // the same PDF as the one already in the row: no second copy in Drive
     if (letter && older && sameLetter_(older["Motivation letter"], letter))
       letter = null;
-    // a Drive hiccup must not lose the registration: the row still goes in, with a note instead of the link
+    // a Drive hiccup: nothing is saved yet, so the person sends it again rather than registering without the letter
     if (letter) {
       try {
         letterUrl = saveLetter_(letter, email, data);
       } catch (err) {
         Logger.log("letter not saved: " + err);
-        letterUrl = "upload failed: " + err;
+        return json_({
+          ok: false,
+          error: "We could not save your motivation letter just now. Please send the form again in a minute.",
+        });
       }
     }
     rec["Motivation letter"] = letterUrl;
@@ -773,6 +789,113 @@ function doPost(e) {
   }
 
   return json_({ ok: true, updated: !!merge });
+}
+
+/* --- confirmations owed ----------------------------------------- */
+
+// run from the editor: who is owed a confirmation (theirs failed or was held). Sends nothing.
+function previewConfirmations() {
+  confirmations_(false);
+}
+
+// run from the editor: sends each of them the confirmation, once
+function sendConfirmations() {
+  confirmations_(true);
+}
+
+// previewConfirmations and sendConfirmations: the registrations with no "confirmation sent" in "Emails", oldest
+// first, but those with nothing there (rows from before it was recorded) and those with a decision email, which
+// says more. Stops as decisions_ does, at the day's emails and well before Apps Script's 6 minutes.
+function confirmations_(send) {
+  var lock = send ? LockService.getDocumentLock() : null;
+  if (lock && !lock.tryLock(2000)) {
+    Logger.log("Someone else is sending emails from this script right now. Try again in a minute.");
+    return null;
+  }
+  try {
+    var started = Date.now();
+    var sheet = sheet_();
+    var values = sheet.getDataRange().getValues();
+    var header = header_(values);
+    var col = header.indexOf("Emails") + 1;
+    var stamp = function () {
+      return Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm");
+    };
+    var due = [];
+    var unknown = 0;
+    var decided = 0;
+    for (var i = 1; i < values.length; i++) {
+      var r = toRecord_(header, values[i]);
+      var had = String(r["Emails"]).trim();
+      if (had.indexOf("confirmation sent") !== -1) continue;
+      var name = String(r["First name"] + " " + r["Last name"]).trim();
+      var email = String(r["Email"]).trim().toLowerCase();
+      if (!had) {
+        unknown++;
+        if (!send) Logger.log("Row " + (i + 1) + " · " + name + " <" + email + "> · nothing in Emails · left out");
+        continue;
+      }
+      if (String(r["Decision email"]).indexOf(": sent") !== -1) {
+        decided++;
+        continue;
+      }
+      due.push({ row: i + 1, r: r, had: had, name: name, email: email });
+    }
+    var reserve = reserve_();
+    var cache = CacheService.getScriptCache();
+    var sent = 0;
+    var failed = 0;
+    var stopped = "";
+    due.forEach(function (d) {
+      if (!send) {
+        Logger.log("Row " + d.row + " · " + d.name + " <" + d.email + "> · " + d.had + " · to send");
+        return;
+      }
+      if (stopped) return;
+      var left = emailsLeft_();
+      if (left !== null && left <= reserve) stopped = "quota";
+      else if (Date.now() - started > 4.5 * 60 * 1000) stopped = "time";
+      if (stopped) return;
+      var note;
+      try {
+        var data = { first_name: d.r["First name"], attend: String(d.r["Attends"]).trim() };
+        note = "confirmation sent " + stamp() + " via " + sendConfirmation_(d.email, data, null) + ", late";
+        sent++;
+        // as doPost does: registering again within 6 hours sends no second email
+        cache.put("mail-to:" + eventKey_(d.r["Attends"]) + ":" + d.email, "1", 21600);
+      } catch (err) {
+        note = "confirmation FAILED again " + stamp() + ": " + err;
+        failed++;
+      }
+      // the cell keeps 500 characters (clean_): the newest note is the one to keep, so this one is not sent twice
+      var text = d.had + "; " + note;
+      if (text.length > 500) text = "…" + text.slice(-499);
+      sheet.getRange(d.row, col).setValue(cellFor_("Emails", text));
+      Logger.log("Row " + d.row + " · " + d.name + " <" + d.email + "> · " + note);
+    });
+    var waiting = due.length - sent - failed;
+    var rest =
+      (decided ? ", " + decided + " left out with a decision email" : "") +
+      (unknown ? ", " + unknown + " left out with nothing in Emails" : "");
+    Logger.log(
+      send
+        ? sent + " sent, " + failed + " failed" + rest +
+            (stopped === "quota"
+              ? (reserve
+                  ? ". Stopped with " + reserve + " emails left for today, kept for new registrations"
+                  : ". Stopped: today's emails are used up") +
+                ": run sendConfirmations again tomorrow for the other " + waiting + "."
+              : stopped === "time"
+                ? ". Stopped before Apps Script's time limit: run sendConfirmations again for the other " + waiting + "."
+                : failed
+                  ? ". Run sendConfirmations again to retry the failed ones."
+                  : "")
+        : due.length + " to send" + rest + ". Run sendConfirmations to send them.",
+    );
+    return { sent: sent, failed: failed, left: send ? waiting : due.length, stopped: stopped };
+  } finally {
+    if (lock) lock.releaseLock();
+  }
 }
 
 /* ---------------------------------------------------------------- */
@@ -890,6 +1013,7 @@ function sendDecisions() {
 // run from the editor: one of each decision email, personal and team, to the account running it
 function sendDecisionSamples() {
   var me = Session.getEffectiveUser().getEmail();
+  var to = sampleTo_();
   var alone = { name: "Ana", email: me, mates: [], conference: false };
   var team = {
     name: "Ana",
@@ -901,7 +1025,7 @@ function sendDecisionSamples() {
     [alone, team].forEach(function (p) {
       var mail = renderEmail_(p.name, decisionEmail_(kind, p));
       send_({
-        to: me,
+        to: to,
         subject: "[sample] " + mail.subject,
         body: mail.text,
         htmlBody: mail.html,
@@ -910,7 +1034,7 @@ function sendDecisionSamples() {
       });
     });
   });
-  Logger.log("Sent " + DECISIONS.length * 2 + " sample emails to " + me);
+  Logger.log("Sent " + DECISIONS.length * 2 + " sample emails to " + to);
 }
 
 // previewDecisions, sendDecisions and the admin page's Send button: what happens to each person with a
@@ -1614,13 +1738,14 @@ function sendHackingTeams() {
 // run from the editor: the email to the account running it, as someone on their own and as someone with a team
 function sendHackingTeamsSample() {
   var me = Session.getEffectiveUser().getEmail();
+  var to = sampleTo_();
   [
     { name: "Ana", email: me, team: "solo", mates: "" },
     { name: "Ana", email: me, team: "team", mates: "Mihai Ionescu, Ioana Marin" },
   ].forEach(function (p) {
     var mail = renderEmail_(p.name, hackingTeamsEmail_(p));
     send_({
-      to: me,
+      to: to,
       subject: "[sample] " + mail.subject,
       body: mail.text,
       htmlBody: mail.html,
@@ -1628,7 +1753,7 @@ function sendHackingTeamsSample() {
       replyTo: REPLY_TO,
     });
   });
-  Logger.log("Sent 2 sample emails to " + me);
+  Logger.log("Sent 2 sample emails to " + to);
 }
 
 // previewHackingTeams and sendHackingTeams: the hackathon registrations with the Quantum Hacking track, but the
@@ -1782,6 +1907,7 @@ function sendTeammatesReminder() {
 // registered for the conference only
 function sendTeammatesReminderSample() {
   var me = Session.getEffectiveUser().getEmail();
+  var to = sampleTo_();
   [
     { name: "Ana", email: me, mates: ["Mihai Ionescu"], missing: ["Mihai Ionescu"], conference: [] },
     {
@@ -1794,7 +1920,7 @@ function sendTeammatesReminderSample() {
   ].forEach(function (p) {
     var mail = renderEmail_(p.name, teammatesReminderEmail_(p));
     send_({
-      to: me,
+      to: to,
       subject: "[sample] " + mail.subject,
       body: mail.text,
       htmlBody: mail.html,
@@ -1802,7 +1928,7 @@ function sendTeammatesReminderSample() {
       replyTo: REPLY_TO,
     });
   });
-  Logger.log("Sent 2 sample emails to " + me);
+  Logger.log("Sent 2 sample emails to " + to);
 }
 
 // previewTeammatesReminder and sendTeammatesReminder: the hackathon registrations, but the denied, that came with
@@ -3756,9 +3882,10 @@ function certificatesLocked_(send, sample) {
   if (sample) {
     var me = Session.getEffectiveUser().getEmail();
     var who = items[0] || { name: "Ana Popescu", first: "Ana", email: me, team: "Qubits", challenge: "Quantum AI", award: "1st" };
+    var to = sampleTo_();
     var mail = certEmail_(who, dashboardCode_(who.email));
     send_({
-      to: me,
+      to: to,
       subject: "[sample] " + mail.subject,
       body: mail.text,
       htmlBody: mail.html,
@@ -3766,7 +3893,7 @@ function certificatesLocked_(send, sample) {
       replyTo: REPLY_TO,
       attachments: [certificatePdf_(tpl, who)],
     });
-    return answer({ sample: me });
+    return answer({ sample: to });
   }
 
   var folder = null;
@@ -4202,6 +4329,11 @@ function sendNotice_(email, data, letterUrl, merge, row, namesake) {
 
 // GmailApp first: it sends through the account's Gmail, as the inbox does, where MailApp's messages to outside
 // addresses bounced; MailApp stays as the fallback. Returns which one sent, for the "Emails" column.
+// where the [sample] emails go: the account running the script, and SAMPLES_TO
+function sampleTo_() {
+  return [Session.getEffectiveUser().getEmail(), SAMPLES_TO].filter(String).join(", ");
+}
+
 function send_(msg) {
   var options = { name: msg.name };
   if (msg.htmlBody) options.htmlBody = msg.htmlBody;

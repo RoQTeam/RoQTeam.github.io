@@ -116,6 +116,8 @@
 			if (el.type === 'file') {
 				var file = el.files && el.files[0];
 				if (el.required && !file) return setError('Please attach your motivation letter as a PDF.', el), false;
+				// 0 bytes: often a phone's iCloud or Google Drive file that is not downloaded yet
+				if (file && !file.size) return setError('That PDF is empty. If it is in iCloud or Google Drive, download it to your device first, then choose it again.', el), false;
 				if (file && !/\.pdf$/i.test(file.name) && file.type !== 'application/pdf') return setError('The motivation letter has to be a PDF.', el), false;
 				if (file && file.size > LETTER_MAX) return setError('The motivation letter is over 5 MB. Please upload a smaller PDF.', el), false;
 				continue;
@@ -193,7 +195,9 @@
 		var reader = new FileReader();
 		reader.onload = function () {
 			var url = String(reader.result || '');
-			cb({ name: file.name, size: file.size, data: url.slice(url.indexOf(',') + 1) });
+			var data = url.slice(url.indexOf(',') + 1);
+			if (!data) return cb(null, true);
+			cb({ name: file.name, size: file.size, data: data });
 		};
 		reader.onerror = function () { cb(null, true); };
 		reader.readAsDataURL(file);
