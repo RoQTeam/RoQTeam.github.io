@@ -59,11 +59,6 @@
 			color: #fff;
 		}
 
-	/* one above the form's steps (the emails delayed), spaced as a step */
-	.reg > .reg-notice {
-		margin: 0 0 3em;
-	}
-
 	.reg-step {
 		position: relative;
 		margin: 0 0 3em;
