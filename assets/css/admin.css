@@ -2914,3 +2914,58 @@ input[type="checkbox"] {
 			border-radius: 6px;
 			background: #fff;
 		}
+
+/* --- the track given: a list in the table, on a team and on the bar, buttons in the full view ----------------------- */
+
+.dec.track-pick {
+	padding: 0;
+	box-shadow: none;
+}
+
+	.track-select {
+		max-width: 9.5em;
+		font-weight: 400;
+	}
+
+		.track-select.is-given {
+			border-color: var(--mark);
+			font-weight: 600;
+		}
+
+	.dec.track .dec-t[aria-pressed="true"] {
+		background: rgba(127, 140, 214, 0.2);
+		box-shadow: inset 0 0 0 1px var(--mark);
+		color: var(--fg);
+	}
+
+.detail-track {
+	display: flex;
+	flex-basis: 100%;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 6px 14px;
+	padding-top: 10px;
+	border-top: solid 1px var(--line);
+}
+
+	.detail-ticked {
+		font-size: 0.9em;
+		color: var(--fg-light);
+	}
+
+.team-track,
+.pick-track {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+}
+
+	.team-track-label,
+	.pick-track-label {
+		font-size: 0.9em;
+		color: var(--fg-light);
+	}
+
+	.pick-track[hidden] {
+		display: none;
+	}

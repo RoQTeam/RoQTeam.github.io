@@ -102,6 +102,11 @@
  * or one written on the page in the same look. It first shows who gets it and the email as the first of them reads
  * it, and stops at the day's emails as sendDecisions does.
  *
+ * The track each participant is given (track_): on the admin page, a list on each row, on each team and on the bar of
+ * the people picked, and buttons in the full view, fill the "Hackathon track" column with one of the CHALLENGES (or
+ * empty it). The "Tracks" they ticked on the form stay as they were. In an email written on the admin page, {track}
+ * becomes it.
+ *
  * On their own or in a team: the "Team" column is solo, team (with the names in "Team name and members") or
  * match (the organisers put them in a team). The form asks with Quantum AI or Quantum Hacking ticked. Quantum
  * Hacking became a team challenge after people had registered for it, so one email asks each of them, from the
@@ -214,6 +219,8 @@ var COLUMNS = [
   "Coming answered",
   "Checked in",
   "Certificate",
+  // the track the organisers give them (track_), one of the CHALLENGES; "Tracks" is what they ticked
+  "Hackathon track",
 ];
 // each organiser's note and grade, just before the Decision the grades add up to
 COLUMNS.splice.apply(COLUMNS, [COLUMNS.indexOf("Decision"), 0].concat(NOTE_COLUMNS, VOTE_COLUMNS));
@@ -233,6 +240,7 @@ var NOT_ANSWERS = [
   "Coming answered",
   "Checked in",
   "Certificate",
+  "Hackathon track",
 ].concat(VOTE_COLUMNS, NOTE_COLUMNS);
 
 // what the organisers and the dashboard write in a row: a merge keeps the earlier row's, the later one's only fills
@@ -245,6 +253,7 @@ var ORGANISER_COLUMNS = [
   "Coming answered",
   "Checked in",
   "Certificate",
+  "Hackathon track",
 ].concat(VOTE_COLUMNS, NOTE_COLUMNS);
 
 // what the organisers can pick in the "Decision" column; each has its email in decisionEmail_
@@ -570,6 +579,7 @@ function doPost(e) {
     "decide",
     "decisions",
     "mail",
+    "track",
     "board-admin",
     "board-save",
     "board-delete",
@@ -594,6 +604,7 @@ function doPost(e) {
       if (data.action === "decide") return json_(decide_(data));
       if (data.action === "decisions") return json_(decisions_(!!data.send));
       if (data.action === "mail") return json_(mail_(data));
+      if (data.action === "track") return json_(track_(data));
       if (data.action === "board-admin") return json_(boardAdmin_());
       if (data.action === "board-save") return json_(boardSave_(data));
       if (data.action === "board-delete") return json_(boardDelete_(data));
@@ -1419,6 +1430,10 @@ function mailLocked_(kind, emails, opts, send) {
     items.push(it);
     return it;
   };
+  // {track} in what the organisers wrote, for someone given no track yet: it would come out empty
+  var trackless = function (r, text) {
+    return /\{track\}/i.test(text) && !String(r["Hackathon track"] || "").trim() ? "⚠ no track given yet: {track} is empty" : "";
+  };
   emails.forEach(function (email) {
     var rows = rowsOf[email] || [];
     if (!rows.length) {
@@ -1451,7 +1466,9 @@ function mailLocked_(kind, emails, opts, send) {
         : [];
       it.p = p;
       var now = String(r["Decision"]).trim().toLowerCase();
-      it.note = [now && now !== kind ? "decided " + now + " until now" : "", teamLine_(team, kind)].filter(String).join(" · ");
+      it.note = [now && now !== kind ? "decided " + now + " until now" : "", teamLine_(team, kind), trackless(r, opts.note)]
+        .filter(String)
+        .join(" · ");
       it.warn = it.note.indexOf("⚠") !== -1;
       if (!opts.again && String(r["Decision email"]).indexOf(kind + ": sent") === 0) it.status = "sent before";
       return;
@@ -1465,6 +1482,8 @@ function mailLocked_(kind, emails, opts, send) {
       return;
     }
     var mine = add(email, rows[0]);
+    mine.note = trackless(rows[0].r, opts.subject + "\n" + opts.body);
+    mine.warn = !!mine.note;
     if (!opts.again && String(rows[0].r["Emails"]).indexOf("email “" + opts.subject + "” sent") !== -1)
       mine.status = "sent before";
   });
@@ -1559,7 +1578,8 @@ function mailLocked_(kind, emails, opts, send) {
   };
 }
 
-// {first name}, {name} and {dashboard} (the link with their code) in what the organisers write, each person's own
+// {first name}, {name}, {track} (the one they were given) and {dashboard} (the link with their code) in what the
+// organisers write, each person's own
 function fill_(s, r) {
   var email = String(r["Email"]).trim().toLowerCase();
   var put = function (v) {
@@ -1570,6 +1590,7 @@ function fill_(s, r) {
   return String(s)
     .replace(/\{first name\}/gi, put(String(r["First name"]).trim()))
     .replace(/\{name\}/gi, put(String(r["First name"] + " " + r["Last name"]).trim()))
+    .replace(/\{track\}/gi, put(String(r["Hackathon track"] || "").trim()))
     .replace(/\{dashboard\}/gi, function () {
       return TEAMS_PAGE + "#code=" + dashboardCode_(email);
     });
@@ -1595,6 +1616,21 @@ function decisionColumn_(sheet, header) {
     .setDataValidation(
       SpreadsheetApp.newDataValidation()
         .requireValueInList(DECISIONS, true)
+        .setAllowInvalid(false)
+        .build(),
+    );
+}
+
+// the Hackathon track column as a dropdown of CHALLENGES
+function trackColumn_(sheet, header) {
+  var c = header.indexOf("Hackathon track") + 1;
+  var rows = sheet.getMaxRows() - 1;
+  if (!c || rows < 1) return;
+  sheet
+    .getRange(2, c, rows, 1)
+    .setDataValidation(
+      SpreadsheetApp.newDataValidation()
+        .requireValueInList(CHALLENGES, true)
         .setAllowInvalid(false)
         .build(),
     );
@@ -2844,6 +2880,41 @@ function decide_(data) {
     });
     rosterChanged_(); // the dashboard's access follows the decision at once
     return { ok: true, action: "decide", set: set, missing: missing };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// admin.html: the track given to hackathon registrations, each found by one of its emails: one of the CHALLENGES,
+// or "" to take it back. Sends nothing.
+function track_(data) {
+  var track = clean_(data.track);
+  var known = CHALLENGES.filter(function (c) {
+    return c.toLowerCase() === track.toLowerCase();
+  })[0];
+  if (track && !known) return { ok: false, action: "track", error: "Not a track: " + track };
+  track = known || "";
+  var emails = emailsOf_({ Email: "", "Other emails": [].concat(data.emails || []).join(",") });
+  if (!emails.length) return { ok: false, action: "track", error: "No registration given." };
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    var sheet = sheet_(); // with the column, the first time
+    var values = sheet.getDataRange().getValues();
+    var header = header_(values);
+    var col = header.indexOf("Hackathon track") + 1;
+    var set = [];
+    var missing = [];
+    emails.forEach(function (email) {
+      var row = regRow_(values, header, email);
+      if (row === -1) {
+        missing.push(email);
+        return;
+      }
+      sheet.getRange(row, col).setValue(track);
+      set.push({ email: email, track: track });
+    });
+    return { ok: true, action: "track", set: set, missing: missing };
   } finally {
     lock.releaseLock();
   }
@@ -4498,6 +4569,7 @@ function sheet_() {
     sheet.getRange(1, 1, 1, COLUMNS.length).setFontWeight("bold");
     sheet.setFrozenRows(1);
     decisionColumn_(sheet, COLUMNS);
+    trackColumn_(sheet, COLUMNS);
     voteColumns_(sheet, COLUMNS, VOTE_COLUMNS);
   } else {
     // a sheet made by an older version: add the headers of the newer columns after the last one, past any
@@ -4519,6 +4591,8 @@ function sheet_() {
     }
     if (missing.indexOf("Decision") !== -1)
       decisionColumn_(sheet, have.concat(missing));
+    if (missing.indexOf("Hackathon track") !== -1)
+      trackColumn_(sheet, have.concat(missing));
     voteColumns_(sheet, have.concat(missing), missing);
     fixRules_(sheet, have.concat(missing));
   }

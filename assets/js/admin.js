@@ -47,6 +47,7 @@
 		from: '',                 // registered on or after this day (yyyy-mm-dd), and on or before "to"
 		to: '',
 		pending: {},              // emails whose decision is being saved
+		tracking: {},             // emails whose track is being saved
 		detail: null,             // the person open in the full view
 		sort: { key: 'time', dir: -1 },
 		view: 'regs',             // regs, teams, checkin, board (the team dashboard), after
@@ -230,6 +231,16 @@
 	function decisionOf(r) {
 		var d = get(r, 'Decision').toLowerCase();
 		return DECISIONS.indexOf(d) !== -1 ? d : '';
+	}
+
+	// the track the organisers give each participant ("Hackathon track", the Apps Script's CHALLENGES); "Tracks" is
+	// what they ticked on the form
+	var TRACKS = ['Quantum Foundations', 'Quantum AI', 'Quantum Hacking'];
+	var TRACK_SHORT = { 'Quantum Foundations': 'Foundations', 'Quantum AI': 'AI', 'Quantum Hacking': 'Hacking' };
+
+	function trackOf(r) {
+		var t = get(r, 'Hackathon track').toLowerCase();
+		return TRACKS.filter(function (x) { return x.toLowerCase() === t; })[0] || '';
 	}
 
 	// what the "Decision email" column says went out: { decision, sent }, or null before any
@@ -850,6 +861,7 @@
 		state.people = [];
 		state.shown = [];
 		state.pending = {};
+		state.tracking = {};
 		state.detail = null;
 		if ($('detail').open) $('detail').close();
 		if ($('send-dlg').open) $('send-dlg').close();
@@ -1288,6 +1300,9 @@
 		{ id: 'status', col: 'Status', title: 'You are', order: ['High-school student', 'Bachelor student', 'Master student', 'PhD student', 'Researcher', 'Working in industry', 'Other'] },
 		{ id: 'exp', col: 'Experience', title: 'Experience', order: ['None yet, curious', 'Beginner: a course or some tutorials', 'Intermediate: built circuits or small projects', 'Advanced: research or work in the field'], short: true },
 		{ id: 'tracks', col: 'Tracks', title: 'Tracks', order: ['Quantum Foundations', 'Quantum AI', 'Quantum Hacking', 'Not sure yet'], multi: true },
+		// the track given, from the hackathon registration (where a change shows at once)
+		{ id: 'htrack', title: 'Track given', order: TRACKS, done: 'given',
+			value: function (p) { var h = hackReg(p); return h ? trackOf(h) : ''; } },
 		{ id: 'tshirt', col: 'T-shirt', title: 'T-shirts', order: ['XS', 'S', 'M', 'L', 'XL', 'XXL'] },
 		// asked only with the Quantum AI or Quantum Hacking track (the first form asked everyone, so earlier answers
 		// with neither are left out)
@@ -1387,7 +1402,7 @@
 
 			var panel = el('section', 'panel bd' + (on.length ? ' is-filtering' : ''));
 			var h = el('h2', null, b.title);
-			h.appendChild(el('span', 'count', answered + ' answered'));
+			h.appendChild(el('span', 'count', answered + ' ' + (b.done || 'answered')));
 			panel.appendChild(h);
 			var list = el('ul', 'bars');
 			items.forEach(function (it) {
@@ -1482,6 +1497,9 @@
 				if (get(h, 'Team answered') || /answered on the team page/.test(get(h, 'Merged'))) return v === 'yes';
 				return v === 'no' && /Quantum Hacking teams email sent|Teammates reminder sent/.test(get(h, 'Emails'));
 			} },
+		{ key: 'htrack', label: 'Track given', hack: true,
+			options: [['none', 'Not yet']].concat(TRACKS.map(function (t) { return [t, t]; })),
+			test: function (h, v) { return trackOf(h) === (v === 'none' ? '' : v); } },
 		{ key: 'hteam', label: 'Put in a team', hack: true,
 			options: [['yes', 'Yes'], ['no', 'Not yet']],
 			test: function (h, v) { return !!get(h, 'Hackathon team') === (v === 'yes'); } },
@@ -1694,6 +1712,16 @@
 				if (h) td.appendChild(voting() ? voteCell([h], r.name || 'this person') : decisionControl([h], r.name || 'this person'));
 				return td;
 			} },
+		// the track given, in a list (the ones they ticked have a ✓)
+		{ key: 'track', label: 'Track', always: true, cls: 'c-track hide-sm',
+			when: function () { return state.event !== 'conference'; },
+			sort: function (r) { var h = hackReg(r); return h ? TRACKS.indexOf(trackOf(h)) : 9; },
+			cell: function (r) {
+				var td = el('td', 'c-track hide-sm');
+				var h = hackReg(r);
+				if (h) td.appendChild(trackControl([h], r.name || 'this person'));
+				return td;
+			} },
 		{ key: 'email', label: 'Email', always: true, sort: function (r) { return r.email; },
 			cell: function (r) { return cellText(get(r, 'Email'), 'c-email'); } },
 		{ key: 'event', label: 'Event', when: function () { return state.event === 'all'; },
@@ -1904,6 +1932,10 @@
 		var rest = el('td');
 		rest.colSpan = cols.length - at - 1;
 		var info = el('div', 'team-info');
+		var given = el('span', 'team-track');
+		given.appendChild(el('span', 'team-track-label', 'Track'));
+		given.appendChild(trackControl(team.members, 'the whole team'));
+		info.appendChild(given);
 		info.appendChild(el('span', 'team-names', team.members.map(function (r) { return r.name; }).join(', ')));
 		if (team.missing.length) info.appendChild(el('span', 'team-warn', '⚠ Not registered: ' + team.missing.join(', ')));
 		if (size > 3) info.appendChild(el('span', 'team-warn', '⚠ Over 3 people'));
@@ -1925,7 +1957,7 @@
 	});
 
 	$('people').tBodies[0].addEventListener('click', function (ev) {
-		if (ev.target.closest('a, .c-pick')) return;
+		if (ev.target.closest('a, .c-pick, .c-track')) return;
 		var tr = ev.target.closest('tr[data-i]');
 		if (tr) openDetail(state.shown[+tr.getAttribute('data-i')]);
 	});
@@ -1975,6 +2007,11 @@
 			if (mates.length) box.appendChild(el('p', 'detail-team', 'Team with ' + mates.join(', ')));
 		}
 		if (decisionOf(h) === 'accepted') box.appendChild(dashboardLine(h));
+		var track = el('div', 'detail-track');
+		track.appendChild(el('span', 'detail-decision-label', 'Track'));
+		track.appendChild(trackControl([h], p.name || 'this person', true));
+		track.appendChild(el('span', 'detail-ticked', get(h, 'Tracks') ? 'Ticked on the form: ' + get(h, 'Tracks') : 'Ticked none on the form'));
+		box.appendChild(track);
 	}
 
 	// the full view with grades: the reader's, everyone's, what they add up to, and the decision by hand for the
@@ -2139,6 +2176,90 @@
 			}
 			refreshDecisions();
 		});
+	}
+
+	/* --- tracks ------------------------------------------------------------------------ */
+
+	// the track given to one registration, a whole team or everyone picked: in the table and the bar a list, in the
+	// full view buttons (pressing the chosen one again takes it back); the tracks one person ticked have a ✓
+	function trackControl(regs, who, wide) {
+		var ts = regs.map(trackOf);
+		var current = ts.every(function (t) { return t === ts[0]; }) ? ts[0] : null;   // null: given different ones
+		var saving = regs.some(function (r) { return state.tracking[r.email]; });
+		var ticked = regs.length === 1 ? get(regs[0], 'Tracks').split(/\s*,\s*/) : [];
+		var group = el(wide ? 'div' : 'span', 'dec ' + (wide ? 'track' : 'track-pick') + (saving ? ' is-saving' : ''));
+		group.setAttribute('data-key', regs.map(function (r) { return r.email; }).join(' '));
+		group.addEventListener('click', function (ev) { ev.stopPropagation(); });   // a click here does not open the registration
+		if (!wide) {
+			var pick = el('select', 'grade-select track-select' + (current ? ' is-given' : ''));
+			pick.setAttribute('data-d', 'track');
+			pick.setAttribute('aria-label', 'Track for ' + who);
+			if (current === null) pick.appendChild(new Option('Mixed', 'mixed'));
+			pick.appendChild(new Option('–', ''));
+			TRACKS.forEach(function (t) { pick.appendChild(new Option(TRACK_SHORT[t] + (ticked.indexOf(t) !== -1 ? ' ✓' : ''), t)); });
+			pick.value = current === null ? 'mixed' : current;
+			if (regs.length === 1) pick.title = get(regs[0], 'Tracks') ? 'Ticked on the form (✓): ' + get(regs[0], 'Tracks') : 'Ticked none on the form';
+			if (saving) pick.setAttribute('aria-disabled', 'true');   // not disabled: that would lose the focus
+			pick.addEventListener('change', function () {
+				if (saving || pick.value === 'mixed') { pick.value = current === null ? 'mixed' : current; return; }
+				setTrack(regs, pick.value);
+			});
+			group.appendChild(pick);
+			return group;
+		}
+		group.setAttribute('role', 'group');
+		group.setAttribute('aria-label', 'Track for ' + who);
+		if (saving) group.setAttribute('aria-busy', 'true');
+		TRACKS.forEach(function (t) {
+			var b = el('button', 'dec-t', TRACK_SHORT[t] + (ticked.indexOf(t) !== -1 ? ' ✓' : ''));
+			b.type = 'button';
+			b.title = t + (ticked.indexOf(t) !== -1 ? ', ticked on the form' : '');
+			b.setAttribute('data-d', t);
+			b.setAttribute('aria-pressed', String(current === t));
+			if (saving) b.setAttribute('aria-disabled', 'true');
+			group.appendChild(b);
+		});
+		group.addEventListener('click', function (ev) {
+			var b = ev.target.closest('button[data-d]');
+			if (!b || saving) return;
+			var t = b.getAttribute('data-d');
+			setTrack(regs, current === t ? '' : t);
+		});
+		return group;
+	}
+
+	// shows the track at once and saves it in the sheet; put back as it was if the save fails
+	function setTrack(regs, t) {
+		// several at once over tracks given before: ask
+		var other = regs.filter(function (r) { var x = trackOf(r); return x && x !== t; });
+		if (regs.length > 1 && other.length) {
+			var q = other.length + ' of these ' + regs.length + ' people have another track already. ' +
+				(t ? 'Give all ' + regs.length + ' ' + t + '?' : 'Take the track back from all ' + regs.length + '?');
+			if (!window.confirm(q)) { refreshTracks(); return; }
+		}
+		var before = regs.map(function (r) { return get(r, 'Hackathon track'); });
+		regs.forEach(function (r) { setCol(r, 'Hackathon track', t); state.tracking[r.email] = true; });
+		refreshTracks();
+		post({ action: 'track', key: state.key, emails: regs.map(function (r) { return r.email; }), track: t }, 60000, function (json, err) {
+			regs.forEach(function (r) { delete state.tracking[r.email]; });
+			if (json && json.denied) { lock(json.error); return; }
+			if (json && json.ok && json.action === 'track') {
+				var missing = json.missing || [];
+				regs.forEach(function (r, i) { if (missing.indexOf(r.email) !== -1) setCol(r, 'Hackathon track', before[i]); });
+				dashError(missing.length ? 'Not saved, as the sheet has no hackathon registration for ' + missing.join(', ') + ' any more. Refresh the page.' : '');
+			} else {
+				regs.forEach(function (r, i) { setCol(r, 'Hackathon track', before[i]); });
+				dashError('The track was not saved. ' + actionProblem(json, err, 'give tracks'));
+			}
+			refreshTracks();
+		});
+	}
+
+	// the Track given bars count the change too
+	function refreshTracks() {
+		renderBreakdowns();
+		renderChips();
+		refreshDecisions();
 	}
 
 	/* --- votes -------------------------------------------------------------------- */
@@ -3479,6 +3600,14 @@
 		count.textContent = plural(ps.length, 'person', 'people') + ' selected';
 		if (away && state.view === 'regs') count.appendChild(el('em', null, ' · ' + away + ' not in this list'));
 		$('pick-only').setAttribute('aria-pressed', String(state.onlyPicked));
+		// their track, all at once (those only at the conference have none)
+		var hs = ps.map(hackReg).filter(Boolean);
+		var box = $('pick-track');
+		box.textContent = '';
+		box.hidden = !hs.length;
+		if (!hs.length) return;
+		box.appendChild(el('span', 'pick-track-label', 'Track'));
+		box.appendChild(trackControl(hs, hs.length === 1 ? 'the person selected' : 'the ' + hs.length + ' people selected'));
 	}
 
 	var pickTimer = null;
@@ -3647,7 +3776,7 @@
 				(can ? 'the first ' + can + ' go today. Send again tomorrow for the other ' + (due.length - can) + ': they stay selected.' : 'none can go out today. Try again tomorrow.'));
 		var changing = due.filter(function (it) { return / until now/.test(it.note); }).length;
 		if (changing) mailLine('send-warn', plural(changing, 'decision changes', 'decisions change') + ' with this email (“until now” below).');
-		mailList('To send', due, due.some(function (it) { return it.warn; }) ? 'The ones marked go out as they are: check their teams first.' : '');
+		mailList('To send', due, due.some(function (it) { return it.warn; }) ? 'The ones marked go out as they are: check them first (a team, a track not given yet).' : '');
 		mailList('Had it already', withStatus(items, ['sent before']), 'Tick “Also to those who already had this email” to send it again.');
 		mailList('Left out', withStatus(items, ['skipped', 'missing']));
 		if (json.sample) {

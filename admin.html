@@ -10,7 +10,7 @@
 		     (script.google.com answers through a redirect to script.googleusercontent.com) -->
 		<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src https://script.google.com https://script.googleusercontent.com; frame-src blob:; base-uri 'none'; form-action 'none'" />
 		<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Raleway:700|Source+Sans+Pro:300,400,600&amp;display=swap" />
-		<link rel="stylesheet" href="assets/css/admin.css?v=20261018" />
+		<link rel="stylesheet" href="assets/css/admin.css?v=20261019" />
 		<link rel="icon" type="image/png" href="images/favicon-2026.png">
 	</head>
 	<body>
@@ -457,6 +457,7 @@
 				<div class="pickbar" id="pickbar" role="region" aria-label="Selected people" hidden>
 					<span class="pick-count" id="pick-count" aria-live="polite"></span>
 					<span class="note" id="pick-note" aria-live="polite"></span>
+					<span class="pick-track" id="pick-track" hidden></span>
 					<button type="button" class="btn small ghost" id="pick-only" aria-pressed="false">Show only them</button>
 					<button type="button" class="btn small ghost" id="pick-copy">Copy emails</button>
 					<button type="button" class="btn small ghost" id="pick-clear">Clear</button>
@@ -531,7 +532,7 @@
 						<span>A paragraph of your own <em>optional, after the usual text</em></span>
 						<textarea id="mail-note" class="mail-note" maxlength="5000" placeholder="We moved you up from the waiting list: a place opened up."></textarea>
 					</label>
-					<p class="muted mail-help" id="mail-fill">In what you write, <code>{first name}</code>, <code>{name}</code> and <code>{dashboard}</code> (their team dashboard link, which opens for the accepted only) become each person’s own.</p>
+					<p class="muted mail-help" id="mail-fill">In what you write, <code>{first name}</code>, <code>{name}</code>, <code>{track}</code> (the track they were given) and <code>{dashboard}</code> (their team dashboard link, which opens for the accepted only) become each person’s own.</p>
 					<label class="check" id="mail-mates-field"><input type="checkbox" id="mail-mates" checked /> Name their registered teammates who get the same decision (the team version)</label>
 					<label class="check"><input type="checkbox" id="mail-again" /> Also to those who already had this email</label>
 					<div class="bform-actions">
@@ -572,6 +573,6 @@
 
 		</main>
 
-		<script src="assets/js/admin.js?v=20261019"></script>
+		<script src="assets/js/admin.js?v=20261019b"></script>
 	</body>
 </html>
