@@ -1946,17 +1946,22 @@ function decisionEmail_(kind, p) {
     subject: team
       ? "Your team’s BreaQ Hackathon application"
       : "Your BreaQ Hackathon application",
-    heading: "Thank you for applying, " + p.name + ".",
+    heading: "Dear " + p.name + ",",
     paras: [
-      "We read every application to the BreaQ Hackathon, and there were many more than we have places. We are sorry to tell you that we cannot offer " +
-        (team ? "your team" : "you") +
-        " a place this year.",
-      "It was a hard choice, and we hope you apply again next year.",
-      p.conference
+      "Thank you for applying to the BreaQ Hackathon. Competition was tough, with over four applicants per spot, and we’re sorry that we cannot offer you a place this year.",
+      // "We read every application to the BreaQ Hackathon, and there were many more than we have places. We are sorry to tell you that we cannot offer " +
+      //   (team ? "your team" : "you") +
+      //   " a place this year.",
+      // "It was a hard choice, and we hope you apply again next year.",
+
+      p.conference 
         ? "You are registered for the BreaQ Conference on 14 November, and we look forward to seeing you there."
-        : "The BreaQ Conference on 14 November, at the Military Technical Academy “Ferdinand I”, is free and open to everyone, and we would be glad to see you there. Registration takes a couple of minutes and closes on 5 November: " +
-          SITE +
-          "/register-conference.html",
+        : "In case you missed it, the BreaQ Conference on 14 November, at the Military Technical Academy “Ferdinand I”, is free and open to everyone, and we’d be glad to see you there. Registration takes a couple of minutes and closes on 5 November: " + SITE + "/register-conference.html",
+
+      "We appreciate your interest in quantum and hope this outcome won’t kill your enthusiasm. We’re already organizing more events, hackathons, and seminars for the spring to accommodate everyone interested.",
+
+      "Follow RoQTeam on " + "LinkedIn (https://www.linkedin.com/company/roqteam)" + " and "+ "Instagram (https://www.instagram.com/roqteam)" + " to stay tuned. We’ll share all upcoming events there."
+
     ],
     button: null,
     sign: "Warm regards,",
