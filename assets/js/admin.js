@@ -249,6 +249,17 @@
 		return m ? { decision: m[1], sent: m[2] === 'sent' } : null;
 	}
 
+	// emailed by hand, outside the Apps Script, and recorded so (the email's "only record it")
+	function byHand(r) { return / by hand/.test(get(r, 'Decision email')); }
+
+	// an accepted participant who has their team dashboard link: in our acceptance, or in an email written on this
+	// page about the dashboard (the Dashboard link one). An acceptance emailed by hand did not have it.
+	function hasLink(r) {
+		var m = emailedOf(r);
+		if (m && m.sent && m.decision === 'accepted' && !byHand(r)) return true;
+		return /email “[^”]*dashboard[^”]*” sent/i.test(get(r, 'Emails'));
+	}
+
 	/* --- votes (hackathon) ------------------------------------------------------ */
 
 	// each organiser grades from 1 to 10 in their "Vote <name>" column, with their own key; once state.majority have,
@@ -1480,6 +1491,17 @@
 				if (v === 'some') return n > 0 && !decisionOf(h);
 				return revealed([h]) && state.voters.some(function (x) { return noteOf(h, x); });
 			} },
+		{ key: 'demail', label: 'Decision email', hack: true,
+			options: [['due', 'Decided, not emailed yet'], ['sent', 'Emailed'], ['hand', 'Emailed by hand']],
+			test: function (h, v) {
+				var d = decisionOf(h), m = emailedOf(h);
+				if (!d) return false;
+				var sent = !!m && m.sent && m.decision === d;
+				return v === 'due' ? !sent : v === 'hand' ? sent && byHand(h) : sent;
+			} },
+		{ key: 'link', label: 'Dashboard link', hack: true,
+			options: [['no', 'Accepted, never emailed it'], ['yes', 'Accepted, has it']],
+			test: function (h, v) { return decisionOf(h) === 'accepted' && hasLink(h) === (v === 'yes'); } },
 		{ key: 'letter', label: 'Motivation letter', hack: true,
 			options: [['yes', 'In Drive'], ['no', 'Missing or failed']],
 			test: function (h, v) { return isUrl(get(h, 'Motivation letter')) === (v === 'yes'); } },
@@ -3655,8 +3677,37 @@
 		waitlist: 'Sets their hackathon decision to Waitlist and sends the waiting-list email.',
 		denied: 'Sets their hackathon decision to Denied and sends it. Those registered for the conference read that we look forward to seeing them there; the others are invited to register for it.',
 		confirmation: 'The “You are registered” email again, one for each event they registered for.',
-		custom: 'Your own email, in the look of ours: “Hi” and their first name at the top, your sign-off and RoQTeam at the end. Links starting with https:// can be clicked.'
+		custom: 'Your own email, in the look of ours: “Hi” and their first name at the top, your sign-off and RoQTeam at the end. Links starting with https:// can be clicked.',
+		link: 'For the accepted whose acceptance went out by hand, without their link (More filters → Dashboard link: Accepted, never emailed it): each one’s own team dashboard link, which signs them in, and the ask to press “I am coming” there. Change the text as you like; it goes out as one of your own.'
 	};
+
+	// what Your own and Dashboard link start with; each keeps what is typed in it while the other is open
+	var MAIL_DRAFTS = {
+		custom: { subject: '', text: '', sign: 'Best regards,' },
+		link: {
+			subject: 'Your link to the BreaQ Hackathon dashboard',
+			text: 'You are in the BreaQ Hackathon this weekend, 24–25 October, as our email said. Here is what that email did not have: your own link to the team dashboard.\n\n' +
+				'{dashboard}\n\n' +
+				'It is where we post everything for the hackathon: the schedule, your team, the challenge resources, a checklist for the day and how to submit. The link signs you in by itself. Keep it to yourself: it is yours alone.\n\n' +
+				'Please press “I am coming” there, even if you already told us by replying to our email: it keeps every answer in one place.',
+			sign: 'See you on Saturday,'
+		}
+	};
+
+	function written(kind) { return kind === 'custom' || kind === 'link'; }
+
+	function keepDraft(kind) {
+		if (written(kind)) MAIL_DRAFTS[kind] = { subject: $('mail-subject').value, text: $('mail-text').value, sign: $('mail-sign').value };
+	}
+
+	function loadDraft(kind) {
+		if (!written(kind)) return;
+		$('mail-subject').value = MAIL_DRAFTS[kind].subject;
+		$('mail-text').value = MAIL_DRAFTS[kind].text;
+		$('mail-sign').value = MAIL_DRAFTS[kind].sign;
+	}
+
+	function recording() { return DECISIONS.indexOf(mailKind) !== -1 && $('mail-record').checked; }
 
 	function mailLine(cls, text) { mailBody.appendChild(el('p', cls, text)); }
 
@@ -3685,10 +3736,14 @@
 		forEach($('mail-kind').querySelectorAll('button'), function (b) {
 			b.setAttribute('aria-pressed', String(b.getAttribute('data-kind') === mailKind));
 		});
-		$('mail-help').textContent = MAIL_HELP[mailKind];
-		$('mail-custom').hidden = mailKind !== 'custom';
-		$('mail-note-field').hidden = $('mail-mates-field').hidden = !decision;
-		$('mail-fill').hidden = mailKind === 'confirmation';
+		$('mail-help').textContent = recording()
+			? 'Sets their hackathon decision to ' + DECISION_LABEL[mailKind] + ' and records that they had the email by hand. Sends nothing: the regular Send then leaves them out.'
+			: MAIL_HELP[mailKind];
+		$('mail-custom').hidden = !written(mailKind);
+		$('mail-record-field').hidden = !decision;
+		$('mail-note-field').hidden = $('mail-mates-field').hidden = !decision || recording();
+		$('mail-fill').hidden = mailKind === 'confirmation' || recording();
+		$('mail-check').textContent = recording() ? 'Check who it records' : 'Check who gets it';
 	}
 
 	// what the preview showed no longer holds once the form changes: check again before sending
@@ -3702,7 +3757,8 @@
 			action: 'mail',
 			key: state.key,
 			send: send,
-			kind: mailKind,
+			kind: mailKind === 'link' ? 'custom' : mailKind,
+			record: recording(),
 			emails: pickedPeople().map(function (p) { return p.email; }),
 			note: $('mail-note').value,
 			mates: $('mail-mates').checked,
@@ -3733,18 +3789,22 @@
 
 	forEach($('mail-kind').querySelectorAll('button'), function (b) {
 		b.addEventListener('click', function () {
+			keepDraft(mailKind);
 			mailKind = b.getAttribute('data-kind');
+			loadDraft(mailKind);
 			renderMailForm();
 			mailStale();
 		});
 	});
+
+	$('mail-record').addEventListener('change', renderMailForm);
 
 	$('mail-form').addEventListener('input', mailStale);
 	$('mail-form').addEventListener('change', mailStale);
 
 	$('mail-form').addEventListener('submit', function (ev) {
 		ev.preventDefault();
-		if (mailKind === 'custom' && (!$('mail-subject').value.trim() || !$('mail-text').value.trim())) {
+		if (written(mailKind) && (!$('mail-subject').value.trim() || !$('mail-text').value.trim())) {
 			mailBody.textContent = '';
 			mailBody.classList.remove('is-stale');
 			mailLine('err', 'Write the subject and the message first.');
@@ -3768,9 +3828,17 @@
 	function mailPreview(json) {
 		var items = json.items || [];
 		var due = withStatus(items, ['to send']);
-		var can = typeof json.emailsLeft === 'number' ? Math.max(0, json.emailsLeft - json.reserve) : due.length;
 		mailBody.textContent = '';
+		// a script from before "only record it" would send the emails: it has to say it records
+		if (recording() && json.record !== true) {
+			mailLine('err', actionProblem({}, null, 'record emails sent by hand'));
+			mailGo.hidden = true;
+			return;
+		}
+		if (recording()) { recordPreview(due, items); return; }
+		var can = typeof json.emailsLeft === 'number' ? Math.max(0, json.emailsLeft - json.reserve) : due.length;
 		mailLine('send-big', due.length ? plural(due.length, 'email', 'emails') + ' to send' : 'Nothing to send');
+		dashboardWarnings(due);
 		if (due.length > can)
 			mailLine('send-warn', 'Google allows ' + json.emailsLeft + ' more emails today' + (json.reserve ? ' and ' + json.reserve + ' stay free for new registrations' : '') + ', so ' +
 				(can ? 'the first ' + can + ' go today. Send again tomorrow for the other ' + (due.length - can) + ': they stay selected.' : 'none can go out today. Try again tomorrow.'));
@@ -3795,12 +3863,41 @@
 		mailGo.textContent = 'Send ' + plural(Math.min(due.length, can), 'email', 'emails');
 	}
 
+	// {dashboard} for someone it does not open for, or who has the link already
+	function dashboardWarnings(due) {
+		if (!written(mailKind) || !/\{dashboard\}/i.test($('mail-subject').value + $('mail-text').value)) return;
+		var rs = due.map(function (it) {
+			var p = state.records.filter(function (r) { return r.email === it.email && (r.event === 'hackathon' || r.event === 'both'); })[0];
+			return { name: it.name || it.email, h: p || null };
+		});
+		var shut = rs.filter(function (x) { return !x.h || decisionOf(x.h) !== 'accepted'; });
+		var had = rs.filter(function (x) { return x.h && decisionOf(x.h) === 'accepted' && hasLink(x.h); });
+		if (shut.length) mailLine('send-warn', 'Not accepted, so the link does not open the dashboard for them: ' + shut.map(function (x) { return x.name; }).join(', ') + '. Unselect them first.');
+		if (had.length) mailLine('send-warn', 'Had their link already, in our acceptance or an email about the dashboard: ' + had.map(function (x) { return x.name; }).join(', ') + '.');
+	}
+
+	// "only record it": who it records, and the decision it sets
+	function recordPreview(due, items) {
+		var label = DECISION_LABEL[mailKind];
+		mailLine('send-big', due.length ? 'To record for ' + plural(due.length, 'person', 'people') : 'Nothing to record');
+		mailLine('muted', 'No email goes out. Their decision becomes ' + label + ' and “Decision email” says it was sent by hand, so the regular Send leaves them out.');
+		var changing = due.filter(function (it) { return / until now/.test(it.note); }).length;
+		if (changing) mailLine('send-warn', plural(changing, 'decision changes', 'decisions change') + ' with this (“until now” below).');
+		mailList('To record', due);
+		mailList('Recorded or emailed already', withStatus(items, ['sent before']));
+		mailList('Left out', withStatus(items, ['skipped', 'missing']));
+		mailGo.hidden = !due.length;
+		mailGo.disabled = false;
+		mailGo.textContent = 'Record for ' + plural(due.length, 'person', 'people');
+	}
+
 	mailGo.addEventListener('click', function () {
+		var rec = recording();
 		mailGo.disabled = true;
 		mailGo.classList.add('is-busy');
-		mailGo.textContent = 'Sending…';
+		mailGo.textContent = rec ? 'Recording…' : 'Sending…';
 		$('mail-check').disabled = true;
-		mailLine('muted', 'Sending. This can take a few minutes; the page waits for the Apps Script to finish.');
+		mailLine('muted', rec ? 'Recording.' : 'Sending. This can take a few minutes; the page waits for the Apps Script to finish.');
 		post(mailRequest(true), 6.5 * 60 * 1000, function (json, err) {
 			mailGo.classList.remove('is-busy');
 			mailGo.hidden = true;
@@ -3814,12 +3911,13 @@
 	// after: those who got it are no longer picked; the rest stay, for another try
 	function mailSent(json) {
 		var items = json.items || [];
-		var done = withStatus(items, ['sent']);
+		var done = withStatus(items, ['sent', 'recorded']);
 		pick(done, false);
 		var left = pickedPeople().length;
 		mailBody.textContent = '';
-		mailLine('send-big', done.length ? plural(done.length, 'email', 'emails') + ' sent' : 'No email sent');
-		if (done.length) mailLine('muted', 'Those who got it are no longer selected' + (left ? '; the other ' + left + ' still are.' : '.'));
+		if (json.record) mailLine('send-big', done.length ? 'Recorded for ' + plural(done.length, 'person', 'people') : 'Nothing recorded');
+		else mailLine('send-big', done.length ? plural(done.length, 'email', 'emails') + ' sent' : 'No email sent');
+		if (done.length) mailLine('muted', 'Those ' + (json.record ? 'recorded' : 'who got it') + ' are no longer selected' + (left ? '; the other ' + left + ' still are.' : '.'));
 		if (json.stopped === 'quota') mailLine('send-warn', (json.reserve ? 'Stopped with ' + json.reserve + ' of today’s emails left for new registrations.' : 'Today’s emails are used up.') + ' Send again tomorrow for the rest: they stay selected.');
 		if (json.stopped === 'time') mailLine('send-warn', 'Stopped before the Apps Script’s time limit. Send again for the rest: they stay selected.');
 		mailList('Failed', withStatus(items, ['failed']), 'They stay selected: send again to try once more.');
@@ -4160,9 +4258,13 @@
 
 	function teamOfH(h) { return get(h, 'Hackathon team').trim(); }
 
+	// as the Apps Script's comingOf_ reads it: the dashboard writes yes or no, and "confirmed", "da" or "nu" typed in
+	// the sheet by hand (an answer by email) read the same
 	function comingOf(h) {
-		var c = get(h, 'Coming').toLowerCase();
-		return c === 'yes' || c === 'no' ? c : '';
+		var c = get(h, 'Coming').trim().toLowerCase();
+		if (/^(yes|y|da|confirm[a-z]*|coming|vine|true|✓|✔)(?![a-z])/.test(c)) return 'yes';
+		if (/^(no|n|nu|false|declined|cancel[a-z]*)$|^(not|cannot|can't|nu) (com|vine)/.test(c)) return 'no';
+		return '';
 	}
 
 	function comingTag(h) {

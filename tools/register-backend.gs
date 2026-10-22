@@ -100,7 +100,9 @@
  * while one looks around; the bar at the bottom emails them the one chosen there: a decision email (accepted,
  * waitlist, denied, which also sets their Decision, so the regular send counts it as sent), the confirmation again,
  * or one written on the page in the same look. It first shows who gets it and the email as the first of them reads
- * it, and stops at the day's emails as sendDecisions does.
+ * it, and stops at the day's emails as sendDecisions does. A decision emailed by hand, outside this script (the day's
+ * emails ran out), is recorded there instead ("only record it"): it sets the Decision and writes "<decision>: sent by
+ * hand" in "Decision email", sending nothing, so that sendDecisions and the page's Send do not email it again.
  *
  * The track each participant is given (track_): on the admin page, a list on each row, on each team and on the bar of
  * the people picked, and buttons in the full view, fill the "Hackathon track" column with one of the CHALLENGES (or
@@ -1352,10 +1354,10 @@ var MAIL_KINDS = ["accepted", "waitlist", "denied", "confirmation", "custom"];
 var MAIL_TEXT_MAX = 5000;
 var MAIL_SUBJECT_MAX = 150;
 
-// admin.html: { emails, kind, note, mates, again, subject, text, sign, send }. note: a paragraph of the organisers'
-// own after a decision email's text; mates: a decision email names the registered teammates with the same decision
-// (or picked for it now), else it is the personal one; again: also to those who had this email already; subject,
-// text and sign: the custom email. Without send: who would get it (items) and the email as the first of them reads
+// admin.html: { emails, kind, note, mates, again, subject, text, sign, record, send }. note: a paragraph of the
+// organisers' own after a decision email's text; mates: a decision email names the registered teammates with the same
+// decision (or picked for it now), else it is the personal one; again: also to those who had this email already;
+// subject, text and sign: the custom email; record: a decision email they had by hand, only recorded (no email). Without send: who would get it (items) and the email as the first of them reads
 // it (sample). Stops as decisions_ does, at the day's emails and well before Apps Script's 6 minutes.
 function mail_(data) {
   var kind = String(data.kind || "");
@@ -1373,6 +1375,7 @@ function mail_(data) {
     sign: clean_(data.sign).slice(0, 60) || "Best regards,",
     mates: data.mates !== false,
     again: !!data.again,
+    record: !!data.record && DECISIONS.indexOf(kind) !== -1,
   };
   if (kind === "custom" && (!opts.subject || !opts.body))
     return { ok: false, action: "mail", error: "Write the subject and the message first." };
@@ -1515,11 +1518,24 @@ function mailLocked_(kind, emails, opts, send) {
   if (send)
     items.forEach(function (it) {
       if (it.status !== "to send" || stopped) return;
+      var r = it.x.r;
+      // emailed by hand already: the Decision and the record of it, as a send would leave them, and no email
+      if (opts.record) {
+        if (String(r["Decision"]).trim().toLowerCase() !== kind) {
+          sheet.getRange(it.x.row, col("Decision")).setValue(kind);
+          r["Decision"] = kind;
+          changed = true;
+        }
+        sheet
+          .getRange(it.x.row, col("Decision email"))
+          .setValue(cellFor_("Decision email", kind + ": sent by hand, recorded " + stamp() + " on the admin page"));
+        it.status = "recorded";
+        return;
+      }
       var left = emailsLeft_();
       if (left !== null && left <= reserve) stopped = "quota";
       else if (Date.now() - started > 4.5 * 60 * 1000) stopped = "time";
       if (stopped) return;
-      var r = it.x.r;
       // the decision first: the email says it, and the dashboard opens for the accepted only
       if (decision && String(r["Decision"]).trim().toLowerCase() !== kind) {
         sheet.getRange(it.x.row, col("Decision")).setValue(kind);
@@ -1559,7 +1575,7 @@ function mailLocked_(kind, emails, opts, send) {
   var first = items.filter(function (it) {
     return it.status === "to send" || it.status === "sent before";
   })[0];
-  if (!send && first) {
+  if (!send && first && !opts.record) {
     var m = mailFor(first);
     sample = { name: first.name, email: first.email, subject: m.subject, html: m.html };
   }
@@ -1568,6 +1584,7 @@ function mailLocked_(kind, emails, opts, send) {
     action: "mail",
     kind: kind,
     sent: send,
+    record: opts.record, // the page sends a record only to a script that says it records
     stopped: stopped,
     items: items.map(function (it) {
       return { email: it.email, name: it.name, what: it.what, status: it.status, note: it.note, warn: it.warn };
@@ -3189,10 +3206,13 @@ function merged_(a, b) {
   return o;
 }
 
-// the "Coming" column: "yes", "no", or "" (no answer yet)
+// the "Coming" column: "yes", "no", or "" (no answer yet). The dashboard writes yes or no; typed in the sheet by hand
+// for someone who answered by email, "confirmed", "da" or "nu" read the same
 function comingOf_(v) {
   v = String(v || "").trim().toLowerCase();
-  return v === "yes" || v === "no" ? v : "";
+  if (/^(yes|y|da|confirm[a-z]*|coming|vine|true|✓|✔)(?![a-z])/.test(v)) return "yes";
+  if (/^(no|n|nu|false|declined|cancel[a-z]*)$|^(not|cannot|can't|nu) (com|vine)/.test(v)) return "no";
+  return "";
 }
 
 // whose dashboard this is: { name, email, at (in roster_().people) } for an accepted participant,
