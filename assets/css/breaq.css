@@ -4666,6 +4666,28 @@
 				height: auto;
 			}
 
+	/* an event whose registration has closed (the hackathon, since 18 October): the panel steps back
+	   into the shade, plainer and dimmer, and comes back to full light under the pointer or the keyboard */
+	.twin--shade {
+		border-color: var(--bq-line);
+		background: rgba(255, 255, 255, 0.025);
+		opacity: 0.7;
+		transition: opacity 0.3s ease;
+	}
+
+		.twin--shade:hover,
+		.twin--shade:focus-within {
+			opacity: 1;
+		}
+
+		.twin--shade .twin-date span {
+			color: var(--bq-fg-light);
+		}
+
+		.twin--shade .shots img {
+			filter: grayscale(1);
+		}
+
 	.twin, .twin * {
 		text-align: left;
 	}
