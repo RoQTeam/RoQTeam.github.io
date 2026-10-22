@@ -24,6 +24,7 @@
 
 	var endpoint = (root.getAttribute('data-endpoint') || '').trim();
 	var KEY_STORE = 'breaq-2026-admin-key';
+	var EVENT_STORE = 'breaq-2026-admin-event';
 	var DAY_MS = 24 * 60 * 60 * 1000;
 	var MAX_DAYS = 92;   // the per-day chart shows at most the last three months
 
@@ -37,7 +38,7 @@
 		sheet: '',
 		at: null,
 		emailsLeft: null,
-		event: 'all',
+		event: storedEvent(),     // conference (the first, since the hackathon's registration closed), hackathon or all
 		query: '',
 		problems: false,          // only the registrations with a failed email or letter
 		kind: 'all',              // the Who tab: all, teams, solo (hackathon)
@@ -1145,12 +1146,12 @@
 		box.textContent = '';
 		[
 			['Registrations', rs.length],
-			['Hackathon', hack],
 			['Conference', conf],
+			['Hackathon', hack, 'Registration closed on 18 October', 'tile--shade'],
 			['People', everyone.length, 'Each person once, also when registered for both events'],
 			['Last 24 hours', recent]
 		].forEach(function (t) {
-			var tile = el('div', 'tile');
+			var tile = el('div', 'tile' + (t[3] ? ' ' + t[3] : ''));
 			tile.appendChild(el('span', 'tile-label', t[0]));
 			tile.appendChild(el('span', 'tile-value', t[1].toLocaleString('en-GB')));
 			if (t[2]) tile.title = t[2];
@@ -1212,15 +1213,31 @@
 
 	function setEvent(ev) {
 		state.event = ev;
-		forEach($('f-event').querySelectorAll('button'), function (b) {
-			b.setAttribute('aria-pressed', String(b.getAttribute('data-event') === ev));
-		});
+		pressEvent();
 		renderEvent();
 	}
 
+	function pressEvent() {
+		forEach($('f-event').querySelectorAll('button'), function (b) {
+			b.setAttribute('aria-pressed', String(b.getAttribute('data-event') === state.event));
+		});
+	}
+
+	// the event picked by hand stays on this browser; until then, the conference
+	function storedEvent() {
+		var ev = '';
+		try { ev = window.localStorage.getItem(EVENT_STORE) || ''; } catch (e) {}
+		return ev === 'hackathon' || ev === 'all' ? ev : 'conference';
+	}
+
 	forEach($('f-event').querySelectorAll('button'), function (b) {
-		b.addEventListener('click', function () { setEvent(b.getAttribute('data-event')); });
+		b.addEventListener('click', function () {
+			var ev = b.getAttribute('data-event');
+			try { window.localStorage.setItem(EVENT_STORE, ev); } catch (e) {}
+			setEvent(ev);
+		});
 	});
+	pressEvent();
 
 	// the Who and Decision tabs above the table
 	forEach($('f-kind').querySelectorAll('button'), function (b) {

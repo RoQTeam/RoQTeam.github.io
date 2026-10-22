@@ -10,7 +10,7 @@
 		     (script.google.com answers through a redirect to script.googleusercontent.com) -->
 		<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src https://script.google.com https://script.googleusercontent.com; frame-src blob:; base-uri 'none'; form-action 'none'" />
 		<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Raleway:700|Source+Sans+Pro:300,400,600&amp;display=swap" />
-		<link rel="stylesheet" href="assets/css/admin.css?v=20261022" />
+		<link rel="stylesheet" href="assets/css/admin.css?v=20261022b" />
 		<link rel="icon" type="image/png" href="images/favicon-2026.png">
 	</head>
 	<body>
@@ -89,10 +89,11 @@
 				</section>
 
 				<div class="bar-row">
+					<!-- the conference first: the hackathon's registration closed on 18 October (the choice stays on this browser) -->
 					<div class="seg" role="group" aria-label="Event" id="f-event">
-						<button type="button" data-event="all" aria-pressed="true">All</button>
+						<button type="button" data-event="conference" aria-pressed="true">Conference</button>
 						<button type="button" data-event="hackathon" aria-pressed="false">Hackathon</button>
-						<button type="button" data-event="conference" aria-pressed="false">Conference</button>
+						<button type="button" data-event="all" aria-pressed="false">All</button>
 					</div>
 					<input type="search" id="search" placeholder="Search names, emails, universities…" aria-label="Search" autocomplete="off" spellcheck="false" />
 				</div>
@@ -124,7 +125,7 @@
 						</div>
 						<button type="button" class="btn primary" id="send-open">Send decision emails</button>
 					</div>
-					<p class="muted send-help">You grade from 1 to 10 in Your letters above (or in the table): once 3 of you have, the average makes the decision (<span id="grade-scale">7 or more: accepted, 5 or more: the waiting list, below: denied</span>), and that only notes it. Sort the table by Grade for the highest averages first. Nothing goes out until you press Send, which first shows who gets what. Google allows about 100 emails a day: the accepted go first, then the waiting list, then the denied, and the next day’s Send carries on. Registration closes on 18 October at 23:59.</p>
+					<p class="muted send-help">You grade from 1 to 10 in Your letters above (or in the table): once 3 of you have, the average makes the decision (<span id="grade-scale">7 or more: accepted, 5 or more: the waiting list, below: denied</span>), and that only notes it. Sort the table by Grade for the highest averages first. Nothing goes out until you press Send, which first shows who gets what. Google allows about 100 emails a day: the accepted go first, then the waiting list, then the denied, and the next day’s Send carries on. Registration closed on 18 October at 23:59.</p>
 				</section>
 
 				<section class="panel" aria-labelledby="people-h">
@@ -576,6 +577,6 @@
 
 		</main>
 
-		<script src="assets/js/admin.js?v=20261022b"></script>
+		<script src="assets/js/admin.js?v=20261022c"></script>
 	</body>
 </html>

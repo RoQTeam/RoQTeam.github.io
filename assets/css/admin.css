@@ -377,6 +377,11 @@ input[type="checkbox"] {
 			box-shadow: inset 0 0 0 1px var(--bad);
 		}
 
+	/* an event whose registration has closed (the hackathon, since 18 October): in the shade */
+	.tile--shade {
+		opacity: 0.6;
+	}
+
 	/* who has not answered something we asked (the Quantum Hacking teams email): a button that lists them */
 	.tile--ask {
 		border-color: rgba(255, 196, 119, 0.45);
