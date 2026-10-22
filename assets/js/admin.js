@@ -48,6 +48,7 @@
 		to: '',
 		pending: {},              // emails whose decision is being saved
 		tracking: {},             // emails whose track is being saved
+		accessing: {},            // emails whose dashboard code is being turned off or on
 		detail: null,             // the person open in the full view
 		sort: { key: 'time', dir: -1 },
 		view: 'regs',             // regs, teams, checkin, board (the team dashboard), after
@@ -258,6 +259,27 @@
 		var m = emailedOf(r);
 		if (m && m.sent && m.decision === 'accepted' && !byHand(r)) return true;
 		return /email “[^”]*dashboard[^”]*” sent/i.test(get(r, 'Emails'));
+	}
+
+	// the day their dashboard link first went out, "2026-10-19" ('' for none): our acceptance, or an email about the
+	// dashboard written on this page
+	function linkSince(r) {
+		var days = [];
+		var d = /^accepted: sent (\d{4}-\d\d-\d\d)/.exec(get(r, 'Decision email'));
+		if (d && !byHand(r)) days.push(d[1]);
+		get(r, 'Emails').replace(/email “[^”]*dashboard[^”]*” sent (\d{4}-\d\d-\d\d)/gi, function (m, day) { days.push(day); return m; });
+		return days.sort()[0] || '';
+	}
+
+	// the dashboard code turned off by the organisers ("Code off": since when)
+	function codeOff(r) { return !!get(r, 'Code off'); }
+
+	// the acceptance asked to say by Wednesday 21 October whether they are coming (CONFIRM_BY in the Apps Script):
+	// accepted, the link sent before that day, and no answer since
+	var ANSWER_BY = '2026-10-21';
+	function silent(r) {
+		var since = linkSince(r);
+		return decisionOf(r) === 'accepted' && !comingOf(r) && !codeOff(r) && !!since && since < ANSWER_BY;
 	}
 
 	/* --- votes (hackathon) ------------------------------------------------------ */
@@ -873,6 +895,7 @@
 		state.shown = [];
 		state.pending = {};
 		state.tracking = {};
+		state.accessing = {};
 		state.detail = null;
 		if ($('detail').open) $('detail').close();
 		if ($('send-dlg').open) $('send-dlg').close();
@@ -1506,8 +1529,13 @@
 			options: [['yes', 'In Drive'], ['no', 'Missing or failed']],
 			test: function (h, v) { return isUrl(get(h, 'Motivation letter')) === (v === 'yes'); } },
 		{ key: 'coming', label: 'Coming', hack: true,
-			options: [['yes', 'Yes'], ['no', 'Cannot come'], ['open', 'Accepted, not answered']],
-			test: function (h, v) { var c = comingOf(h); return v === 'open' ? decisionOf(h) === 'accepted' && !c : c === v; } },
+			options: [['yes', 'Yes'], ['no', 'Cannot come'], ['open', 'Accepted, not answered'], ['silent', 'No answer, had the link before 21 Oct'], ['off', 'Code off']],
+			test: function (h, v) {
+				if (v === 'off') return codeOff(h);
+				if (v === 'silent') return silent(h);
+				var c = comingOf(h);
+				return v === 'open' ? decisionOf(h) === 'accepted' && !c && !codeOff(h) : c === v;
+			} },
 		{ key: 'checked', label: 'Checked in', hack: true,
 			options: [['yes', 'Yes'], ['no', 'Not yet']],
 			test: function (h, v) { return !!get(h, 'Checked in') === (v === 'yes'); } },
@@ -1775,7 +1803,9 @@
 			} },
 		// the hackathon itself, once there is something in these: the team they are in, their "are you coming?"
 		{ key: 'hteam', label: 'In team', col: 'Hackathon team', cls: 'hide-md' },
-		{ key: 'coming', label: 'Coming', col: 'Coming', cls: 'hide-sm',
+		// once someone is accepted: their answer, or that their code is off
+		{ key: 'coming', label: 'Coming', cls: 'hide-sm',
+			when: function () { return state.event !== 'conference' && state.people.some(function (p) { var h = hackReg(p); return h && decisionOf(h) === 'accepted'; }); },
 			sort: function (r) { var h = hackReg(r); return h ? ['yes', '', 'no'].indexOf(comingOf(h)) : 9; },
 			cell: function (r) {
 				var td = el('td', 'hide-sm');
@@ -2066,6 +2096,16 @@
 	// an accepted participant's team dashboard code, to read out or send again
 	function dashboardLine(h) {
 		var line = el('p', 'detail-code');
+		var turn = el('button', 'btn small ghost', codeOff(h) ? 'Turn it on' : 'Turn code off');
+		turn.type = 'button';
+		turn.disabled = !!state.accessing[h.email];
+		turn.addEventListener('click', function () { setAccess([h], !codeOff(h)); });
+		if (codeOff(h)) {
+			var since = new Date(get(h, 'Code off'));
+			line.appendChild(el('span', 'bad', 'Their dashboard code is off' + (isNaN(since) ? '' : ' since ' + fmtShort.format(since)) + '. '));
+			line.appendChild(turn);
+			return line;
+		}
 		var code = state.codes[h.email];
 		if (!code) {
 			line.textContent = 'Their team dashboard code shows after a Refresh.';
@@ -2079,6 +2119,7 @@
 			copyText(teamsLink(code), function (ok) { copy.textContent = ok ? 'Copied' : 'Could not copy'; });
 		});
 		line.appendChild(copy);
+		line.appendChild(turn);
 		return line;
 	}
 
@@ -2283,6 +2324,44 @@
 		renderChips();
 		refreshDecisions();
 	}
+
+	/* --- dashboard codes off ---------------------------------------------------------------- */
+
+	// Turns accepted participants' dashboard codes off (or on again): the dashboard then tells them we did not hear
+	// from them and to write to us. Their decision stays. Shown at once, put back if the save fails.
+	function setAccess(regs, off) {
+		regs = regs.filter(function (r) { return decisionOf(r) === 'accepted' && codeOff(r) !== off; });
+		if (!regs.length) return;
+		var who = regs.length === 1 ? (regs[0].name || regs[0].email) : regs.length + ' people';
+		var answered = regs.filter(function (r) { return comingOf(r) === 'yes'; }).length;
+		var q = off
+			? 'Turn off the dashboard code of ' + who + '? The dashboard tells them we did not hear from them by Wednesday and to write to us. Their decision stays; you can turn it on again.' +
+				(answered ? '\n\n' + answered + ' of them said they are coming.' : '')
+			: 'Turn the dashboard code of ' + who + ' on again? The code they had works again.';
+		if (!window.confirm(q)) return;
+		var before = regs.map(function (r) { return get(r, 'Code off'); });
+		regs.forEach(function (r) { setCol(r, 'Code off', off ? new Date().toISOString() : ''); state.accessing[r.email] = true; });
+		refreshTracks();
+		post({ action: 'access', key: state.key, emails: regs.map(function (r) { return r.email; }), off: off }, 60000, function (json, err) {
+			regs.forEach(function (r) { delete state.accessing[r.email]; });
+			if (json && json.denied) { lock(json.error); return; }
+			if (json && json.ok && json.action === 'access') {
+				var missing = json.missing || [];
+				regs.forEach(function (r, i) { if (missing.indexOf(r.email) !== -1) setCol(r, 'Code off', before[i]); });
+				dashError(missing.length ? 'Not saved, as the sheet has no hackathon registration for ' + missing.join(', ') + ' any more. Refresh the page.' : '');
+				pickNote(off ? 'Code off for ' + plural(regs.length - missing.length, 'person', 'people') : 'Code on again for ' + plural(regs.length - missing.length, 'person', 'people'));
+			} else {
+				regs.forEach(function (r, i) { setCol(r, 'Code off', before[i]); });
+				dashError('The codes were not changed. ' + actionProblem(json, err, 'turn dashboard codes off'));
+			}
+			refreshTracks();
+		});
+	}
+
+	$('pick-code').addEventListener('click', function () {
+		var hs = pickedPeople().map(hackReg).filter(function (h) { return h && decisionOf(h) === 'accepted'; });
+		setAccess(hs, !hs.every(codeOff));
+	});
 
 	/* --- votes -------------------------------------------------------------------- */
 
@@ -3622,6 +3701,10 @@
 		count.textContent = plural(ps.length, 'person', 'people') + ' selected';
 		if (away && state.view === 'regs') count.appendChild(el('em', null, ' · ' + away + ' not in this list'));
 		$('pick-only').setAttribute('aria-pressed', String(state.onlyPicked));
+		// their dashboard codes, off or on again (the accepted among them)
+		var acc = ps.map(hackReg).filter(function (h) { return h && decisionOf(h) === 'accepted'; });
+		$('pick-code').hidden = !acc.length;
+		$('pick-code').textContent = acc.length && acc.every(codeOff) ? 'Code on again' : 'Code off…';
 		// their track, all at once (those only at the conference have none)
 		var hs = ps.map(hackReg).filter(Boolean);
 		var box = $('pick-track');
@@ -4269,6 +4352,11 @@
 
 	function comingTag(h) {
 		var c = comingOf(h);
+		if (codeOff(h) && !c) {
+			var off = el('span', 'ctag ctag-off', 'Code off');
+			off.title = 'Their dashboard code is off' + (isNaN(new Date(get(h, 'Code off'))) ? '' : ' since ' + fmtShort.format(new Date(get(h, 'Code off'))));
+			return off;
+		}
 		var t = el('span', 'ctag ctag-' + (c || 'none'), COMING_LABEL[c]);
 		if (get(h, 'Coming answered')) t.title = 'Answered ' + fmtShort.format(new Date(get(h, 'Coming answered')));
 		return t;
@@ -4321,7 +4409,8 @@
 			['Accepted', list.length],
 			['Coming', n('yes')],
 			['Cannot come', n('no'), n('no') ? 'tile--warn' : ''],
-			['No answer yet', n('')],
+			['No answer yet', list.filter(function (x) { return !comingOf(x.h) && !codeOff(x.h); }).length],
+			['Code off', list.filter(function (x) { return codeOff(x.h); }).length],
 			['Teams', teams.length],
 			['Not in a team', loose.length, loose.length ? 'tile--warn' : ''],
 			['Handed in', teams.filter(function (x) { return x.t.repo; }).length + ' of ' + teams.length]

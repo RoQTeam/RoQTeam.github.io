@@ -137,8 +137,10 @@
  * It is for the accepted participants only: each has a personal code, made from their email with a secret kept
  * in the script properties (TEAM_SECRET), which their acceptance email gives with a link that fills it in. A code
  * opens the dashboard only while that person's Decision is "accepted": the waiting list and the denied never get
- * one, and changing an accepted person's decision shuts their code out at once. The organisers open it with the
- * admin key. The admin page shows each accepted person's code (in their full view), for anyone who lost the
+ * one, and changing an accepted person's decision shuts their code out at once. The organisers can also turn an
+ * accepted person's code off on the admin page (access_), for someone who did not say by CONFIRM_BY whether they are
+ * coming: the "Code off" column says since when, their Decision stays, and the dashboard tells them to write to
+ * us; turned on again, the same code works. The organisers open it with the admin key. The admin page shows each accepted person's code (in their full view), for anyone who lost the
  * email; "dashboardCodes" in the editor's function list logs them all.
  *
  * On the dashboard each participant also sees:
@@ -223,6 +225,8 @@ var COLUMNS = [
   "Certificate",
   // the track the organisers give them (track_), one of the CHALLENGES; "Tracks" is what they ticked
   "Hackathon track",
+  // since when their dashboard code is off (access_); empty while it works
+  "Code off",
 ];
 // each organiser's note and grade, just before the Decision the grades add up to
 COLUMNS.splice.apply(COLUMNS, [COLUMNS.indexOf("Decision"), 0].concat(NOTE_COLUMNS, VOTE_COLUMNS));
@@ -243,6 +247,7 @@ var NOT_ANSWERS = [
   "Checked in",
   "Certificate",
   "Hackathon track",
+  "Code off",
 ].concat(VOTE_COLUMNS, NOTE_COLUMNS);
 
 // what the organisers and the dashboard write in a row: a merge keeps the earlier row's, the later one's only fills
@@ -256,6 +261,7 @@ var ORGANISER_COLUMNS = [
   "Checked in",
   "Certificate",
   "Hackathon track",
+  "Code off",
 ].concat(VOTE_COLUMNS, NOTE_COLUMNS);
 
 // what the organisers can pick in the "Decision" column; each has its email in decisionEmail_
@@ -582,6 +588,7 @@ function doPost(e) {
     "decisions",
     "mail",
     "track",
+    "access",
     "board-admin",
     "board-save",
     "board-delete",
@@ -607,6 +614,7 @@ function doPost(e) {
       if (data.action === "decisions") return json_(decisions_(!!data.send));
       if (data.action === "mail") return json_(mail_(data));
       if (data.action === "track") return json_(track_(data));
+      if (data.action === "access") return json_(access_(data));
       if (data.action === "board-admin") return json_(boardAdmin_());
       if (data.action === "board-save") return json_(boardSave_(data));
       if (data.action === "board-delete") return json_(boardDelete_(data));
@@ -2937,6 +2945,42 @@ function track_(data) {
   }
 }
 
+// admin.html: accepted participants' dashboard codes off ({ emails, off: true }) or on again ({ emails, off: false }).
+// Their Decision stays as it is, and so does the code itself: on again, it works as before. Sends nothing.
+function access_(data) {
+  var emails = emailsOf_({ Email: "", "Other emails": [].concat(data.emails || []).join(",") });
+  if (!emails.length) return { ok: false, action: "access", error: "No registration given." };
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    var sheet = sheet_(); // with the column, the first time
+    var values = sheet.getDataRange().getValues();
+    var header = header_(values);
+    var col = header.indexOf("Code off") + 1;
+    var since = data.off ? new Date() : "";
+    var set = [];
+    var missing = [];
+    emails.forEach(function (email) {
+      var row = regRow_(values, header, email);
+      if (row === -1) {
+        missing.push(email);
+        return;
+      }
+      sheet.getRange(row, col).setValue(since);
+      set.push({ email: email, off: since });
+    });
+    rosterChanged_(); // the dashboard follows at once
+    return { ok: true, action: "access", set: set, missing: missing };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// a code the organisers turned off (access_)
+function codeOff_(r) {
+  return String(r["Code off"] === undefined || r["Code off"] === null ? "" : r["Code off"]).trim() !== "";
+}
+
 // admin.html: one organiser's grade on hackathon registrations, each found by one of its emails: a whole number from
 // GRADE_MIN to GRADE_MAX, or "" to take it back. Only a voter's own key votes, in their column. A grade that changes
 // what the average says (outcome_) sets the Decision (accepted, waitlist, denied, or undecided again); any other
@@ -3153,20 +3197,27 @@ function codeKey_(s) {
 // answer to "are you coming?", their check-in. Kept a minute in the cache; whatever changes one of these clears it
 // (rosterChanged_), so a change of decision, say, counts at once.
 //   { codes: { codeKey: i }, people: [{ name, email, team, coming, checkedIn, certificate }],
-//     teams: { lower-case name: { name, challenge, table, pitch, room, award, members: [names] } } }
+//     teams: { lower-case name: { name, challenge, table, pitch, room, award, members: [names] } },
+//     off: { codeKey: true } (the codes turned off, access_) }
 function roster_() {
   var cache = CacheService.getScriptCache();
   var hit = cache.get("roster");
   if (hit) return JSON.parse(hit);
   var values = sheet_().getDataRange().getValues();
   var header = header_(values);
-  var out = { codes: {}, people: [], teams: {} };
+  var out = { codes: {}, people: [], teams: {}, off: {} };
   teamsList_().forEach(function (t) {
     out.teams[t.name.toLowerCase()] = merged_(t, { members: [] });
   });
   for (var i = 1; i < values.length; i++) {
     var r = toRecord_(header, values[i]);
     if (!accepted_(r)) continue;
+    if (codeOff_(r)) {
+      emailsOf_(r).forEach(function (email) {
+        out.off[codeKey_(dashboardCode_(email))] = true;
+      });
+      continue;
+    }
     var p = {
       name: String(r["First name"] + " " + r["Last name"]).trim(),
       email: String(r["Email"]).trim().toLowerCase(),
@@ -3228,6 +3279,15 @@ function dashboardWho_(code) {
   var at = roster ? roster.codes[key] : undefined;
   if (at !== undefined)
     return { name: roster.people[at].name, email: roster.people[at].email, at: at, organiser: false };
+  if (roster && roster.off && roster.off[key])
+    return {
+      ok: false,
+      denied: true,
+      off: true,
+      error:
+        "We did not hear from you by " + CONFIRM_BY + " whether you are coming, so your code is off and your place may go " +
+        "to someone on the waiting list. Still want to come? Write to us at " + REPLY_TO + " as soon as you can.",
+    };
   Utilities.sleep(1500); // a wrong code costs time, so guessing does not pay
   return {
     ok: false,

@@ -315,7 +315,7 @@
 		var timer = ctrl ? window.setTimeout(function () { ctrl.abort(); }, 30000) : null;
 		function finish(json, err) {
 			if (timer) window.clearTimeout(timer);
-			if (json && json.denied) { lock('This code no longer opens the team dashboard. Questions? Reply to your acceptance email, or ask at the desk.'); return; }
+			if (json && json.denied) { lock(json.off ? json.error : 'This code no longer opens the team dashboard. Questions? Reply to your acceptance email, or ask at the desk.'); return; }
 			if (json && json.ok && json.me) {
 				var old = state.me;
 				state.me = json.me;
@@ -453,7 +453,7 @@
 				refreshLabel.textContent = 'Refresh';
 			}
 			if (loaded(json)) { state.failing = false; dashError(''); show(json, false); return; }
-			if (json && json.denied) { lock('This code no longer opens the team dashboard. Questions? Reply to your acceptance email, or ask at the desk.'); return; }
+			if (json && json.denied) { lock(json.off ? json.error : 'This code no longer opens the team dashboard. Questions? Reply to your acceptance email, or ask at the desk.'); return; }
 			// a missed update keeps what is on the screen; asked by hand, it says why
 			state.failing = true;
 			renderMeta();
