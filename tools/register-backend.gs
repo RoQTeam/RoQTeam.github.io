@@ -1546,8 +1546,7 @@ function mailLocked_(kind, emails, opts, send) {
         eve.note = codeOff_(h) ? "their code is off" : "not accepted";
       } else {
         if (!String(h["Hackathon track"] || "").trim()) {
-          eve.note = "⚠ no track given yet: the email says they hear it at the kick-off";
-          eve.warn = true;
+          eve.note = "no track: the email leaves the challenge out";
         }
         if (!opts.again && String(h["Emails"]).indexOf(EVE_LOG + " sent") !== -1) eve.status = "sent before";
       }
@@ -2162,7 +2161,8 @@ function renderEmail_(name, t) {
 }
 
 // the day before the hackathon, in a look of its own: their challenge, the schedule, how to find CAMPUS, the laptop
-// and the WhatsApp group. Tables and inline styles, as email clients want them; the plain text says the same.
+// and the WhatsApp group; with no track, the challenge is left out. Tables and inline styles, as email clients want
+// them; the plain text says the same.
 function eveEmail_(r) {
   var first = String(r["First name"]).trim();
   var track = String(r["Hackathon track"] || "").trim();
@@ -2194,10 +2194,14 @@ function eveEmail_(r) {
   };
 
   var challenge = track
-    ? label("Your challenge", tint[0]) +
-      p(esc_(track), "font-size:24px;font-weight:800;line-height:1.2;margin:0 0 8px") +
-      p("One challenge each: if you ticked more than one, we picked yours from your preferences and the places left in each.", "font-size:13px;color:" + soft)
-    : label("Your challenge", tint[0]) + p("You hear it at the kick-off, with everyone else.", "font-size:17px;font-weight:700");
+    ? box(
+        tint[1],
+        label("Your challenge", tint[0]) +
+          p(esc_(track), "font-size:24px;font-weight:800;line-height:1.2;margin:0 0 8px") +
+          p("One challenge each: if you ticked more than one, we picked yours from your preferences and the places left in each.", "font-size:13px;color:" + soft),
+        "border-left:5px solid " + tint[0] + ";",
+      )
+    : "";
 
   var schedule = EVE_SCHEDULE.map(function (d, i) {
     return (
@@ -2226,7 +2230,8 @@ function eveEmail_(r) {
   }).join("");
 
   var html =
-    '<div style="display:none;max-height:0;overflow:hidden">Your challenge, the schedule, how to find CAMPUS and the WhatsApp group.</div>' +
+    '<div style="display:none;max-height:0;overflow:hidden">' + (track ? "Your challenge, the schedule" : "The schedule") +
+    ", how to find CAMPUS and the WhatsApp group.</div>" +
     '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#eef0f5"><tr><td align="center" style="padding:24px 12px">' +
     '<table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;background:#ffffff;border-radius:14px;overflow:hidden">' +
     // the header: the logo, who it is for, when and where
@@ -2240,7 +2245,7 @@ function eveEmail_(r) {
     "</td></tr>" +
     '<tr><td style="padding:28px 28px 8px">' +
     p("We can’t wait to get together and meet you all. Here is everything for the weekend, in one place.", "margin:0 0 24px") +
-    box(tint[1], challenge, "border-left:5px solid " + tint[0] + ";") +
+    challenge +
     label("The schedule") + schedule + '<div style="height:28px;line-height:28px">&nbsp;</div>' +
     label("How to find us") +
     box(
@@ -2276,9 +2281,8 @@ function eveEmail_(r) {
     "Hi " + first + ",\n\n" +
     "See you tomorrow at the BreaQ Hackathon! We can’t wait to get together and meet you all. Here is everything for the weekend, in one place.\n\n" +
     (track
-      ? "YOUR CHALLENGE: " + track + "\nOne challenge each: if you ticked more than one, we picked yours from your preferences and the places left in each."
-      : "YOUR CHALLENGE: you hear it at the kick-off, with everyone else.") +
-    "\n\n" +
+      ? "YOUR CHALLENGE: " + track + "\nOne challenge each: if you ticked more than one, we picked yours from your preferences and the places left in each.\n\n"
+      : "") +
     EVE_SCHEDULE.map(function (d) {
       return d.day.toUpperCase() + "\n" + d.rows.map(function (row) { return (row[0] || "then") + "  " + row[1]; }).join("\n");
     }).join("\n\n") +
