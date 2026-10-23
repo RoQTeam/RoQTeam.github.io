@@ -3778,6 +3778,7 @@
 		denied: 'Sets their hackathon decision to Denied and sends it. Those registered for the conference read that we look forward to seeing them there; the others are invited to register for it.',
 		confirmation: 'The “You are registered” email again, one for each event they registered for.',
 		custom: 'Your own email, in the look of ours: “Hi” and their first name at the top, your sign-off and RoQTeam at the end. Links starting with https:// can be clicked.',
+		eve: 'The last details before the hackathon, in a look of its own: their challenge, the schedule, how to find CAMPUS, the laptop and the WhatsApp group. Only the accepted get it (not those whose code is off); ⚠ marks those with no track given yet.',
 		link: 'For the accepted whose acceptance went out by hand, without their link (More filters → Dashboard link: Accepted, never emailed it): each one’s own team dashboard link, which signs them in, and the ask to press “I am coming” there. Change the text as you like; it goes out as one of your own.'
 	};
 
@@ -3842,7 +3843,7 @@
 		$('mail-custom').hidden = !written(mailKind);
 		$('mail-record-field').hidden = !decision;
 		$('mail-note-field').hidden = $('mail-mates-field').hidden = !decision || recording();
-		$('mail-fill').hidden = mailKind === 'confirmation' || recording();
+		$('mail-fill').hidden = mailKind === 'confirmation' || mailKind === 'eve' || recording();
 		$('mail-check').textContent = recording() ? 'Check who it records' : 'Check who gets it';
 	}
 

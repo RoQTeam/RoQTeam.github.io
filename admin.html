@@ -514,6 +514,7 @@
 							<button type="button" data-kind="confirmation" aria-pressed="false">Confirmation</button>
 							<button type="button" data-kind="custom" aria-pressed="false">Your own</button>
 							<button type="button" data-kind="link" aria-pressed="false">Dashboard link</button>
+							<button type="button" data-kind="eve" aria-pressed="false">The day before</button>
 						</div>
 						<p class="muted mail-help" id="mail-help"></p>
 					</div>
@@ -536,7 +537,7 @@
 						<span>A paragraph of your own <em>optional, after the usual text</em></span>
 						<textarea id="mail-note" class="mail-note" maxlength="5000" placeholder="We moved you up from the waiting list: a place opened up."></textarea>
 					</label>
-					<p class="muted mail-help" id="mail-fill">In what you write, <code>{first name}</code>, <code>{name}</code>, <code>{track}</code> (the track they were given) and <code>{dashboard}</code> (their team dashboard link, which opens for the accepted only) become each person’s own.</p>
+					<p class="muted mail-help" id="mail-fill">In what you write, <code>{first name}</code>, <code>{name}</code>, <code>{track}</code> (the track they were given) and <code>{dashboard}</code> (their team dashboard link, which opens for the accepted only) become each person’s own. <code>**bold**</code>, <code>[a label](https://…)</code> for a link and lines that start with <code>- </code> (a list) are formatted.</p>
 					<label class="check" id="mail-mates-field"><input type="checkbox" id="mail-mates" checked /> Name their registered teammates who get the same decision (the team version)</label>
 					<label class="check"><input type="checkbox" id="mail-again" /> Also to those who already had this email</label>
 					<div class="bform-actions">
@@ -577,6 +578,6 @@
 
 		</main>
 
-		<script src="assets/js/admin.js?v=20261022c"></script>
+		<script src="assets/js/admin.js?v=20261023"></script>
 	</body>
 </html>

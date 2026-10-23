@@ -305,6 +305,43 @@ var TEAMS_PAGE = SITE + "/teams";
 var MENTORS_PAGE = SITE + "/mentors";
 var CONFIRM_BY = "Wednesday 21 October"; // the acceptance email asks to answer "are you coming?" by then
 
+// the day-before email (eveEmail_, "The day before" on the admin page): the hackathon's WhatsApp group, which it
+// cannot go out without, and CAMPUS on Google Maps
+var WHATSAPP_GROUP = "https://chat.whatsapp.com/ILDYZn3dlC62gLnXZ5rLmV";
+var CAMPUS_MAP =
+  "https://www.google.com/maps/search/?api=1&query=Centrul%20CAMPUS%2C%20Splaiul%20Independen%C8%9Bei%20313%2C%20Bucure%C8%99ti";
+var EVE_LOG = "the day-before email"; // how the Emails column records it
+var EVE_SCHEDULE = [
+  {
+    day: "Saturday · 24 October",
+    rows: [
+      ["9:00", "Doors open: come in and settle down"],
+      ["9:30", "A short kick-off: we show you the rooms and you split into the challenges"],
+      ["10:00", "Coding starts 🚀"],
+    ],
+  },
+  {
+    day: "Sunday · 25 October",
+    rows: [
+      ["9:00", "Coding stops. Still a full 24 hours: the clocks go back an hour that night"],
+      ["", "Each challenge gathers in its room, and every team presents its work to the jury"],
+      ["", "The jury decides"],
+      ["12:00", "The awards ceremony 🏆 Then we can all go home and sleep 😴"],
+    ],
+  },
+];
+var EVE_WAY = [
+  "On the Politehnica campus, on the Iuliu Maniu side: one of the two newer buildings, the one closest to the gate for cars.",
+  "The entrance is on the side towards the boulevard, up the stairs.",
+  "Door closed? There is a doorbell on the right: tell security you are here for the hackathon.",
+];
+// each challenge's colour in that email, and the tint of its card
+var TRACK_COLOR = {
+  "Quantum Foundations": ["#4c5c96", "#eef0f8"],
+  "Quantum AI": ["#7a5cc7", "#f3effb"],
+  "Quantum Hacking": ["#e8590c", "#fdf1e8"],
+};
+
 // the hackathon's "Team" column: on their own, with the teammates they name ("Team name and members"), or put in
 // a team by the organisers. register.html asks it with Quantum AI or Quantum Hacking ticked; team-choice.html
 // (roqteam.ro/team-choice) lets a registered participant change it, with their personal code
@@ -1358,7 +1395,7 @@ function reserve_() {
 
 // what the admin page can send the people picked in it: the decision emails (which set the Decision too, so the
 // dashboard, the regular send and the page agree), the registration's confirmation again, or one written there
-var MAIL_KINDS = ["accepted", "waitlist", "denied", "confirmation", "custom"];
+var MAIL_KINDS = ["accepted", "waitlist", "denied", "confirmation", "custom", "eve"];
 var MAIL_TEXT_MAX = 5000;
 var MAIL_SUBJECT_MAX = 150;
 
@@ -1387,6 +1424,12 @@ function mail_(data) {
   };
   if (kind === "custom" && (!opts.subject || !opts.body))
     return { ok: false, action: "mail", error: "Write the subject and the message first." };
+  if (kind === "eve" && !WHATSAPP_GROUP)
+    return {
+      ok: false,
+      action: "mail",
+      error: "Paste the WhatsApp group’s link into WHATSAPP_GROUP in the Apps Script first (and deploy a new version).",
+    };
   // two organisers pressing Send at once must not email anyone twice
   var lock = data.send ? LockService.getDocumentLock() : null;
   if (lock && !lock.tryLock(2000))
@@ -1492,6 +1535,24 @@ function mailLocked_(kind, emails, opts, send) {
       });
       return;
     }
+    if (kind === "eve") {
+      var eve = add(email, rows[0]);
+      var h = rows[0].r;
+      if (rows[0].ev !== "hackathon") {
+        eve.status = "skipped";
+        eve.note = "registered for the conference only";
+      } else if (String(h["Decision"]).trim().toLowerCase() !== "accepted" || codeOff_(h)) {
+        eve.status = "skipped";
+        eve.note = codeOff_(h) ? "their code is off" : "not accepted";
+      } else {
+        if (!String(h["Hackathon track"] || "").trim()) {
+          eve.note = "⚠ no track given yet: the email says they hear it at the kick-off";
+          eve.warn = true;
+        }
+        if (!opts.again && String(h["Emails"]).indexOf(EVE_LOG + " sent") !== -1) eve.status = "sent before";
+      }
+      return;
+    }
     var mine = add(email, rows[0]);
     mine.note = trackless(rows[0].r, opts.subject + "\n" + opts.body);
     mine.warn = !!mine.note;
@@ -1508,6 +1569,7 @@ function mailLocked_(kind, emails, opts, send) {
       return renderEmail_(first, t);
     }
     if (kind === "confirmation") return confirmationEmail_({ first_name: first, attend: String(r["Attends"]).trim() }, null);
+    if (kind === "eve") return eveEmail_(r);
     return renderEmail_(first, {
       subject: fill_(opts.subject, r),
       heading: "Hi " + first + ",",
@@ -1572,7 +1634,10 @@ function mailLocked_(kind, emails, opts, send) {
       if (decision) sheet.getRange(it.x.row, col("Decision email")).setValue(cellFor_("Decision email", kind + ":" + how));
       else {
         var had = String(r["Emails"]).trim();
-        r["Emails"] = emailsWith_(had, (kind === "confirmation" ? "confirmation" : "email “" + opts.subject + "”") + how);
+        r["Emails"] = emailsWith_(
+          had,
+          (kind === "confirmation" ? "confirmation" : kind === "eve" ? EVE_LOG : "email “" + opts.subject + "”") + how,
+        );
         sheet.getRange(it.x.row, col("Emails")).setValue(cellFor_("Emails", r["Emails"]));
       }
     });
@@ -2029,18 +2094,48 @@ function decisionEmail_(kind, p) {
   };
 }
 
-// a decisionEmail_ as plain text and HTML, in the look of the confirmation email
+// a decisionEmail_ as plain text and HTML, in the look of the confirmation email. What the organisers write on the
+// admin page may have **bold**, [a label](https://…) for a link and lines that start with "- " (a list)
 function renderEmail_(name, t) {
   var linked = function (s) {
-    return esc_(s).replace(/https:\/\/[^\s<]*[^\s<.,:;)]/g, function (u) {
-      return '<a href="' + u + '" style="color:#4c5c96">' + u + "</a>";
-    });
+    return esc_(s)
+      .replace(/\[([^\]\n]+)\]\((https:\/\/[^\s)<]+)\)|https:\/\/[^\s<]*[^\s<.,:;)]/g, function (m, label, href) {
+        var u = href || m;
+        return '<a href="' + u + '" style="color:#4c5c96">' + (label || u) + "</a>";
+      })
+      .replace(/\*\*([^*\n]+)\*\*/g, "<b>$1</b>");
+  };
+  var item = /^- /;
+  var block = function (s) {
+    var lines = s.split("\n");
+    if (!lines.some(function (l) { return item.test(l); }))
+      return "<p>" + linked(s).replace(/\n/g, "<br>") + "</p>"; // a line break typed on the admin page
+    // the lines of a list as one, the lines around it as a paragraph each side
+    var html = "";
+    for (var i = 0; i < lines.length; ) {
+      var list = item.test(lines[i]);
+      var run = [];
+      while (i < lines.length && item.test(lines[i]) === list) run.push(lines[i++]);
+      html += list
+        ? '<ul style="margin:0 0 1em;padding-left:22px">' +
+          run
+            .map(function (l) {
+              return '<li style="margin:3px 0">' + linked(l.slice(2)) + "</li>";
+            })
+            .join("") +
+          "</ul>"
+        : '<p style="margin:1em 0 4px">' + run.map(function (l) { return linked(l); }).join("<br>") + "</p>";
+    }
+    return html;
+  };
+  var plain = function (s) {
+    return s.replace(/\[([^\]\n]+)\]\((https:\/\/[^\s)]+)\)/g, "$1: $2").replace(/\*\*([^*\n]+)\*\*/g, "$1");
   };
   var text =
     "Hi " +
     name +
     ",\n\n" +
-    t.paras.join("\n\n") +
+    t.paras.map(plain).join("\n\n") +
     (t.button ? "\n\n" + t.button.label + ": " + t.button.href : "") +
     "\n\n" +
     t.sign +
@@ -2051,11 +2146,7 @@ function renderEmail_(name, t) {
     '<h2 style="margin:0 0 18px;font-weight:700">' +
     esc_(t.heading) +
     "</h2>" +
-    t.paras
-      .map(function (s) {
-        return "<p>" + linked(s).replace(/\n/g, "<br>") + "</p>"; // a line break typed on the admin page
-      })
-      .join("") +
+    t.paras.map(block).join("") +
     (t.button
       ? '<p style="margin:24px 0"><a href="' +
         t.button.href +
@@ -2068,6 +2159,136 @@ function renderEmail_(name, t) {
     esc_(t.sign) +
     "<br>RoQTeam</p></div>";
   return { subject: t.subject, text: text, html: html };
+}
+
+// the day before the hackathon, in a look of its own: their challenge, the schedule, how to find CAMPUS, the laptop
+// and the WhatsApp group. Tables and inline styles, as email clients want them; the plain text says the same.
+function eveEmail_(r) {
+  var first = String(r["First name"]).trim();
+  var track = String(r["Hackathon track"] || "").trim();
+  var tint = TRACK_COLOR[track] || ["#4c5c96", "#eef0f8"];
+  var font = "font-family:Helvetica,Arial,sans-serif;";
+  var ink = "#2e3141";
+  var soft = "#5b6075";
+  var label = function (s, c) {
+    return (
+      '<p style="' + font + "margin:0 0 10px;font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:" +
+      (c || "#ff8c00") + '">' + esc_(s) + "</p>"
+    );
+  };
+  var box = function (bg, inner, extra) {
+    return (
+      '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:separate;margin:0 0 26px">' +
+      '<tr><td style="background:' + bg + ";border-radius:10px;padding:20px 22px;" + (extra || "") + '">' + inner + "</td></tr></table>"
+    );
+  };
+  var button = function (href, text, bg) {
+    return (
+      '<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td style="border-radius:6px;background:' + bg + '">' +
+      '<a href="' + esc_(href) + '" style="display:inline-block;padding:13px 24px;' + font +
+      'font-size:15px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:6px">' + esc_(text) + "</a></td></tr></table>"
+    );
+  };
+  var p = function (s, style) {
+    return '<p style="' + font + "margin:0;font-size:15px;line-height:1.55;color:" + ink + ";" + (style || "") + '">' + s + "</p>";
+  };
+
+  var challenge = track
+    ? label("Your challenge", tint[0]) +
+      p(esc_(track), "font-size:24px;font-weight:800;line-height:1.2;margin:0 0 8px") +
+      p("One challenge each: if you ticked more than one, we picked yours from your preferences and the places left in each.", "font-size:13px;color:" + soft)
+    : label("Your challenge", tint[0]) + p("You hear it at the kick-off, with everyone else.", "font-size:17px;font-weight:700");
+
+  var schedule = EVE_SCHEDULE.map(function (d, i) {
+    return (
+      p(esc_(d.day), "font-weight:700;margin:" + (i ? "20px" : "0") + " 0 8px") +
+      '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">' +
+      d.rows
+        .map(function (row) {
+          return (
+            '<tr><td width="66" valign="top" style="padding:5px 0"><span style="display:inline-block;width:52px;padding:3px 0;border-radius:12px;' +
+            "background:" + (row[0] ? ink : "#e6e8f0") + ";color:" + (row[0] ? "#ffffff" : "#6b7088") + ";" + font +
+            'font-size:12px;font-weight:700;text-align:center">' + esc_(row[0] || "then") + "</span></td>" +
+            '<td valign="top" style="padding:5px 0;' + font + "font-size:15px;line-height:1.5;color:" + ink + '">' + esc_(row[1]) + "</td></tr>"
+          );
+        })
+        .join("") +
+      "</table>"
+    );
+  }).join("");
+
+  var way = EVE_WAY.map(function (s, i) {
+    return (
+      '<tr><td width="34" valign="top" style="padding:4px 0"><span style="display:inline-block;width:22px;height:22px;line-height:22px;border-radius:11px;' +
+      "background:#4c5c96;color:#ffffff;" + font + 'font-size:12px;font-weight:700;text-align:center">' + (i + 1) + "</span></td>" +
+      '<td valign="top" style="padding:4px 0;' + font + "font-size:14px;line-height:1.5;color:" + ink + '">' + esc_(s) + "</td></tr>"
+    );
+  }).join("");
+
+  var html =
+    '<div style="display:none;max-height:0;overflow:hidden">Your challenge, the schedule, how to find CAMPUS and the WhatsApp group.</div>' +
+    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#eef0f5"><tr><td align="center" style="padding:24px 12px">' +
+    '<table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;background:#ffffff;border-radius:14px;overflow:hidden">' +
+    // the header: the logo, who it is for, when and where
+    '<tr><td style="background:#2e3141;background-image:linear-gradient(135deg,#454d84 0%,#2e3141 65%);padding:28px 28px 24px">' +
+    '<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>' +
+    '<td width="64" valign="middle"><img src="' + SITE + '/images/favicon-2026.png" width="56" height="56" alt="BreaQ 2026" style="display:block;border:0;border-radius:12px"></td>' +
+    '<td valign="middle" style="padding-left:16px">' + label("BreaQ Hackathon · tomorrow") +
+    '<h1 style="' + font + 'margin:0;font-size:26px;line-height:1.2;font-weight:800;color:#ffffff">See you tomorrow, ' + esc_(first) + "!</h1></td>" +
+    "</tr></table>" +
+    p("Saturday 24 – Sunday 25 October · CAMPUS Research Institute, Bucharest", "margin:18px 0 0;font-size:14px;color:#c9cce0") +
+    "</td></tr>" +
+    '<tr><td style="padding:28px 28px 8px">' +
+    p("We can’t wait to get together and meet you all. Here is everything for the weekend, in one place.", "margin:0 0 24px") +
+    box(tint[1], challenge, "border-left:5px solid " + tint[0] + ";") +
+    label("The schedule") + schedule + '<div style="height:28px;line-height:28px">&nbsp;</div>' +
+    label("How to find us") +
+    box(
+      "#f5f6fa",
+      p("📍 CAMPUS Research Institute", "font-size:17px;font-weight:700") +
+        p("Splaiul Independenței 313, Bucharest", "font-size:14px;color:" + soft + ";margin:2px 0 14px") +
+        '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 18px">' + way + "</table>" +
+        button(CAMPUS_MAP, "Open in Google Maps", "#4c5c96"),
+    ) +
+    box(
+      "#fff4e5",
+      p("💻 Bring your own laptop, and its charger", "font-size:16px;font-weight:700") +
+        p("Meals and refreshments are on us.", "font-size:14px;color:" + soft + ";margin:4px 0 0"),
+      "border-left:5px solid #ff8c00;",
+    ) +
+    box(
+      "#e9f8ef",
+      '<div style="text-align:center">' +
+        p("Join the hackathon’s WhatsApp group", "font-size:17px;font-weight:700;margin:0 0 4px") +
+        p("For everyone taking part this weekend.", "font-size:14px;color:" + soft + ";margin:0 0 16px") +
+        '<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center"><tr><td>' +
+        button(WHATSAPP_GROUP || "https://chat.whatsapp.com/", "Join the group", "#1f9d55") +
+        "</td></tr></table></div>",
+    ) +
+    p("Questions? Just reply to this email.", "color:#666;margin:0 0 16px") +
+    p("See you tomorrow,<br>RoQTeam", "margin:0 0 28px") +
+    "</td></tr>" +
+    '<tr><td style="background:#f5f6fa;padding:14px 28px;' + font + 'font-size:12px;color:#8a8fa3">BreaQ 2026 · <a href="' + SITE +
+    '/breaq-hackathon.html" style="color:#8a8fa3">roqteam.ro</a></td></tr>' +
+    "</table></td></tr></table>";
+
+  var text =
+    "Hi " + first + ",\n\n" +
+    "See you tomorrow at the BreaQ Hackathon! We can’t wait to get together and meet you all. Here is everything for the weekend, in one place.\n\n" +
+    (track
+      ? "YOUR CHALLENGE: " + track + "\nOne challenge each: if you ticked more than one, we picked yours from your preferences and the places left in each."
+      : "YOUR CHALLENGE: you hear it at the kick-off, with everyone else.") +
+    "\n\n" +
+    EVE_SCHEDULE.map(function (d) {
+      return d.day.toUpperCase() + "\n" + d.rows.map(function (row) { return (row[0] || "then") + "  " + row[1]; }).join("\n");
+    }).join("\n\n") +
+    "\n\nHOW TO FIND US\nCAMPUS Research Institute, Splaiul Independenței 313, Bucharest\nGoogle Maps: " + CAMPUS_MAP + "\n" +
+    EVE_WAY.map(function (s, i) { return i + 1 + ". " + s; }).join("\n") +
+    "\n\nBRING YOUR OWN LAPTOP, and its charger. Meals and refreshments are on us." +
+    "\n\nThe hackathon’s WhatsApp group: " + WHATSAPP_GROUP +
+    "\n\nQuestions? Just reply to this email.\n\nSee you tomorrow,\nRoQTeam";
+
+  return { subject: "See you tomorrow at the BreaQ Hackathon 🚀", text: text, html: html };
 }
 
 /* --- on their own or in a team ------------------------------------------- */
