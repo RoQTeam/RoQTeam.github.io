@@ -8,6 +8,8 @@
 	  a code we do not know, it says that. The test pass, BREAQ-TEST, checks nobody in.
 	- Chrome reads the codes with its own reader (BarcodeDetector); Safari and every browser on an iPhone with jsQR
 	  (assets/js/vendor), loaded only there
+	- a handheld QR scanner (by cable, its dongle or Bluetooth) does the same without the camera: it types what it
+	  reads, as a keyboard, and then Enter
 	- keeps the screen on while it scans (where the browser can), and lets the camera go when the app is put away
 */
 
@@ -213,11 +215,7 @@
 			startErr('This browser cannot open the camera. Use Find by name or code instead.');
 			return;
 		}
-		// the tap that starts it lets the phone beep later (iPhones play sound only after one)
-		try {
-			if (!state.audio && (window.AudioContext || window.webkitAudioContext)) state.audio = new (window.AudioContext || window.webkitAudioContext)();
-			if (state.audio && state.audio.state === 'suspended') state.audio.resume();
-		} catch (e) {}
+		wakeAudio();
 		$('go').disabled = true;
 		var got = { read: null, stream: null }, failed = false;
 		function both() {
@@ -309,6 +307,14 @@
 	});
 
 	/* --- a pass read ----------------------------------------------------------------------- */
+
+	// the tap that starts the camera, or a scanner's keys, lets the phone beep later (iPhones play sound only after one)
+	function wakeAudio() {
+		try {
+			if (!state.audio && (window.AudioContext || window.webkitAudioContext)) state.audio = new (window.AudioContext || window.webkitAudioContext)();
+			if (state.audio && state.audio.state === 'suspended') state.audio.resume();
+		} catch (e) {}
+	}
 
 	// a short buzz and a beep: high for in, low for a problem
 	function feedback(ok) {
@@ -438,6 +444,58 @@
 
 	$('res-next').addEventListener('click', closeSheet);
 
+	/* --- a handheld scanner ------------------------------------------------------------------ */
+
+	// a QR scanner plugged in or paired types what it reads, as a keyboard does, in one fast burst, and then Enter (or
+	// Tab, or nothing): on any screen past the key, with the camera on or not, each pass it reads checks its owner in
+	// as the camera's do, the sheet of the one before giving way. What it types is kept twice, as the letters this
+	// computer's keyboard layout made of it and as the keys pressed (a scanner presses them as on an English keyboard),
+	// so a Y and a Z swapped by a German or Romanian layout still find their pass.
+	var GUN_GAP = 300;      // a pause this long ends a burst
+	var gun = { key: '', code: '', at: 0, timer: null, done: 0 };
+
+	function typing(t) {
+		return !!t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName));
+	}
+
+	function known(s) { return codeKey(s) === TEST_CODE || !!byCode(s); }
+
+	// the burst so far, as a pass; false when it is too short to be one (a key pressed by hand)
+	function gunRead() {
+		window.clearTimeout(gun.timer);
+		var a = gun.key, b = gun.code;
+		gun.key = gun.code = '';
+		if (codeKey(a).length < 6) return false;
+		gun.done = Date.now();
+		var raw = known(a) || !known(b) ? a : b;
+		var k = codeKey(raw);
+		// the same pass again (a scanner reading on while it is held up): not until it has been away a moment
+		if (k === state.last && Date.now() - state.lastAt < SAME_MS) { state.lastAt = Date.now(); return true; }
+		if (!$('find-sheet').hidden) closeFind();
+		if (!$('result').hidden) closeSheet();
+		awake(true);
+		scanned(raw);
+		return true;
+	}
+
+	document.addEventListener('keydown', function (ev) {
+		if (!state.key || !state.listAt || !$('lock').hidden || typing(ev.target) || ev.ctrlKey || ev.metaKey || ev.altKey) return;
+		var now = Date.now();
+		if (ev.key === 'Enter' || ev.key === 'Tab') {
+			// its Enter does not press the button that has the focus (Next on a sheet)
+			if (gunRead() || now - gun.done < 600) ev.preventDefault();
+			return;
+		}
+		if (!ev.key || ev.key.length !== 1) return;
+		if (now - gun.at > GUN_GAP) { gun.key = gun.code = ''; wakeAudio(); }
+		gun.at = now;
+		gun.key += ev.key;
+		var m = /^(?:Key([A-Z])|(?:Digit|Numpad)([0-9]))$/.exec(ev.code || '');
+		gun.code += m ? m[1] || m[2] : ev.code ? '' : ev.key;
+		window.clearTimeout(gun.timer);
+		gun.timer = window.setTimeout(gunRead, GUN_GAP);
+	}, true);
+
 	/* --- by hand ----------------------------------------------------------------------------- */
 
 	function openFind() {
@@ -487,6 +545,15 @@
 	$('start-find').addEventListener('click', openFind);
 	$('find-close').addEventListener('click', closeFind);
 	$('find-q').addEventListener('input', renderFind);
+
+	// a pass scanned into the search: Enter checks it in
+	$('find-q').addEventListener('keydown', function (ev) {
+		var q = $('find-q').value;
+		if (ev.key !== 'Enter' || !known(q)) return;
+		ev.preventDefault();
+		closeFind();
+		scanned(q);
+	});
 
 	/* --- opening ----------------------------------------------------------------------------- */
 

@@ -29,7 +29,8 @@
 			code is not one we know. "Find by name or code" does it by hand. It reads the admin page's list (the "list"
 			action, with the admin key) and checks in with the "checkin" action, as the admin page's Check-in view does.
 			Chrome reads the codes with its own reader; Safari and every browser on an iPhone with jsQR
-			(assets/js/vendor). Added to the home screen (door-manifest.json), it opens as an app.
+			(assets/js/vendor). A handheld QR scanner, plugged in or paired, checks people in the same way, with the
+			camera on or not. Added to the home screen (door-manifest.json), it opens as an app.
 		-->
 
 		<svg class="sprite" aria-hidden="true" focusable="false">
@@ -68,6 +69,7 @@
 					<button type="button" class="btn primary door-go" id="go"><svg class="ic" aria-hidden="true"><use href="#i-scan" /></svg>Start scanning</button>
 					<button type="button" class="btn ghost" id="start-find"><svg class="ic" aria-hidden="true"><use href="#i-search" /></svg>Find by name or code</button>
 					<p class="err" id="start-err" role="alert" hidden></p>
+					<p class="door-fine">Got a QR scanner? Plug it in or pair it, and scan: no camera needed.</p>
 					<p class="door-fine">On an iPhone: Share, then Add to Home Screen, and it opens as an app.</p>
 				</div>
 			</section>
@@ -118,6 +120,6 @@
 
 		</main>
 
-		<script src="assets/js/door.js?v=20261017"></script>
+		<script src="assets/js/door.js?v=20261023"></script>
 	</body>
 </html>
