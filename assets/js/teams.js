@@ -196,11 +196,12 @@
 	// Text as typed in the admin page: blank lines make paragraphs, line breaks stay, web addresses become links.
 	// Built from text nodes and <a>, never from HTML, so nothing posted can run on the page.
 	// what the organisers write: paragraphs (a blank line between), line breaks, links, and lists (lines that
-	// start with "• " or "- "). A paragraph that is a list of times ("- 9:10 Qubits"), with a line above it or not,
+	// start with "• " or "- "). A paragraph that is a list of times ("- 9:10 Qubits", or "- TBA Qubits" for one not
+	// set yet), with a line above it or not,
 	// is a timetable: a card with that line as its heading ("Quantum AI · Room B · 5 minutes each": the name, then
 	// the rest), the times in a column; timetables one after another sit side by side. you: the names that are the
 	// reader's (theirs, their team's), their row marked.
-	var TIME_LINE = /^\s*[•-]\s+(\d{1,2}:\d{2})\s+(.+)$/;
+	var TIME_LINE = /^\s*[•-]\s+(\d{1,2}:\d{2}|TBA)\s+(.+)$/;
 	function richText(text, you) {
 		var box = el('div', 'rich');
 		var grid = null;
