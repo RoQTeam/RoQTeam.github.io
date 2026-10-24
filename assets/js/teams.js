@@ -1058,6 +1058,14 @@
 		return f;
 	}
 
+	// a field of buttons (1 to 5, yes or no…): a div, as a label would pass a click on its text to the first button
+	function group(label, control, hint) {
+		var f = field(label, control, hint);
+		var d = el('div', 'field');
+		while (f.firstChild) d.appendChild(f.firstChild);
+		return d;
+	}
+
 	// a text box that keeps what is typed in state.draft, should the panel be drawn again
 	function drafted(tag, name, value, attrs) {
 		var c = el(tag);
@@ -1200,43 +1208,61 @@
 		}
 		var form = el('form', 'act-form');
 		form.noValidate = true;
-		var overall = state.draft.overall || (fb ? fb.overall : 0);
-		var again = state.draft.again !== undefined ? state.draft.again : fb ? fb.again : '';
-		var stars = el('div', 'stars');
-		stars.setAttribute('role', 'group');
-		stars.setAttribute('aria-label', 'Overall, from 1 to 5');
-		[1, 2, 3, 4, 5].forEach(function (n) {
-			var b = el('button', 'star', String(n));
-			b.type = 'button';
-			b.setAttribute('aria-pressed', String(n === overall));
-			b.addEventListener('click', function () {
-				overall = state.draft.overall = n;
-				forEach(stars.children, function (c, i) { c.setAttribute('aria-pressed', String(i + 1 === n)); });
+		// what they picked, kept in state.draft should the panel be drawn again: a draft, else what they sent
+		var picked = function (name) { return state.draft[name] !== undefined ? state.draft[name] : fb && fb[name] ? fb[name] : ''; };
+		var chosen = {};
+		// 1 to 5 (Overall must be picked, the others can be left, or clicked again to clear)
+		var stars = function (name, label, required) {
+			chosen[name] = picked(name) || 0;
+			var row = el('div', 'stars');
+			row.setAttribute('role', 'group');
+			row.setAttribute('aria-label', label + ', from 1 to 5');
+			[1, 2, 3, 4, 5].forEach(function (n) {
+				var b = el('button', 'star', String(n));
+				b.type = 'button';
+				b.setAttribute('aria-pressed', String(n === chosen[name]));
+				b.addEventListener('click', function () {
+					chosen[name] = state.draft[name] = !required && chosen[name] === n ? 0 : n;
+					forEach(row.children, function (c, i) { c.setAttribute('aria-pressed', String(i + 1 === chosen[name])); });
+				});
+				row.appendChild(b);
 			});
-			stars.appendChild(b);
-		});
+			return row;
+		};
+		// one of a few answers, or none: clicked again, it clears
+		var choice = function (name, options) {
+			chosen[name] = picked(name);
+			var seg = el('div', 'seg');
+			seg.setAttribute('role', 'group');
+			options.forEach(function (o) {
+				var b = el('button', null, o[1]);
+				b.type = 'button';
+				b.setAttribute('aria-pressed', String(chosen[name] === o[0]));
+				b.addEventListener('click', function () {
+					chosen[name] = state.draft[name] = chosen[name] === o[0] ? '' : o[0];
+					forEach(seg.children, function (c) { c.setAttribute('aria-pressed', 'false'); });
+					if (chosen[name]) b.setAttribute('aria-pressed', 'true');
+				});
+				seg.appendChild(b);
+			});
+			return seg;
+		};
+		var overall = stars('overall', 'Overall', true);
 		var scale = el('div', 'stars-wrap');
-		scale.appendChild(stars);
+		scale.appendChild(overall);
 		scale.appendChild(el('span', 'field-hint', '1: not good · 5: loved it'));
-		form.appendChild(field('Overall', scale));
-		var best = drafted('textarea', 'best', fb ? fb.best : '', { maxlength: '2000', rows: '2' });
-		var change = drafted('textarea', 'change', fb ? fb.change : '', { maxlength: '2000', rows: '2' });
+		form.appendChild(group('Overall', scale));
+		[['rChallenge', 'Your challenge'], ['rMentors', 'The mentors'], ['rOrganisation', 'The organisation'], ['rVenue', 'Food and venue']].forEach(function (r) {
+			form.appendChild(group(r[1], stars(r[0], r[1], false), r[0] === 'rChallenge' ? 'Optional, like the rest below' : ''));
+		});
+		form.appendChild(group('Your challenge was…', choice('difficulty', [['easy', 'Too easy'], ['right', 'Just right'], ['hard', 'Too hard']])));
+		var text = function (name) { return drafted('textarea', name, fb ? fb[name] : '', { maxlength: '2000', rows: '2' }); };
+		var best = text('best'), change = text('change'), learned = text('learned'), other = text('other');
 		form.appendChild(field('What worked best?', best));
 		form.appendChild(field('What should we change?', change));
-		var seg = el('div', 'seg');
-		seg.setAttribute('role', 'group');
-		[['yes', 'Yes'], ['maybe', 'Maybe'], ['no', 'No']].forEach(function (o) {
-			var b = el('button', null, o[1]);
-			b.type = 'button';
-			b.setAttribute('aria-pressed', String(again === o[0]));
-			b.addEventListener('click', function () {
-				again = state.draft.again = again === o[0] ? '' : o[0];
-				forEach(seg.children, function (c) { c.setAttribute('aria-pressed', 'false'); });
-				if (again) b.setAttribute('aria-pressed', 'true');
-			});
-			seg.appendChild(b);
-		});
-		form.appendChild(field('Would you come again?', seg));
+		form.appendChild(field('What did you learn?', learned));
+		form.appendChild(group('Would you come again?', choice('again', [['yes', 'Yes'], ['maybe', 'Maybe'], ['no', 'No']])));
+		form.appendChild(field('Anything else you want to tell us?', other));
 		var go = el('button', 'btn primary', fb ? 'Update my answers' : 'Send');
 		go.type = 'submit';
 		var buttons = el('div', 'act-buttons');
@@ -1244,8 +1270,11 @@
 		form.appendChild(buttons);
 		form.addEventListener('submit', function (ev) {
 			ev.preventDefault();
-			if (!overall) { actError(card, 'Pick how it was overall, from 1 to 5.'); stars.firstChild.focus(); return; }
-			sending(go, card, 'Sending…', { action: 'feedback', overall: overall, best: best.value, change: change.value, again: again });
+			if (!chosen.overall) { actError(card, 'Pick how it was overall, from 1 to 5.'); overall.firstChild.focus(); return; }
+			sending(go, card, 'Sending…', {
+				action: 'feedback', overall: chosen.overall, rChallenge: chosen.rChallenge, rMentors: chosen.rMentors, rOrganisation: chosen.rOrganisation, rVenue: chosen.rVenue,
+				difficulty: chosen.difficulty, again: chosen.again, best: best.value, change: change.value, learned: learned.value, other: other.value
+			});
 		});
 		card.appendChild(form);
 		return state.organiser ? preview(card) : card;

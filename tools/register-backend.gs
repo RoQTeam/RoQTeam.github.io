@@ -376,8 +376,13 @@ var QUEUE_OPEN = ["waiting", "taken"]; // then done (by the mentor) or cancelled
 
 // what the participants say after the event, without their names: Key only lets someone change their answers
 var FEEDBACK_SHEET = "Feedback";
-var FEEDBACK_COLUMNS = ["Sent", "Challenge", "Overall", "Best", "Change", "Again", "Key"];
+// (the columns after Key came later: a tab made before gets them added to its header on the next answer)
+var FEEDBACK_COLUMNS = ["Sent", "Challenge", "Overall", "Best", "Change", "Again", "Key",
+  "Challenge rating", "Mentors", "Organisation", "Food and venue", "Difficulty", "Learned", "Other"];
 var AGAIN = ["yes", "maybe", "no"];
+var DIFFICULTY = ["easy", "right", "hard"]; // how their challenge was: too easy, just right, too hard
+// the parts rated 1 to 5 besides Overall, none of them required: the form's field and the tab's column
+var FEEDBACK_RATINGS = { rChallenge: "Challenge rating", rMentors: "Mentors", rOrganisation: "Organisation", rVenue: "Food and venue" };
 
 var CERTIFICATES_FOLDER = "BreaQ 2026 certificates"; // Drive folder with a copy of each certificate sent
 var EVENT_DATES = "24–25 October 2026";
@@ -3421,7 +3426,7 @@ function codeKey_(s) {
 // registered with, so an email changed by a second application keeps the old code working), their team, their
 // answer to "are you coming?", their check-in. Kept a minute in the cache; whatever changes one of these clears it
 // (rosterChanged_), so a change of decision, say, counts at once.
-//   { codes: { codeKey: i }, people: [{ name, email, team, coming, checkedIn, certificate }],
+//   { codes: { codeKey: i }, people: [{ name, email, team, track, coming, checkedIn, certificate }],
 //     teams: { lower-case name: { name, challenge, table, pitch, room, award, members: [names] } },
 //     off: { codeKey: true } (the codes turned off, access_) }
 function roster_() {
@@ -3447,6 +3452,7 @@ function roster_() {
       name: String(r["First name"] + " " + r["Last name"]).trim(),
       email: String(r["Email"]).trim().toLowerCase(),
       team: String(r["Hackathon team"]).trim(),
+      track: String(r["Hackathon track"]).trim(),
       coming: comingOf_(r["Coming"]),
       checkedIn: isDate_(r["Checked in"]) ? r["Checked in"] : null,
       certificate: /^sent/i.test(String(r["Certificate"])),
@@ -4450,7 +4456,26 @@ function feedbackKey_(email) {
     .join("");
 }
 
-// the feedback by key, a minute in the cache: { key: { sent, overall, best, change, again } }
+// one row of the Feedback tab as the dashboard and the admin page read it
+function feedbackRecord_(r) {
+  var f = {
+    sent: r["Sent"],
+    challenge: String(r["Challenge"]),
+    overall: Number(r["Overall"]) || 0,
+    best: String(r["Best"]),
+    change: String(r["Change"]),
+    again: String(r["Again"]),
+    difficulty: String(r["Difficulty"] === undefined ? "" : r["Difficulty"]),
+    learned: String(r["Learned"] === undefined ? "" : r["Learned"]),
+    other: String(r["Other"] === undefined ? "" : r["Other"]),
+  };
+  Object.keys(FEEDBACK_RATINGS).forEach(function (k) {
+    f[k] = Number(r[FEEDBACK_RATINGS[k]]) || 0;
+  });
+  return f;
+}
+
+// the feedback by key, a minute in the cache: { key: feedbackRecord_ }
 function feedbackMap_() {
   var cache = CacheService.getScriptCache();
   var hit = cache.get("feedback");
@@ -4462,7 +4487,7 @@ function feedbackMap_() {
   for (var i = 1; i < values.length; i++) {
     var r = toRecord_(header, values[i]);
     var k = String(r["Key"]).trim();
-    if (k) map[k] = { sent: r["Sent"], overall: Number(r["Overall"]) || 0, best: String(r["Best"]), change: String(r["Change"]), again: String(r["Again"]) };
+    if (k) map[k] = feedbackRecord_(r);
   }
   try {
     cache.put("feedback", JSON.stringify(map), 60);
@@ -4481,19 +4506,26 @@ function feedbackRows_() {
   if (values.length < 2) return [];
   var header = header_(values);
   return values.slice(1).map(function (row) {
-    var r = toRecord_(header, row);
-    return { sent: r["Sent"], challenge: String(r["Challenge"]), overall: Number(r["Overall"]) || 0, best: String(r["Best"]), change: String(r["Change"]), again: String(r["Again"]) };
+    return feedbackRecord_(toRecord_(header, row));
   }).filter(function (f) {
     return f.overall || f.best || f.change || f.again;
   });
 }
 
+// a rating from the form: 1 to 5, or 0 for none
+function rating_(v) {
+  var n = Math.round(Number(v));
+  return n >= 1 && n <= 5 ? n : 0;
+}
+
 // teams.html: the feedback form; sent again, it replaces the earlier answers
 function feedback_(who, data) {
-  var overall = Math.round(Number(data.overall));
+  var overall = rating_(data.overall);
   var again = String(data.again || "").trim().toLowerCase();
-  if (!(overall >= 1 && overall <= 5)) return { ok: false, action: "feedback", error: "Pick how it was overall, from 1 to 5." };
+  var difficulty = String(data.difficulty || "").trim().toLowerCase();
+  if (!overall) return { ok: false, action: "feedback", error: "Pick how it was overall, from 1 to 5." };
   if (again && AGAIN.indexOf(again) === -1) again = "";
+  if (difficulty && DIFFICULTY.indexOf(difficulty) === -1) difficulty = "";
   var roster = roster_();
   var p = personOf_(roster, who.email);
   var team = p && p.team ? roster.teams[p.team.toLowerCase()] : null;
@@ -4504,7 +4536,33 @@ function feedback_(who, data) {
     var sheet = tab_(FEEDBACK_SHEET, FEEDBACK_COLUMNS);
     var values = sheet.getDataRange().getValues();
     var header = header_(values);
-    var line = [new Date(), team ? team.challenge : "", overall, longText_(data.best).slice(0, 2000), longText_(data.change).slice(0, 2000), again, key];
+    // a tab made before the later columns: they go on the end of its header
+    var missing = FEEDBACK_COLUMNS.filter(function (c) {
+      return header.indexOf(c) === -1;
+    });
+    if (missing.length) {
+      sheet.getRange(1, header.length + 1, 1, missing.length).setValues([missing]).setFontWeight("bold");
+      header = header.concat(missing);
+    }
+    // the team's challenge, or theirs when the team has none (or they are on their own)
+    var cells = {
+      Sent: new Date(),
+      Challenge: (team && team.challenge) || (p && p.track) || "",
+      Overall: overall,
+      Best: longText_(data.best).slice(0, 2000),
+      Change: longText_(data.change).slice(0, 2000),
+      Again: again,
+      Key: key,
+      Difficulty: difficulty,
+      Learned: longText_(data.learned).slice(0, 2000),
+      Other: longText_(data.other).slice(0, 2000),
+    };
+    Object.keys(FEEDBACK_RATINGS).forEach(function (k) {
+      cells[FEEDBACK_RATINGS[k]] = rating_(data[k]) || "";
+    });
+    var line = header.map(function (c) {
+      return c in cells ? cells[c] : "";
+    });
     var at = -1;
     for (var i = 1; i < values.length; i++) if (String(values[i][header.indexOf("Key")]).trim() === key) at = i + 1;
     if (at === -1) sheet.appendRow(line);

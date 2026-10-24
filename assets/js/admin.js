@@ -930,7 +930,7 @@
 		if ($('who-dlg').open) $('who-dlg').close();
 		if (state.decision === 'tovote') state.decision = 'any';
 		teamsUi.editing = null;
-		forEach(['board-list', 'teams-list', 'loose', 'checkin-list', 'cert-result', 'fb-best', 'fb-change'], function (id) { $(id).textContent = ''; });
+		forEach(['board-list', 'teams-list', 'loose', 'checkin-list', 'cert-result', 'fb-best', 'fb-change', 'fb-learned', 'fb-other'], function (id) { $(id).textContent = ''; });
 		$('checkin-search').value = '';
 		checkinUi.query = '';
 		resetForm();
@@ -5222,9 +5222,16 @@
 			var mine = fb.filter(function (f) { return f.challenge === c; });
 			if (mine.length) tiles.push([c, avg(mine) + ' (' + mine.length + ')']);
 		});
+		// the parts rated besides Overall, each out of those who rated it
+		[['rChallenge', 'Challenge'], ['rMentors', 'Mentors'], ['rOrganisation', 'Organisation'], ['rVenue', 'Food and venue']].forEach(function (x) {
+			var rated = fb.filter(function (f) { return f[x[0]]; });
+			if (rated.length) tiles.push([x[1] + ', out of 5', (rated.reduce(function (s, f) { return s + f[x[0]]; }, 0) / rated.length).toFixed(1) + ' (' + rated.length + ')']);
+		});
+		var hard = function (v) { return fb.filter(function (f) { return f.difficulty === v; }).length; };
+		if (hard('easy') + hard('right') + hard('hard')) tiles.push(['Challenge: easy · right · hard', hard('easy') + ' · ' + hard('right') + ' · ' + hard('hard')]);
 		tilesInto('fb-tiles', tiles);
 		$('fb-cols').hidden = !fb.length;
-		[['fb-best', 'best'], ['fb-change', 'change']].forEach(function (x) {
+		[['fb-best', 'best'], ['fb-change', 'change'], ['fb-learned', 'learned'], ['fb-other', 'other']].forEach(function (x) {
 			var ul = $(x[0]);
 			ul.textContent = '';
 			fb.filter(function (f) { return String(f[x[1]] || '').trim(); })
