@@ -985,16 +985,10 @@ input[type="checkbox"] {
 /* the action card: coming?, a mentor, the pitch, the feedback                                                     */
 /* ------------------------------------------------------------------------------------------------------------ */
 
-/* two cards at once (the card of the moment, then the feedback): one under the other */
-.act.is-stacked {
-	display: flex;
-	flex-direction: column;
-	gap: 16px;
+/* a second card (the feedback before the awards): under the row, across the page */
+.act-more {
+	margin-top: 16px;
 }
-
-	.act.is-stacked .act-card {
-		height: auto;
-	}
 
 .act-card {
 	position: relative;
@@ -1133,6 +1127,68 @@ input[type="checkbox"] {
 			opacity: 0.5;
 			cursor: default;
 		}
+
+	/* the smaller ones: the feedback's optional parts */
+	.stars.is-small,
+	.seg.is-small {
+		gap: 6px;
+	}
+
+		.stars.is-small .star,
+		.seg.is-small button {
+			min-width: 38px;
+			height: 38px;
+			padding: 0 12px;
+			font-size: 0.9rem;
+		}
+
+/* the feedback: the parts rated, in two columns on a wide screen; the choices and the texts side by side */
+.fb-sub {
+	margin: 2px 0 -4px;
+	color: var(--mist);
+	font-size: 0.86rem;
+	font-weight: 600;
+}
+
+.act-form {
+	container-type: inline-size;
+}
+
+.fb-rates {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	column-gap: 40px;
+}
+
+	.fb-rate {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: space-between;
+		gap: 8px 16px;
+		padding: 10px 0;
+		border-top: 1px solid var(--soft-line);
+	}
+
+	.fb-rate-label {
+		color: var(--frost);
+		font-size: 0.92rem;
+		font-weight: 700;
+	}
+
+.fb-pair {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 16px 40px;
+}
+
+/* the form narrow (beside the team card, or on a phone): one column */
+@container (max-width: 720px) {
+	.fb-rates,
+	.fb-pair {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}
 
 /* ------------------------------------------------------------------------------------------------------------ */
 /* your team                                                                                                       */

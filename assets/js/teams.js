@@ -447,8 +447,9 @@
 		state.teamEdit = false;
 		state.audience = null;
 		window.clearTimeout(pollTimer);
-		forEach(['live', 'ann', 'res', 'sub', 'handin', 'prac', 'sched', 'act', 'team', 'check'], function (id) { $(id).textContent = ''; });
+		forEach(['live', 'ann', 'res', 'sub', 'handin', 'prac', 'sched', 'act', 'act-more', 'team', 'check'], function (id) { $(id).textContent = ''; });
 		$('act').hidden = true;
+		$('act-more').hidden = true;
 		$('team-panel').hidden = true;
 		$('mine').hidden = true;
 		$('who').textContent = '';
@@ -1006,14 +1007,18 @@
 			else if (p === 'during') card = h && (h.status === 'waiting' || h.status === 'taken') ? helpStatus(h) : helpForm(h);
 			else if (p === 'judging') card = pitchCard();
 			else card = feedbackCard();
-			// the feedback, open before the awards: under the card of the moment
+			// the feedback, open before the awards: under the card of the moment and the team, across the page
 			if ((p === 'during' || p === 'judging') && now >= FEEDBACK_FROM) more = feedbackCard();
 		}
-		var cards = [card, more].filter(Boolean);
+		if (!card) { card = more; more = null; }
 		box.textContent = '';
-		box.hidden = !cards.length;
-		box.classList.toggle('is-stacked', cards.length > 1);
-		cards.forEach(function (c) { box.appendChild(c); });
+		box.hidden = !card;
+		if (card) box.appendChild(card);
+		// the second card goes under the row, across the page
+		var extra = $('act-more');
+		extra.textContent = '';
+		extra.hidden = !more;
+		if (more) extra.appendChild(more);
 	}
 
 	function actCard(cls, label, title, sub) {
@@ -1246,10 +1251,11 @@
 			won.appendChild(document.createTextNode('Audience award: ' + aw.teams[0].name + ', with ' + aw.teams[0].votes + (aw.teams[0].votes === 1 ? ' vote' : ' votes') + '.'));
 			card.querySelector('.act-text').appendChild(won);
 		}
-		if (me && (me.certificate || me.checkedIn)) {
-			card.querySelector('.act-text').appendChild(me.certificate
-				? doneLine('Your certificate is in your inbox.')
-				: el('p', 'act-done', 'Your certificate comes by email in the days after the hackathon.'));
+		// the printed certificates wait at the desk, for those who sent their feedback: this card is what they show
+		if (me && me.checkedIn) {
+			card.querySelector('.act-text').appendChild(fb
+				? doneLine('Feedback sent. Show this at the desk to pick up your certificate.')
+				: el('p', 'act-done', 'Send it, then show this card at the desk to pick up your certificate.'));
 		}
 		var form = el('form', 'act-form');
 		form.noValidate = true;
@@ -1259,7 +1265,7 @@
 		// 1 to 5 (Overall must be picked, the others can be left, or clicked again to clear)
 		var stars = function (name, label, required) {
 			chosen[name] = picked(name) || 0;
-			var row = el('div', 'stars');
+			var row = el('div', 'stars' + (required ? '' : ' is-small'));
 			row.setAttribute('role', 'group');
 			row.setAttribute('aria-label', label + ', from 1 to 5');
 			[1, 2, 3, 4, 5].forEach(function (n) {
@@ -1277,7 +1283,7 @@
 		// one of a few answers, or none: clicked again, it clears
 		var choice = function (name, options) {
 			chosen[name] = picked(name);
-			var seg = el('div', 'seg');
+			var seg = el('div', 'seg is-small');
 			seg.setAttribute('role', 'group');
 			options.forEach(function (o) {
 				var b = el('button', null, o[1]);
@@ -1297,17 +1303,28 @@
 		scale.appendChild(overall);
 		scale.appendChild(el('span', 'field-hint', '1: not good · 5: loved it'));
 		form.appendChild(group('Overall', scale));
+		// the rest, all optional: the parts rated in two columns on a wide screen, then two choices, then the texts
+		form.appendChild(el('p', 'fb-sub', 'Only Overall is needed. The rest, if you like:'));
+		var rates = el('div', 'fb-rates');
 		[['rChallenge', 'Your challenge'], ['rMentors', 'The mentors'], ['rOrganisation', 'The organisation'], ['rVenue', 'Food and venue']].forEach(function (r) {
-			form.appendChild(group(r[1], stars(r[0], r[1], false), r[0] === 'rChallenge' ? 'Optional, like the rest below' : ''));
+			var row = el('div', 'fb-rate');
+			row.appendChild(el('span', 'fb-rate-label', r[1]));
+			row.appendChild(stars(r[0], r[1], false));
+			rates.appendChild(row);
 		});
-		form.appendChild(group('Your challenge was…', choice('difficulty', [['easy', 'Too easy'], ['right', 'Just right'], ['hard', 'Too hard']])));
-		var text = function (name) { return drafted('textarea', name, fb ? fb[name] : '', { maxlength: '2000', rows: '2' }); };
+		form.appendChild(rates);
+		var pair = el('div', 'fb-pair');
+		pair.appendChild(group('Your challenge was…', choice('difficulty', [['easy', 'Too easy'], ['right', 'Just right'], ['hard', 'Too hard']])));
+		pair.appendChild(group('Would you come again?', choice('again', [['yes', 'Yes'], ['maybe', 'Maybe'], ['no', 'No']])));
+		form.appendChild(pair);
+		var text = function (name) { return drafted('textarea', name, fb ? fb[name] : '', { maxlength: '2000', rows: '3' }); };
 		var best = text('best'), change = text('change'), learned = text('learned'), other = text('other');
-		form.appendChild(field('What worked best?', best));
-		form.appendChild(field('What should we change?', change));
-		form.appendChild(field('What did you learn?', learned));
-		form.appendChild(group('Would you come again?', choice('again', [['yes', 'Yes'], ['maybe', 'Maybe'], ['no', 'No']])));
-		form.appendChild(field('Anything else you want to tell us?', other));
+		var texts = el('div', 'fb-pair');
+		texts.appendChild(field('What worked best?', best));
+		texts.appendChild(field('What should we change?', change));
+		texts.appendChild(field('What did you learn?', learned));
+		texts.appendChild(field('Anything else you want to tell us?', other));
+		form.appendChild(texts);
 		var go = el('button', 'btn primary', fb ? 'Update my answers' : 'Send');
 		go.type = 'submit';
 		var buttons = el('div', 'act-buttons');
