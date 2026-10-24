@@ -883,6 +883,76 @@ input[type="checkbox"] {
 				color: var(--gold);
 			}
 
+	/* a timetable (a list of times, teams.js richText): a card each, side by side on a wide screen */
+	.rich .tt-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr));
+		align-items: start;
+		gap: 12px;
+		margin: 0.9em 0;
+	}
+
+		.rich .tt {
+			padding: 14px 16px 8px;
+			border: 1px solid var(--card-line);
+			border-top: 2px solid var(--line-gold);
+			border-radius: var(--radius-slot);
+			background: var(--scrim-soft);
+		}
+
+		.rich .tt-title {
+			margin: 0;
+			color: var(--white);
+			font-size: 1.05rem;
+			font-weight: 800;
+			letter-spacing: -0.01em;
+		}
+
+		.rich .tt-meta {
+			margin: 3px 0 0;
+			color: var(--mist);
+			font-size: 0.85rem;
+		}
+
+		.rich .tt-rows {
+			margin: 10px 0 0;
+			padding: 0;
+			list-style: none;
+		}
+
+			.rich .tt-rows li {
+				display: grid;
+				grid-template-columns: 3.2em minmax(0, 1fr);
+				gap: 10px;
+				align-items: baseline;
+				margin: 0;
+				padding: 7px 0;
+				border-top: 1px solid var(--soft-line);
+			}
+
+			.rich .tt-rows li.is-you {
+				margin: 0 -10px;
+				padding: 7px 10px;
+				border-top-color: transparent;
+				border-radius: 8px;
+				background: rgba(250, 177, 6, 0.14);
+			}
+
+			.rich .tt-time {
+				color: var(--gold);
+				font-weight: 800;
+				font-variant-numeric: tabular-nums;
+			}
+
+			.rich .tt-what {
+				color: var(--frost);
+			}
+
+				.rich .tag-you {
+					margin-left: 8px;
+					vertical-align: 0.1em;
+				}
+
 /* yours: what is up to you, and your team */
 .mine {
 	display: grid;
@@ -914,6 +984,17 @@ input[type="checkbox"] {
 /* ------------------------------------------------------------------------------------------------------------ */
 /* the action card: coming?, a mentor, the pitch, the feedback                                                     */
 /* ------------------------------------------------------------------------------------------------------------ */
+
+/* two cards at once (the card of the moment, then the feedback): one under the other */
+.act.is-stacked {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+	.act.is-stacked .act-card {
+		height: auto;
+	}
 
 .act-card {
 	position: relative;

@@ -9,7 +9,7 @@
 	  details; asks again every minute while the tab is shown (also when hidden, with notifications on)
 	- and what is the participant's own: their team (the admin page's Teams view), "are you coming?" until the
 	  event starts ("coming"), "ask a mentor" during it ("help", "help-cancel"; the mentors answer on mentors.html),
-	  the feedback form from the awards on ("feedback")
+	  the feedback form ("feedback"), from FEEDBACK_FROM under the card of the moment, alone from the awards on
 	- notifications (assets/js/notify.js), when asked for: new announcements, a mentor on the way, what starts in
 	  5 minutes, 15 minutes before coding stops; only while the tab is hidden
 	- the team's hand-in ("handin": the links to the code, the slides and a demo video) until coding stops, the
@@ -60,6 +60,7 @@
 	var STOP = SCHEDULE.filter(function (s) { return s.kind === 'stop'; })[0].from;
 	var JUDGING = SCHEDULE.filter(function (s) { return s.title === 'Judging'; })[0].from;
 	var AWARDS = SCHEDULE.filter(function (s) { return s.kind === 'award'; })[0].from;
+	var FEEDBACK_FROM = Date.parse('2026-10-25T02:00:00+03:00');   // opened in the night, before the awards
 
 	// what the participant is asked for: before (are you coming?), during (ask a mentor), judging (their pitch),
 	// after (the feedback)
@@ -195,11 +196,49 @@
 	// Text as typed in the admin page: blank lines make paragraphs, line breaks stay, web addresses become links.
 	// Built from text nodes and <a>, never from HTML, so nothing posted can run on the page.
 	// what the organisers write: paragraphs (a blank line between), line breaks, links, and lists (lines that
-	// start with "• " or "- ")
-	function richText(text) {
+	// start with "• " or "- "). A paragraph that is a list of times ("- 9:10 Qubits"), with a line above it or not,
+	// is a timetable: a card with that line as its heading ("Quantum AI · Room B · 5 minutes each": the name, then
+	// the rest), the times in a column; timetables one after another sit side by side. you: the names that are the
+	// reader's (theirs, their team's), their row marked.
+	var TIME_LINE = /^\s*[•-]\s+(\d{1,2}:\d{2})\s+(.+)$/;
+	function richText(text, you) {
 		var box = el('div', 'rich');
+		var grid = null;
+		var mine = (you || []).filter(Boolean).map(function (s) { return s.trim().toLowerCase(); });
 		String(text || '').split(/\n{2,}/).forEach(function (para) {
 			if (!para.trim()) return;
+			var lines = para.split('\n').filter(function (l) { return l.trim(); });
+			var rows = lines.filter(function (l) { return TIME_LINE.test(l); });
+			var head = lines.length - rows.length;
+			if (rows.length >= 2 && head <= 1 && lines.slice(head).every(function (l) { return TIME_LINE.test(l); })) {
+				if (!grid) box.appendChild(grid = el('div', 'tt-grid'));
+				var tt = el('section', 'tt');
+				if (head) {
+					var parts = lines[0].split(' · ');
+					var h = el('div', 'tt-head');
+					h.appendChild(el('h4', 'tt-title', parts[0]));
+					if (parts.length > 1) h.appendChild(el('p', 'tt-meta', parts.slice(1).join(' · ')));
+					tt.appendChild(h);
+				}
+				var ol = el('ol', 'tt-rows');
+				rows.forEach(function (l) {
+					var m = TIME_LINE.exec(l);
+					var li = el('li');
+					li.appendChild(el('span', 'tt-time', m[1]));
+					var what = el('span', 'tt-what');
+					linked(what, m[2]);
+					li.appendChild(what);
+					if (mine.indexOf(m[2].trim().toLowerCase()) !== -1) {
+						li.className = 'is-you';
+						what.appendChild(el('span', 'tag tag-you', 'You'));
+					}
+					ol.appendChild(li);
+				});
+				tt.appendChild(ol);
+				grid.appendChild(tt);
+				return;
+			}
+			grid = null;
 			var p = null, ul = null;
 			para.split('\n').forEach(function (line) {
 				var bullet = /^\s*[•-]\s+/.exec(line);
@@ -585,7 +624,7 @@
 			if (state.seen && it.posted > state.seen) head.appendChild(el('span', 'tag tag-new', 'New'));
 			card.appendChild(head);
 			if (it.title) card.appendChild(el('h3', null, it.title));
-			if (it.text) card.appendChild(richText(it.text));
+			if (it.text) card.appendChild(richText(it.text, state.me ? [state.me.name, state.me.team && state.me.team.name] : []));
 			if (it.link) {
 				var go = link(it.link, 'Open the link');
 				go.className = 'btn small';
@@ -952,14 +991,14 @@
 		var a = state.audience;
 		var key = JSON.stringify([
 			a && [a.state, a.mine, a.canVote, a.teams && a.teams.map(function (t) { return t.name + ':' + (t.votes || 0); })],
-			phase(now), state.organiser, now < CONFIRM_END, state.confirmNo,
+			phase(now), now >= FEEDBACK_FROM, state.organiser, now < CONFIRM_END, state.confirmNo,
 			me && me.coming, me && me.team && [me.team.challenge, me.team.pitch, me.team.room],
 			h && [h.id, h.status, h.mentor, h.ahead], me && me.feedback && me.feedback.sent, me && me.certificate, me && !!me.checkedIn
 		]);
 		if (key === state.actKey) return;
 		state.actKey = key;
 		var box = $('act');
-		var card = null;
+		var card = null, more = null;
 		if ((me || state.organiser) && a && a.state === 'open') card = audienceCard();
 		else if (me || state.organiser) {
 			var p = phase(now);
@@ -967,10 +1006,14 @@
 			else if (p === 'during') card = h && (h.status === 'waiting' || h.status === 'taken') ? helpStatus(h) : helpForm(h);
 			else if (p === 'judging') card = pitchCard();
 			else card = feedbackCard();
+			// the feedback, open before the awards: under the card of the moment
+			if ((p === 'during' || p === 'judging') && now >= FEEDBACK_FROM) more = feedbackCard();
 		}
+		var cards = [card, more].filter(Boolean);
 		box.textContent = '';
-		box.hidden = !card;
-		if (card) box.appendChild(card);
+		box.hidden = !cards.length;
+		box.classList.toggle('is-stacked', cards.length > 1);
+		cards.forEach(function (c) { box.appendChild(c); });
 	}
 
 	function actCard(cls, label, title, sub) {
@@ -1191,9 +1234,11 @@
 	function feedbackCard() {
 		var me = state.me;
 		var fb = me && me.feedback;
-		var card = actCard('act-feedback', 'After the hackathon', fb ? 'Thank you for your feedback.' : 'How was it?',
+		var after = phase(Date.now()) === 'after';
+		var card = actCard('act-feedback', after ? 'After the hackathon' : 'Your feedback', fb ? 'Thank you for your feedback.' : 'How was it?',
 			fb ? 'Your answers are in. Change them any time: we read every answer, without your name.'
-				: 'Two minutes, and we read every answer. We keep them without your name.');
+				: after ? 'Two minutes, and we read every answer. We keep them without your name.'
+					: 'Two minutes, now or after the awards, and we read every answer. We keep them without your name.');
 		var aw = state.audience;
 		if (aw && aw.state === 'shown' && aw.teams && aw.teams.length && aw.teams[0].votes) {
 			var won = el('p', 'act-done act-award');
