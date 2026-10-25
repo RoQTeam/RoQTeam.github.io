@@ -359,7 +359,8 @@ var MATES_SENT = "Teammates reminder sent";
 var TEAMS_SHEET = "Teams";
 var TEAM_COLUMNS = ["Team", "Challenge", "Table", "Pitch", "Room", "Award", "Repository", "Slides", "Video", "About", "Handed in", "Handed in by"];
 var AWARDS = ["1st", "2nd", "3rd"]; // a challenge's podium; the certificate says it
-var HANDIN_BY = "2026-10-25T09:00:00+02:00"; // coding stops: the hand-in closes (STOP in assets/js/schedule.js)
+var CODING_STOPS = "2026-10-25T09:00:00+02:00"; // STOP in assets/js/schedule.js: the team names close
+var HANDIN_BY = "2026-10-25T09:10:00+02:00"; // the hand-in closes, ten minutes after coding stops
 
 // The audience award: the organisers open the vote at the awards (the admin page, Team dashboard view); each
 // participant checked in at the door gives one vote, to a team not their own, and can change it while the vote is
@@ -3753,7 +3754,7 @@ function teamName_(who, data) {
   var fail = function (msg) {
     return { ok: false, action: "team-name", error: msg };
   };
-  if (Date.now() >= Date.parse(HANDIN_BY)) return fail("Coding has stopped, and the team names with it. Ask at the desk for a change.");
+  if (Date.now() >= Date.parse(CODING_STOPS)) return fail("Coding has stopped, and the team names with it. Ask at the desk for a change.");
   var roster = roster_();
   var p = personOf_(roster, who.email);
   if (!p) return fail("Your registration is not in the sheet any more. Ask at the desk.");
@@ -3802,7 +3803,7 @@ function renameInTab_(tab, column, from, to) {
 
 /* --- the hand-in ------------------------------------------------------------------------ */
 
-// teams.html: the team's hand-in, as often as they like until coding stops (HANDIN_BY): where the code is (a
+// teams.html: the team's hand-in, as often as they like until HANDIN_BY, ten minutes after coding stops: where the code is (a
 // repository, a Colab or Drive link: required), the slides and a demo video (optional), a line on what they built.
 // Any of the team can change it, and the last one counts. The admin page shows it to the jury, team by team.
 function handin_(who, data) {

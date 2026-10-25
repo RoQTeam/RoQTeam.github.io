@@ -746,6 +746,12 @@
 		var b = el('b', null, 'Stop coding: ' + fmt.long.format(STOP) + ', ' + hm(STOP));
 		txt.appendChild(b);
 		txt.appendChild(document.createTextNode(now < STOP ? ' · in ' + span(STOP - now) : ' · coding is over'));
+		// the hand-in can close a little after coding stops (HANDIN_BY in the Apps Script)
+		if (state.handinBy > STOP) {
+			txt.appendChild(document.createElement('br'));
+			txt.appendChild(el('b', null, 'Hand in by ' + hm(state.handinBy)));
+			if (now >= STOP && now < state.handinBy) txt.appendChild(document.createTextNode(' · in ' + span(state.handinBy - now)));
+		}
 		p.appendChild(txt);
 		box.appendChild(p);
 	}
