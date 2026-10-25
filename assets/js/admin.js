@@ -2922,7 +2922,9 @@
 		});
 		var rows = [['Registered', 'Event', 'University or company', 'City', 'Status', 'Experience', 'Tracks ticked', 'Hackathon track', 'Heard from',
 			'Decision', 'Coming', 'Checked in', 'Outcome', 'Team', 'Team size', 'Team handed in', 'Award']];
-		people(state.records).sort(function (a, b) { return (a.time || 0) - (b.time || 0); }).forEach(function (p) {
+		// when they registered: for the hackathon, if they did
+		var when = function (p) { return (hackReg(p) || p).time; };
+		people(state.records).sort(function (a, b) { return (when(a) || 0) - (when(b) || 0); }).forEach(function (p) {
 			var h = hackReg(p);
 			var d = h ? decisionOf(h) : '';
 			var yes = d === 'accepted';
@@ -2931,7 +2933,7 @@
 			var team = yes ? teamOf[h.email] : null;
 			var t = team ? team.t : null;
 			rows.push([
-				(h || p).time ? dayKey((h || p).time) : '',
+				when(p) ? dayKey(when(p)) : '',
 				EVENT_LABEL[p.event] || get(p, 'Attends'),
 				get(p, 'University or company'),
 				p.city,
