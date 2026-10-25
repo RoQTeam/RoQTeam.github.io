@@ -13,6 +13,8 @@
 	  checklist, the resources, submission and practical details the teams see on teams.html (the "board-…"
 	  actions; kept in the sheet's "Team dashboard" tab)
 	- the After the event view: the certificates ("certificates") and the feedback sent from the dashboard
+	- the In numbers view: counts and charts for the brochure, and CSVs for the report (the registrations without
+	  names, the feedback)
 */
 
 (function () {
@@ -2904,6 +2906,70 @@
 		var text = [['Section', 'Number', 'Value']].concat(numRows).map(function (r) { return r.map(esc).join(','); }).join('\r\n');
 		download('breaq-2026-in-numbers-' + dayKey(new Date()) + '.csv', new Blob(['﻿' + text], { type: 'text/csv;charset=utf-8' }));
 	});
+
+	// For the report: a CSV of one row each, with nothing that names anyone. Registrations without names: everyone who
+	// registered, oldest first, with what became of them (the decision, coming, the check-in, the team as a number and
+	// its hand-in), and no name, email, phone, letter, team name, dietary need or organiser's grade or note
+	function csvFile(name, rows) {
+		var text = rows.map(function (r) { return r.map(csvCell).join(','); }).join('\r\n') + '\r\n';
+		download(name + '-' + dayKey(new Date()) + '.csv', new Blob(['\ufeff' + text], { type: 'text/csv;charset=utf-8' }));
+	}
+
+	$('nums-people').addEventListener('click', function () {
+		var teamOf = {};   // by email: { n, size, t }
+		teamsWithMembers(acceptedPeople()).filter(function (x) { return x.members.length; }).forEach(function (x, i) {
+			x.members.forEach(function (m) { teamOf[m.h.email] = { n: i + 1, size: x.members.length, t: x.t }; });
+		});
+		var rows = [['Registered', 'Event', 'University or company', 'City', 'Status', 'Experience', 'Tracks ticked', 'Hackathon track', 'Heard from',
+			'Decision', 'Coming', 'Checked in', 'Outcome', 'Team', 'Team size', 'Team handed in', 'Award']];
+		people(state.records).sort(function (a, b) { return (a.time || 0) - (b.time || 0); }).forEach(function (p) {
+			var h = hackReg(p);
+			var d = h ? decisionOf(h) : '';
+			var yes = d === 'accepted';
+			var c = yes ? comingOf(h) : '';
+			var here = yes && !!get(h, 'Checked in');
+			var team = yes ? teamOf[h.email] : null;
+			var t = team ? team.t : null;
+			rows.push([
+				(h || p).time ? dayKey((h || p).time) : '',
+				EVENT_LABEL[p.event] || get(p, 'Attends'),
+				get(p, 'University or company'),
+				p.city,
+				get(p, 'Status'),
+				get(p, 'Experience'),
+				get(h || p, 'Tracks'),
+				h ? trackOf(h) : '',
+				get(p, 'Heard from'),
+				h ? DECISION_LABEL[d] : '',
+				yes ? (c === 'yes' ? 'Yes' : c === 'no' ? 'Cannot come' : 'No answer') : '',
+				yes ? (here ? 'Yes' : 'No') : '',
+				!h ? 'Conference only' : here ? 'Came' : yes ? (c === 'no' ? 'Accepted, could not come' : 'Accepted, did not come') : DECISION_LABEL[d],
+				team ? team.n : '',
+				team ? team.size : '',
+				// Quantum Foundations hands in on a site of its own
+				!t ? '' : t.handedIn ? 'Yes' : t.challenge === 'Quantum Foundations' ? '' : 'No',
+				t && t.award ? PLACE[t.award] || t.award : ''
+			]);
+		});
+		csvFile('breaq-2026-registrations-no-names', rows);
+	});
+
+	// the feedback answers, oldest first (they come without names)
+	function feedbackCsv() {
+		var rows = [['Sent', 'Challenge', 'Overall', 'Challenge rating', 'Mentors', 'Organisation', 'Food and venue', 'Difficulty', 'Would come again',
+			'What worked best', 'What to change', 'What they learned', 'Anything else']];
+		state.feedback.filter(function (f) { return f.overall; })
+			.sort(function (a, b) { return String(a.sent).localeCompare(String(b.sent)); })
+			.forEach(function (f) {
+				var sent = new Date(f.sent);
+				rows.push([isNaN(sent) ? '' : csvTime(sent), f.challenge, f.overall, f.rChallenge || '', f.rMentors || '', f.rOrganisation || '', f.rVenue || '',
+					f.difficulty, f.again, f.best, f.change, f.learned, f.other]);
+			});
+		csvFile('breaq-2026-feedback', rows);
+	}
+
+	$('nums-feedback').addEventListener('click', feedbackCsv);
+	$('fb-csv').addEventListener('click', feedbackCsv);
 
 	/* --- reading the letters --------------------------------------------------------- */
 

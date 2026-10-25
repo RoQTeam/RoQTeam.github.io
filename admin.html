@@ -417,7 +417,12 @@
 					</section>
 
 					<section class="panel" aria-labelledby="fb-h">
-						<h2 id="fb-h">Feedback <span class="count" id="fb-count"></span></h2>
+						<div class="panel-head">
+							<h2 id="fb-h">Feedback <span class="count" id="fb-count"></span></h2>
+							<div class="panel-actions">
+								<button type="button" class="btn small" id="fb-csv">Download CSV</button>
+							</div>
+						</div>
 						<div class="tiles" id="fb-tiles"></div>
 						<div class="fb-cols" id="fb-cols">
 							<div>
@@ -452,9 +457,11 @@
 							</div>
 							<div class="panel-actions">
 								<button type="button" class="btn small" id="nums-csv">Download every number (CSV)</button>
+								<button type="button" class="btn small" id="nums-people">Registrations, no names (CSV)</button>
+								<button type="button" class="btn small" id="nums-feedback">Feedback (CSV)</button>
 							</div>
 						</div>
-						<p class="muted send-help">Each chart downloads as an SVG (a designer can restyle it in Illustrator or Figma) or a PNG. For “vs 2025”, fill in last year’s numbers in LAST_EDITION in assets/js/admin.js.</p>
+						<p class="muted send-help">Each chart downloads as an SVG (a designer can restyle it in Illustrator or Figma) or a PNG. For “vs 2025”, fill in last year’s numbers in LAST_EDITION in assets/js/admin.js. For the report: <b>Registrations, no names</b> is everyone who registered, one row each, with the university, city, status, experience, tracks and what became of them (decision, coming, checked in, the team as a number, its size and hand-in), and no name, email, phone, letter, team name, dietary need or grade; <b>Feedback</b> is every answer to the dashboard’s form.</p>
 					</section>
 
 					<div id="nums"></div>
@@ -586,6 +593,6 @@
 
 		</main>
 
-		<script src="assets/js/admin.js?v=20261025"></script>
+		<script src="assets/js/admin.js?v=20261025b"></script>
 	</body>
 </html>
