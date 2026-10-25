@@ -360,7 +360,7 @@ var TEAMS_SHEET = "Teams";
 var TEAM_COLUMNS = ["Team", "Challenge", "Table", "Pitch", "Room", "Award", "Repository", "Slides", "Video", "About", "Handed in", "Handed in by"];
 var AWARDS = ["1st", "2nd", "3rd"]; // a challenge's podium; the certificate says it
 var CODING_STOPS = "2026-10-25T09:00:00+02:00"; // STOP in assets/js/schedule.js: the team names close
-var HANDIN_BY = "2026-10-25T09:10:00+02:00"; // the hand-in closes, ten minutes after coding stops
+var HANDIN_BY = "2026-10-25T09:20:00+02:00"; // the hand-in closes, twenty minutes after coding stops
 
 // The audience award: the organisers open the vote at the awards (the admin page, Team dashboard view); each
 // participant checked in at the door gives one vote, to a team not their own, and can change it while the vote is
@@ -3803,7 +3803,7 @@ function renameInTab_(tab, column, from, to) {
 
 /* --- the hand-in ------------------------------------------------------------------------ */
 
-// teams.html: the team's hand-in, as often as they like until HANDIN_BY, ten minutes after coding stops: where the code is (a
+// teams.html: the team's hand-in, as often as they like until HANDIN_BY, twenty minutes after coding stops: where the code is (a
 // repository, a Colab or Drive link: required), the slides and a demo video (optional), a line on what they built.
 // Any of the team can change it, and the last one counts. The admin page shows it to the jury, team by team.
 function handin_(who, data) {

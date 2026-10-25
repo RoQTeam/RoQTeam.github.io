@@ -3,7 +3,7 @@
 	Bucharest time. As planned (not on breaq-hackathon.html yet): change it here, and both follow. Full timestamps
 	with their offset: summer time ends in the night (04:00 → 03:00 on Sunday), so the night's coding block is five
 	hours. kind: key (the moments that matter), code, talk, meal, stop (coding stops: the hand-in closes, as
-	CODING_STOPS in tools/register-backend.gs; the hand-in closes ten minutes later, HANDIN_BY there), award.
+	CODING_STOPS in tools/register-backend.gs; the hand-in closes twenty minutes later, HANDIN_BY there), award.
 */
 
 window.BREAQ_SCHEDULE = [
