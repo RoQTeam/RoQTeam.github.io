@@ -924,6 +924,9 @@
 		state.teams = [];
 		state.mentors = null;
 		state.feedback = [];
+		state.photos = null;
+		pics.busy = {};
+		renderPicsBadge();
 		state.voter = '';
 		state.voters = [];
 		state.shared = false;
@@ -932,7 +935,7 @@
 		if ($('who-dlg').open) $('who-dlg').close();
 		if (state.decision === 'tovote') state.decision = 'any';
 		teamsUi.editing = null;
-		forEach(['board-list', 'teams-list', 'loose', 'checkin-list', 'cert-result', 'fb-best', 'fb-change', 'fb-learned', 'fb-other'], function (id) { $(id).textContent = ''; });
+		forEach(['board-list', 'teams-list', 'loose', 'checkin-list', 'cert-result', 'fb-best', 'fb-change', 'fb-learned', 'fb-other', 'pics-waiting', 'pics-up'], function (id) { $(id).textContent = ''; });
 		$('checkin-search').value = '';
 		checkinUi.query = '';
 		resetForm();
@@ -1064,6 +1067,7 @@
 		state.flash = json.flash === undefined ? undefined : json.flash;   // its live message (undefined: an older Apps Script)
 		state.mentors = json.mentors || null;
 		state.feedback = json.feedback || [];
+		state.photos = json.photos;   // { waiting, shown }; null when Drive could not be read, undefined from an older Apps Script
 		state.activity = json.activity || null;
 		state.certificate = json.certificate || '';
 		state.voters = json.voters || [];
@@ -1085,6 +1089,7 @@
 		renderTiles();
 		renderEvent();
 		renderView();
+		renderPicsBadge();
 		if (old) dashError('The Apps Script still counts Yes and No, and this page gives grades from 1 to 10: paste tools/register-backend.gs into the editor, then Deploy → Manage deployments → pencil → Version: New version → Deploy. Until then nobody can grade.');
 		if (state.shared && !state.voter && !state.looking) askWho();
 	}
@@ -5226,6 +5231,7 @@
 		}
 		$('cert-sample').disabled = !state.certificate;
 		$('cert-send').disabled = !state.certificate || !due.length || sent.length === due.length;
+		renderPics();
 		renderFeedback();
 	}
 
@@ -5279,6 +5285,78 @@
 			renderAfter();
 		});
 	});
+
+	/* the participants' photos (breaq-2026-photos.html): waiting for one of you, or on the page */
+
+	var pics = { busy: {} };   // the ids being put up or taken off
+
+	// the After view's button says how many wait, whichever view is open
+	function renderPicsBadge() {
+		var n = state.photos ? state.photos.waiting.length : 0;
+		$('f-view').querySelector('[data-view="after"]').textContent = 'After the event' + (n ? ' · ' + plural(n, 'new photo', 'new photos') : '');
+	}
+
+	function renderPics() {
+		renderPicsBadge();
+		var p = state.photos;
+		$('pics-count').textContent = p && p.waiting.length ? p.waiting.length + ' waiting' : '';
+		$('pics-status').textContent = p === undefined
+			? 'The Apps Script does not show the photos here yet: paste tools/register-backend.gs into the editor, then Deploy → Manage deployments → pencil → Version: New version → Deploy.'
+			: !p ? 'Google could not read the photos just now: Refresh in a minute.'
+			: plural(p.shown.length, 'photo', 'photos') + ' on the page, under From you';
+		picsInto('pics-waiting', p ? p.waiting : [], true);
+		picsInto('pics-up', p ? p.shown : [], false);
+	}
+
+	function picsInto(id, list, waiting) {
+		var box = $(id);
+		box.textContent = '';
+		if (!list.length) { box.appendChild(el('p', 'muted', waiting ? 'Nothing waiting.' : 'None yet.')); return; }
+		list.forEach(function (p) {
+			var fig = el('figure', 'pic' + (pics.busy[p.id] ? ' is-busy' : ''));
+			var a = link('https://drive.google.com/file/d/' + encodeURIComponent(p.id) + '/view');
+			a.className = 'pic-img';
+			var img = el('img');
+			img.alt = 'Sent by ' + (p.name || 'someone');
+			img.loading = 'lazy';
+			img.src = 'https://drive.google.com/thumbnail?id=' + encodeURIComponent(p.id) + '&sz=w400';
+			a.appendChild(img);
+			fig.appendChild(a);
+			var cap = el('figcaption', null, (p.name || 'Put in Drive by hand') + ' · ' + fmtShort.format(new Date(p.at)));
+			if (p.email) cap.title = p.email;
+			fig.appendChild(cap);
+			var row = el('div', 'pic-actions');
+			if (waiting) row.appendChild(picButton(p, true));
+			row.appendChild(picButton(p, false));
+			fig.appendChild(row);
+			box.appendChild(fig);
+		});
+	}
+
+	function picButton(p, put) {
+		var b = el('button', 'btn small' + (put ? ' primary' : ''), put ? 'Put up' : 'Take off');
+		b.type = 'button';
+		b.disabled = !!pics.busy[p.id];
+		b.addEventListener('click', function () { reviewPic(p, put); });
+		return b;
+	}
+
+	function reviewPic(p, put) {
+		pics.busy[p.id] = true;
+		viewError('after-err', '');
+		renderPics();
+		post({ action: 'photo-review', key: state.key, id: p.id, put: put }, 60000, function (json, err) {
+			delete pics.busy[p.id];
+			if (json && json.denied) { lock(json.error); return; }
+			var ph = state.photos;
+			if (json && json.ok && ph) {
+				ph.waiting = ph.waiting.filter(function (x) { return x.id !== p.id; });
+				ph.shown = ph.shown.filter(function (x) { return x.id !== p.id; });
+				if (put) ph.shown = [p].concat(ph.shown).sort(function (a, b) { return String(b.at).localeCompare(String(a.at)); });
+			} else if (!(json && json.ok)) viewError('after-err', actionProblem(json, err, 'put photos up or take them off'));
+			if (state.view === 'after') renderPics(); else renderPicsBadge();
+		});
+	}
 
 	function renderFeedback() {
 		var fb = state.feedback.filter(function (f) { return f.overall; });

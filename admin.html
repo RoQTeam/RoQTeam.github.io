@@ -8,9 +8,9 @@
 		<meta name="referrer" content="no-referrer" />
 		<!-- the page holds personal data once unlocked: only its own files run, and it talks only to the Apps Script
 		     (script.google.com answers through a redirect to script.googleusercontent.com) -->
-		<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src https://script.google.com https://script.googleusercontent.com; frame-src blob:; base-uri 'none'; form-action 'none'" />
+		<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https://drive.google.com https://*.googleusercontent.com; connect-src https://script.google.com https://script.googleusercontent.com; frame-src blob:; base-uri 'none'; form-action 'none'" />
 		<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Raleway:700|Source+Sans+Pro:300,400,600&amp;display=swap" />
-		<link rel="stylesheet" href="assets/css/admin.css?v=20261022b" />
+		<link rel="stylesheet" href="assets/css/admin.css?v=20261026" />
 		<link rel="icon" type="image/png" href="images/favicon-2026.png">
 	</head>
 	<body>
@@ -395,11 +395,33 @@
 
 				</div>
 
-				<!-- After the event: the certificates (the "certificates" action: who gets one, a sample, the send) and the
-				     feedback the participants sent from the dashboard (the sheet's "Feedback" tab, without names) -->
+				<!-- After the event: the photos the participants sent for breaq-2026-photos (with the list; put up or taken off
+				     with "photo-review"), the certificates (the "certificates" action: who gets one, a sample, the send) and
+				     the feedback the participants sent from the dashboard (the sheet's "Feedback" tab, without names) -->
 				<div class="view" id="view-after" hidden>
 
 					<p class="err" id="after-err" role="alert" hidden></p>
+
+					<section class="panel" aria-labelledby="pics-h">
+						<div class="panel-head">
+							<div>
+								<h2 id="pics-h">Participants’ photos <span class="count" id="pics-count"></span></h2>
+								<p class="send-status" id="pics-status"></p>
+							</div>
+							<div class="panel-actions">
+								<a class="btn small" href="breaq-2026-photos#yours" target="_blank" rel="noopener">See the page</a>
+							</div>
+						</div>
+						<p class="muted send-help">What the participants send from BreaQ 2026 in photos with their dashboard code waits here until one of you puts it up. Take off sends a photo to the Drive trash of the account that owns the Apps Script, where it stays 30 days. Photos sent with the admin key go up at once. Refresh reads them again; a photo opens large in Drive.</p>
+						<div class="pics-group">
+							<h3>Waiting</h3>
+							<div class="pics" id="pics-waiting"></div>
+						</div>
+						<div class="pics-group">
+							<h3>On the page</h3>
+							<div class="pics" id="pics-up"></div>
+						</div>
+					</section>
 
 					<section class="panel send-panel" aria-labelledby="cert-h">
 						<div class="panel-head">
@@ -593,6 +615,6 @@
 
 		</main>
 
-		<script src="assets/js/admin.js?v=20261025c"></script>
+		<script src="assets/js/admin.js?v=20261026"></script>
 	</body>
 </html>

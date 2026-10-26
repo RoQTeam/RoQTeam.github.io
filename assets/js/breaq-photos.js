@@ -4,7 +4,8 @@
 	  first, each shown through Drive; the lightbox (breaq.js) takes them in as they come
 	- sends each photo chosen with { action: "photo", code, photo, w, h }, one after another: turned upright and made
 	  at most 2560 px here, as a JPEG, which leaves out where it was taken. The code is the team dashboard's,
-	  filled in when this device has it (teams.js keeps it)
+	  filled in when this device has it (teams.js keeps it). A participant's photo waits (waiting: true) until an
+	  organiser puts it up from the admin page; one sent with the admin key goes up at once
 */
 
 (function () {
@@ -145,14 +146,19 @@
 		if (!okIn.checked) { say('Tick the box first: the photos are yours to share, and fine for the people in them.', true); okIn.focus(); return; }
 		busy(true);
 		var sent = 0;
+		var waiting = 0;   // of those sent, the ones an organiser has to look at first
 		var failed = [];   // [file name, why]
 		(function next(i) {
 			if (i === files.length) {
 				busy(false);
-				var text = sent ? 'Sent ' + sent + (sent === 1 ? ' photo' : ' photos') + '. Thank you! ' + (sent === 1 ? 'It is' : 'They are') + ' first below.' : '';
+				var text = !sent ? ''
+					: 'Sent ' + sent + (sent === 1 ? ' photo' : ' photos') + '. Thank you! ' + (waiting
+						? (sent === 1 ? 'It shows below once one of us has looked at it.' : 'They show below once one of us has looked at them.')
+						: (sent === 1 ? 'It is' : 'They are') + ' first below.');
 				if (failed.length) text += (text ? ' ' : '') + 'Not sent: ' + failed.map(function (f) { return f[0] + ' (' + f[1] + ')'; }).join('; ') + '.';
 				say(text, !sent);
-				if (sent) { filesIn.value = ''; load(0); }
+				if (sent) filesIn.value = '';
+				if (sent > waiting) load(0);
 				return;
 			}
 			var file = files[i];
@@ -160,12 +166,12 @@
 			shrink(file, function (shot, why) {
 				if (!shot) { failed.push([file.name, why]); next(i + 1); return; }
 				post({ action: 'photo', code: code, photo: shot.b64, w: shot.w, h: shot.h }, 120000, function (json) {
-					if (json && json.ok) { sent++; next(i + 1); return; }
+					if (json && json.ok) { sent++; if (json.waiting) waiting++; next(i + 1); return; }
 					// a wrong code stops it all; anything else, that photo only
 					if (json && json.denied) {
 						busy(false);
 						say((sent ? 'Sent ' + sent + ', then: ' : '') + json.error, true);
-						if (sent) load(0);
+						if (sent > waiting) load(0);
 						return;
 					}
 					failed.push([file.name, json && json.error ? json.error.replace(/\.$/, '') : 'could not reach us']);

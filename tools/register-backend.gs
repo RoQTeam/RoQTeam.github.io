@@ -633,7 +633,8 @@ function doPost(e) {
   }
 
   // admin.html: the registrations, a vote, a decision, the decision emails, the team dashboard, the teams, the
-  // check-in, the mentors' key and the certificates; all only for the admin key or a voter's own key
+  // check-in, the mentors' key, the certificates and the participants' photos; all only for the admin key or a voter's
+  // own key
   var ADMIN_ACTIONS = [
     "list",
     "vote",
@@ -656,6 +657,7 @@ function doPost(e) {
     "audience-state",
     "screen-key",
     "screen-flash",
+    "photo-review",
   ];
   if (ADMIN_ACTIONS.indexOf(data.action) !== -1) {
     // an exception here would make Apps Script answer with an HTML error page: send the admin page the reason instead
@@ -683,6 +685,7 @@ function doPost(e) {
       if (data.action === "audience-state") return json_(audienceSet_(data));
       if (data.action === "screen-key") return json_(screenKeySet_(data));
       if (data.action === "screen-flash") return json_(flashSet_(data));
+      if (data.action === "photo-review") return json_(photoReview_(data));
       return json_(list_(data.key));
     } catch (err) {
       console.error(data.action + " failed: " + err);
@@ -3033,6 +3036,7 @@ function list_(key) {
     feedback: feedbackRows_(),
     activity: activity_(),
     certificate: tpl ? tpl.getUrl() : "",
+    photos: photosOrNull_(),
     sheet: ss.getUrl(),
     // who is reading, by their key ("" for the admin key), and who votes: the page shows the votes and theirs
     voter: voterOf_(key),
@@ -4460,11 +4464,14 @@ function mentorMove_(data) {
 
 // The organisers' photos are files on the site. Those the participants send go in a Drive folder that anyone with
 // the link can see (the page shows them through Drive), and who sent which goes in the Photos tab, for the
-// organisers only. A photo comes off the page by deleting it from the folder (in the Drive of the account that owns
-// this script); one an organiser puts in the folder by hand shows up too.
+// organisers only. A participant's photo first waits in the folder's Waiting folder, which nothing lists for anyone
+// but the admin page, until an organiser puts it up there (photo-review); one sent with the admin key goes up at once.
+// In the Drive of the account that owns this script, moving a photo out of Waiting puts it up too, deleting it takes
+// it off, and one an organiser puts in the folder by hand shows up as well.
 var PHOTOS_FOLDER = "BreaQ 2026 photos from participants";
+var PHOTOS_WAITING = "Waiting";
 var PHOTOS_SHEET = "Photos";
-var PHOTOS_COLUMNS = ["Sent", "File", "Name", "Email", "Width", "Height"];
+var PHOTOS_COLUMNS = ["Sent", "File", "Name", "Email", "Width", "Height", "Review"];
 var PHOTO_MAX_BYTES = 8 * 1024 * 1024; // the page sends each one as a JPEG of at most 2560 px, 1 or 2 MB
 var PHOTOS_PER_DAY = 80; // per participant
 
@@ -4476,6 +4483,17 @@ function photosFolder_() {
   return folder;
 }
 
+// shared by link as well, for the admin page to show them through Drive: their links are only ever on that page
+function photosWaiting_() {
+  var main = photosFolder_();
+  var found = main.getFoldersByName(PHOTOS_WAITING);
+  if (found.hasNext()) return found.next();
+  var folder = main.createFolder(PHOTOS_WAITING);
+  folder.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  return folder;
+}
+
+// with the header of any column added since the tab was made
 function photosSheet_() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName(PHOTOS_SHEET) || ss.insertSheet(PHOTOS_SHEET);
@@ -4484,16 +4502,21 @@ function photosSheet_() {
     sheet.getRange(1, 1, 1, PHOTOS_COLUMNS.length).setFontWeight("bold");
     sheet.setFrozenRows(1);
   }
+  var have = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(function (h) {
+    return String(h).trim();
+  });
+  PHOTOS_COLUMNS.forEach(function (c) {
+    if (have.indexOf(c) !== -1) return;
+    have.push(c);
+    sheet.getRange(1, have.length).setValue(c).setFontWeight("bold");
+  });
   return sheet;
 }
 
-// the photos in the folder, newest first: { id, at, w, h } (w and h 0 for one put in by hand), two minutes in the cache
-function photos_() {
-  var cache = CacheService.getScriptCache();
-  var hit = cache.get("photos");
-  if (hit) return { ok: true, action: "photos", photos: JSON.parse(hit) };
+// the images in a folder, newest first: { id, at, w, h } (w and h 0 for one put in by hand)
+function photosIn_(folder) {
   var list = [];
-  var files = photosFolder_().searchFiles("trashed = false and mimeType contains 'image/'");
+  var files = folder.searchFiles("trashed = false and mimeType contains 'image/'");
   while (files.hasNext()) {
     var f = files.next();
     var size = /^(\d+)x(\d+)$/.exec(f.getDescription() || "");
@@ -4502,6 +4525,15 @@ function photos_() {
   list.sort(function (a, b) {
     return a.at < b.at ? 1 : a.at > b.at ? -1 : 0;
   });
+  return list;
+}
+
+// the photos on the page: those in the folder, not those waiting in it, two minutes in the cache
+function photos_() {
+  var cache = CacheService.getScriptCache();
+  var hit = cache.get("photos");
+  if (hit) return { ok: true, action: "photos", photos: JSON.parse(hit) };
+  var list = photosIn_(photosFolder_());
   try {
     cache.put("photos", JSON.stringify(list), 120);
   } catch (err) {}
@@ -4540,17 +4572,91 @@ function photoSend_(who, data) {
     if (today >= PHOTOS_PER_DAY)
       return no("That makes " + PHOTOS_PER_DAY + " photos from you today, as many as one person can send in a day. Send the rest tomorrow, or write to us at " + REPLY_TO + ".");
   }
+  var up = !!who.organiser; // the organisers' go up at once, the participants' wait for one of them
   var name = "breaq-2026-" + Utilities.formatDate(new Date(), "Europe/Bucharest", "yyyyMMdd-HHmmss") + "-" + Utilities.getUuid().slice(0, 6) + ".jpg";
-  var file = photosFolder_().createFile(Utilities.newBlob(bytes, "image/jpeg", name));
+  var file = (up ? photosFolder_() : photosWaiting_()).createFile(Utilities.newBlob(bytes, "image/jpeg", name));
   if (w && h) file.setDescription(w + "x" + h);
   try {
     file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
   } catch (err) {
     console.warn("photo " + file.getId() + ": could not share it by link (" + err + "); the folder's sharing still covers it");
   }
-  sheet.appendRow([new Date(), file.getUrl(), who.organiser ? "Organisers" : who.name, email, w || "", h || ""]);
+  var row = { Sent: new Date(), File: file.getUrl(), Name: up ? "Organisers" : who.name, Email: email, Width: w || "", Height: h || "", Review: up ? "Up" : "Waiting" };
+  sheet.appendRow(header_(sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()).map(function (c) {
+    return row[c] === undefined ? "" : row[c];
+  }));
+  if (up) CacheService.getScriptCache().remove("photos");
+  return { ok: true, action: "photo", waiting: !up };
+}
+
+// the Drive id in a File cell (a file's URL)
+function photoIdOf_(url) {
+  var m = /\/d\/([-\w]{20,})/.exec(String(url || ""));
+  return m ? m[1] : "";
+}
+
+// admin.html: the participants' photos waiting and those on the page, each with who sent it. Never fails the list.
+function photosOrNull_() {
+  try {
+    var by = {};
+    var values = photosSheet_().getDataRange().getValues();
+    var header = header_(values);
+    for (var i = 1; i < values.length; i++) {
+      var r = toRecord_(header, values[i]);
+      var id = photoIdOf_(r["File"]);
+      if (id) by[id] = { name: String(r["Name"] || ""), email: String(r["Email"] || "") };
+    }
+    var withWho = function (p) {
+      p.name = by[p.id] ? by[p.id].name : "";
+      p.email = by[p.id] ? by[p.id].email : "";
+      return p;
+    };
+    return { waiting: photosIn_(photosWaiting_()).map(withWho), shown: photosIn_(photosFolder_()).map(withWho) };
+  } catch (err) {
+    console.error("photos for the admin page failed: " + err);
+    return null;
+  }
+}
+
+// admin.html: put a waiting photo up on the page (data.put), or send one, waiting or up, to the Drive trash
+function photoReview_(data) {
+  var no = function (error) {
+    return { ok: false, action: "photo-review", error: error };
+  };
+  var id = String(data.id || "");
+  var main = photosFolder_();
+  var waiting = photosWaiting_();
+  var file = null;
+  try {
+    file = DriveApp.getFileById(id);
+  } catch (err) {}
+  var where = "";
+  if (file && !file.isTrashed()) {
+    var parents = file.getParents();
+    while (parents.hasNext()) {
+      var p = parents.next().getId();
+      if (p === waiting.getId()) where = "waiting";
+      else if (p === main.getId()) where = "up";
+    }
+  }
+  if (!where) return no("That photo is not among the participants' photos any more: someone took it off in the meantime. Refresh.");
+  if (data.put) {
+    if (where === "waiting") file.moveTo(main);
+    try {
+      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    } catch (err) {}
+  } else file.setTrashed(true);
+  var sheet = photosSheet_();
+  var values = sheet.getDataRange().getValues();
+  var header = header_(values);
+  var col = header.indexOf("Review");
+  for (var i = 1; i < values.length; i++) {
+    if (photoIdOf_(values[i][header.indexOf("File")]) !== id) continue;
+    sheet.getRange(i + 1, col + 1).setValue(data.put ? "Up" : "Taken off");
+    break;
+  }
   CacheService.getScriptCache().remove("photos");
-  return { ok: true, action: "photo", id: file.getId() };
+  return { ok: true, action: "photo-review", id: id, put: !!data.put };
 }
 
 /* --- feedback ------------------------------------------------------------------- */

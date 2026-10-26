@@ -1940,7 +1940,8 @@ input[type="checkbox"] {
 	gap: 20px;
 }
 
-	.fb-cols h3 {
+	.fb-cols h3,
+	.pics-group h3 {
 		margin: 0 0 8px;
 		font-family: Raleway, Helvetica, sans-serif;
 		font-size: 11px;
@@ -1976,6 +1977,66 @@ input[type="checkbox"] {
 		font-size: 0.85em;
 		color: var(--fg-light);
 	}
+
+/* the participants' photos (After the event): a card each, with who sent it, when, Put up and Take off */
+.pics-group {
+	margin-top: 20px;
+}
+
+.pics {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+	gap: 12px;
+}
+
+	.pics > p {
+		margin: 0;
+	}
+
+	.pic {
+		margin: 0;
+		padding: 8px;
+		border: solid 1px var(--line);
+		border-radius: 5px;
+		background: var(--surface);
+	}
+
+		.pic.is-busy {
+			opacity: 0.5;
+		}
+
+		.pic-img {
+			display: block;
+			aspect-ratio: 1;
+			border-radius: 3px;
+			background: rgba(0, 0, 0, 0.25);
+			overflow: hidden;
+		}
+
+			.pic-img img {
+				display: block;
+				width: 100%;
+				height: 100%;
+				object-fit: contain;
+			}
+
+		.pic figcaption {
+			margin-top: 6px;
+			font-size: 0.85em;
+			color: var(--fg-light);
+			overflow-wrap: anywhere;
+		}
+
+		.pic-actions {
+			display: flex;
+			gap: 6px;
+			margin-top: 8px;
+		}
+
+			.pic-actions .btn {
+				flex: 1 1 0;
+				padding: 0 8px;
+			}
 
 @media (max-width: 980px) {
 
