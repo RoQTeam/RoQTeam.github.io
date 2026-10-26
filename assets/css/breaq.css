@@ -3881,6 +3881,12 @@
 				background: #1a1b24;
 			}
 
+			/* main.css lays every video over its box, as a background: not this one */
+			.lb-stage video {
+				position: static;
+				object-fit: contain;
+			}
+
 			.lb-stage img {
 				opacity: 0;
 				transform: scale(0.985);
@@ -3896,6 +3902,7 @@
 			width: 100%;
 			max-width: 60em;
 			margin: 0.8em 0 0;
+			text-align: center;
 			font-size: 0.85em;
 			color: var(--bq-fg-light);
 		}
@@ -4381,6 +4388,21 @@
 		color: var(--bq-fg-light);
 	}
 
+	/* the videos: tiles of one size, four to a row, the poster cropped to fit (the lightbox shows the whole video) */
+	.mosaic--videos {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+		gap: 0.75em;
+		columns: auto;
+	}
+
+		.mosaic--videos .ph {
+			flex: 0 0 calc((100% - 2.25em) / 4);
+			aspect-ratio: 3 / 4;
+			margin: 0;
+		}
+
 	/* 2026: its own photo behind the title, and the form that adds the participants' photos (breaq-photos.js) */
 	.page-photos-2026 #wrapper > header {
 		background:
@@ -4448,6 +4470,10 @@
 		.mosaic {
 			columns: 2;
 		}
+
+			.mosaic--videos .ph {
+				flex-basis: calc((100% - 0.75em) / 2);
+			}
 
 	}
 
