@@ -272,11 +272,14 @@
 	/* ------------------------------------------------------------ */
 	/* Lightbox: carousel slides and gallery tiles open large.        */
 	/* A tile with data-video plays that file instead of an image.    */
+	/* Tiles added later to a [data-lightbox] open too (the photos    */
+	/* the participants send, on breaq-2026-photos.html).             */
 	/* ------------------------------------------------------------ */
 
-	var lbItems = Array.prototype.slice.call(document.querySelectorAll('.gal-slide, [data-lightbox] figure'));
+	var LB_ITEMS = '.gal-slide, [data-lightbox] figure';
+	var lbItems = Array.prototype.slice.call(document.querySelectorAll(LB_ITEMS));
 
-	if (lbItems.length) {
+	if (lbItems.length || document.querySelector('[data-lightbox]')) {
 		var lb = document.createElement('div');
 		lb.className = 'lightbox';
 		lb.setAttribute('role', 'dialog');
@@ -351,15 +354,26 @@
 			if (lbLast && lbLast.focus) lbLast.focus();
 		}
 
-		lbItems.forEach(function (item, i) {
+		function lbBind(item) {
 			item.classList.add('lb-item');
 			if (!item.hasAttribute('tabindex')) item.setAttribute('tabindex', '0');
 			if (!item.hasAttribute('role')) item.setAttribute('role', 'button');
-			item.addEventListener('click', function (ev) { ev.preventDefault(); lbOpenAt(i, item); });
+			item.addEventListener('click', function (ev) { ev.preventDefault(); lbOpenAt(lbItems.indexOf(item), item); });
 			item.addEventListener('keydown', function (ev) {
-				if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); lbOpenAt(i, item); }
+				if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); lbOpenAt(lbItems.indexOf(item), item); }
 			});
-		});
+		}
+
+		lbItems.forEach(lbBind);
+
+		if (window.MutationObserver) {
+			Array.prototype.forEach.call(document.querySelectorAll('[data-lightbox]'), function (box) {
+				new MutationObserver(function () {
+					lbItems = Array.prototype.slice.call(document.querySelectorAll(LB_ITEMS));
+					lbItems.forEach(function (item) { if (!item.classList.contains('lb-item')) lbBind(item); });
+				}).observe(box, { childList: true });
+			});
+		}
 
 		lb.querySelector('.lb-close').addEventListener('click', lbClose);
 		lb.querySelector('.lb-prev').addEventListener('click', function () { lbShow(lbIndex - 1); });

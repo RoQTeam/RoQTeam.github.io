@@ -546,9 +546,19 @@ function doPost(e) {
     return json_({ ok: false, error: "Bad request" });
   }
 
+  // breaq-2026-photos.html: the photos the participants sent, for anyone (sending one takes a dashboard code, below)
+  if (data.action === "photos") {
+    try {
+      return json_(photos_());
+    } catch (err) {
+      console.error("photos failed: " + err);
+      return json_({ ok: false, action: "photos", temporary: true, error: "Google could not read the photos just now (" + err + ")." });
+    }
+  }
+
   // teams.html: the team dashboard, for the accepted participants (their own code) and the organisers (the admin
   // key); the participants also answer "are you coming?", ask for a mentor and send their feedback through it
-  var TEAM_ACTIONS = ["board", "coming", "help", "help-cancel", "feedback", "handin", "audience", "team-name", "flash"];
+  var TEAM_ACTIONS = ["board", "coming", "help", "help-cancel", "feedback", "handin", "audience", "team-name", "flash", "photo"];
   if (TEAM_ACTIONS.indexOf(data.action) !== -1) {
     try {
       var who = dashboardWho_(data.code);
@@ -556,6 +566,8 @@ function doPost(e) {
       if (data.action === "board") return json_(board_(who));
       // the big screen's live message, asked every few seconds: for the screen and the organisers
       if (data.action === "flash") return json_({ ok: true, action: "flash", flash: who.screen || who.organiser ? flashOf_() : null });
+      // a photo for breaq-2026-photos.html: from a participant or an organiser
+      if (data.action === "photo") return json_(photoSend_(who, data));
       if (who.organiser || who.screen)
         return json_({
           ok: false,
@@ -4442,6 +4454,103 @@ function mentorMove_(data) {
   var q = mentorQueue_();
   q.action = data.action;
   return q;
+}
+
+/* --- photos (breaq-2026-photos.html) --------------------------------------------------- */
+
+// The organisers' photos are files on the site. Those the participants send go in a Drive folder that anyone with
+// the link can see (the page shows them through Drive), and who sent which goes in the Photos tab, for the
+// organisers only. A photo comes off the page by deleting it from the folder (in the Drive of the account that owns
+// this script); one an organiser puts in the folder by hand shows up too.
+var PHOTOS_FOLDER = "BreaQ 2026 photos from participants";
+var PHOTOS_SHEET = "Photos";
+var PHOTOS_COLUMNS = ["Sent", "File", "Name", "Email", "Width", "Height"];
+var PHOTO_MAX_BYTES = 8 * 1024 * 1024; // the page sends each one as a JPEG of at most 2560 px, 1 or 2 MB
+var PHOTOS_PER_DAY = 80; // per participant
+
+function photosFolder_() {
+  var found = DriveApp.getFoldersByName(PHOTOS_FOLDER);
+  if (found.hasNext()) return found.next();
+  var folder = DriveApp.createFolder(PHOTOS_FOLDER);
+  folder.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  return folder;
+}
+
+function photosSheet_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(PHOTOS_SHEET) || ss.insertSheet(PHOTOS_SHEET);
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(PHOTOS_COLUMNS);
+    sheet.getRange(1, 1, 1, PHOTOS_COLUMNS.length).setFontWeight("bold");
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+
+// the photos in the folder, newest first: { id, at, w, h } (w and h 0 for one put in by hand), two minutes in the cache
+function photos_() {
+  var cache = CacheService.getScriptCache();
+  var hit = cache.get("photos");
+  if (hit) return { ok: true, action: "photos", photos: JSON.parse(hit) };
+  var list = [];
+  var files = photosFolder_().searchFiles("trashed = false and mimeType contains 'image/'");
+  while (files.hasNext()) {
+    var f = files.next();
+    var size = /^(\d+)x(\d+)$/.exec(f.getDescription() || "");
+    list.push({ id: f.getId(), at: f.getDateCreated().toISOString(), w: size ? Number(size[1]) : 0, h: size ? Number(size[2]) : 0 });
+  }
+  list.sort(function (a, b) {
+    return a.at < b.at ? 1 : a.at > b.at ? -1 : 0;
+  });
+  try {
+    cache.put("photos", JSON.stringify(list), 120);
+  } catch (err) {}
+  return { ok: true, action: "photos", photos: list };
+}
+
+// one photo from the page: a JPEG in base64 (the page makes one of every photo, without its location), and its size
+function photoSend_(who, data) {
+  var no = function (error) {
+    return { ok: false, action: "photo", error: error };
+  };
+  if (who.screen) return no("The big screen's password does not send photos. Use your dashboard code.");
+  var bytes;
+  try {
+    bytes = Utilities.base64Decode(String(data.photo || ""));
+  } catch (err) {
+    return no("That photo did not arrive whole. Try it again.");
+  }
+  if (bytes.length < 1000 || (bytes[0] & 255) !== 0xff || (bytes[1] & 255) !== 0xd8 || (bytes[2] & 255) !== 0xff)
+    return no("That photo did not arrive whole. Try it again.");
+  if (bytes.length > PHOTO_MAX_BYTES) return no("That photo is too big, even made smaller. Try another.");
+  var w = Math.round(Number(data.w)) || 0;
+  var h = Math.round(Number(data.h)) || 0;
+  if (!(w > 0 && h > 0 && w <= 10000 && h <= 10000)) w = h = 0;
+  var email = who.organiser ? "" : who.email;
+  var sheet = photosSheet_();
+  if (email) {
+    var values = sheet.getDataRange().getValues();
+    var header = header_(values);
+    var since = Date.now() - 24 * 60 * 60 * 1000;
+    var today = 0;
+    for (var i = 1; i < values.length; i++) {
+      var r = toRecord_(header, values[i]);
+      if (String(r["Email"]).toLowerCase() === email && new Date(r["Sent"]).getTime() > since) today++;
+    }
+    if (today >= PHOTOS_PER_DAY)
+      return no("That makes " + PHOTOS_PER_DAY + " photos from you today, as many as one person can send in a day. Send the rest tomorrow, or write to us at " + REPLY_TO + ".");
+  }
+  var name = "breaq-2026-" + Utilities.formatDate(new Date(), "Europe/Bucharest", "yyyyMMdd-HHmmss") + "-" + Utilities.getUuid().slice(0, 6) + ".jpg";
+  var file = photosFolder_().createFile(Utilities.newBlob(bytes, "image/jpeg", name));
+  if (w && h) file.setDescription(w + "x" + h);
+  try {
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  } catch (err) {
+    console.warn("photo " + file.getId() + ": could not share it by link (" + err + "); the folder's sharing still covers it");
+  }
+  sheet.appendRow([new Date(), file.getUrl(), who.organiser ? "Organisers" : who.name, email, w || "", h || ""]);
+  CacheService.getScriptCache().remove("photos");
+  return { ok: true, action: "photo", id: file.getId() };
 }
 
 /* --- feedback ------------------------------------------------------------------- */
