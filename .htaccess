@@ -28,6 +28,12 @@ ErrorDocument 404 /404.html
 	RewriteCond %{HTTPS} !=on
 	RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L,NE]
 
+	# never for visitors, should one reach the server: the Apps Script and the other tools, the notes, archives,
+	# copies of the repository and dotfiles (the certificates' .well-known aside); answered as missing
+	RewriteRule ^(?:tools|RoQTeam\.github\.io-[^/]*)(?:/|$) - [R=404,L,NC]
+	RewriteRule \.(?:gs|py|md|zip|tar|gz|sh|sql|bak|log|env|ini)$ - [R=404,L,NC]
+	RewriteRule (?:^|/)\.(?!well-known/) - [R=404,L]
+
 	# /index.html and /folder/index.html -> / and /folder/
 	RewriteCond %{THE_REQUEST} \s/+((?:[^?\s]*/)?)index\.html[?\s] [NC]
 	RewriteRule ^ /%1 [R=301,L,NE]
