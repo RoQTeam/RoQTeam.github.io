@@ -1,0 +1,6 @@
+# GitHub Pages (roqteam.github.io) builds this repository with Jekyll. Left out of that site: what is here for the
+# organisers, not for visitors (the Apps Script and the other tools, the notes). roqteam.ro keeps them out with .htaccess.
+exclude:
+  - tools
+  - README.md
+  - QFF24_main/README.md
