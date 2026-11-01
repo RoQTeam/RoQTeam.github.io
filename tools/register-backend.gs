@@ -3894,23 +3894,45 @@ function sendConferenceAsk() {
   confAsk_(true);
 }
 
-// run from the editor: the email to the account running it (and SAMPLES_TO), to read first
+// run from the editor: the email, to read first. It goes to the addresses in the CONF_SAMPLES_TO script property
+// (Project Settings -> Script properties, separated by commas; kept there, not here, as this file is public), else to
+// the account running it and SAMPLES_TO. Each gets their own, its button with their own code: it opens their page
+// only if that address is registered for the conference (the log says whose do).
 function sendConferenceAskSample() {
-  var me = Session.getEffectiveUser().getEmail();
-  var to = sampleTo_();
-  var mail = renderEmail_("Ana", confAskEmail_({ name: "Ana", email: me }));
-  send_({
-    to: to,
-    subject: "[sample] " + mail.subject,
-    body: mail.text,
-    htmlBody: mail.html,
-    name: SENDER_NAME,
-    replyTo: REPLY_TO,
+  var listed = PropertiesService.getScriptProperties().getProperty("CONF_SAMPLES_TO");
+  var to = unique_(String(listed || sampleTo_()).split(/[,;\s]+/)).map(function (e) {
+    return e.toLowerCase();
   });
-  Logger.log(
-    "Sent the sample to " + to + ". Its button carries the code of " + me +
-      ", so the page opens only if that address is registered for the conference.",
-  );
+  var values = sheet_().getDataRange().getValues();
+  var header = header_(values);
+  var registered = {};
+  for (var i = 1; i < values.length; i++) {
+    var r = toRecord_(header, values[i]);
+    if (eventKey_(r["Attends"]) === "conference")
+      emailsOf_(r).forEach(function (e) {
+        registered[e] = true;
+      });
+  }
+  to.forEach(function (email) {
+    var mail = renderEmail_("Ana", confAskEmail_({ name: "Ana", email: email }));
+    try {
+      send_({
+        to: email,
+        subject: "[sample] " + mail.subject,
+        body: mail.text,
+        htmlBody: mail.html,
+        name: SENDER_NAME,
+        replyTo: REPLY_TO,
+      });
+      Logger.log(
+        "Sent to " + email + (registered[email]
+          ? ": registered for the conference, so its button opens their own page (an answer there counts)."
+          : ": not registered for the conference with this address, so its button says the link opens nothing."),
+      );
+    } catch (err) {
+      Logger.log("FAILED to " + email + ": " + err);
+    }
+  });
 }
 
 // previewConferenceAsk and sendConferenceAsk: the conference registrations from before CONF_ASK_BEFORE that have
