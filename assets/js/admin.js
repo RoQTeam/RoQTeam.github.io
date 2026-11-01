@@ -13,6 +13,7 @@
 	  checklist, the resources, submission and practical details the teams see on teams.html (the "board-…"
 	  actions; kept in the sheet's "Team dashboard" tab)
 	- the After the event view: the certificates ("certificates") and the feedback sent from the dashboard
+	- the conference's list of participants, a Google Doc on the RoQTeam letterhead ("conference-list")
 	- the In numbers view: counts and charts for the brochure, and CSVs for the report (the registrations without
 	  names, the feedback)
 */
@@ -929,6 +930,7 @@
 		if ($('detail').open) $('detail').close();
 		if ($('send-dlg').open) $('send-dlg').close();
 		if ($('mail-dlg').open) $('mail-dlg').close();
+		if ($('list-dlg').open) $('list-dlg').close();
 		state.picked = {};
 		state.onlyPicked = false;
 		keepPicked();
@@ -2044,6 +2046,7 @@
 			(state.problems ? ' · problems only' : '');
 		$('empty').hidden = rs.length > 0;
 		$('copy-emails').disabled = $('download').disabled = !rs.length;
+		$('list-open').hidden = state.event !== 'conference';
 		renderTabs();
 		renderPickBar();
 	}
@@ -3793,6 +3796,95 @@
 		window.setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
 		note('Downloaded ' + plural(lines.length - 1, 'registration', 'registrations'));
 	});
+
+	/* --- the conference's list of participants, as a Google Doc --------------------------------- */
+
+	// The Apps Script makes it ("conference-list": confList_), on the RoQTeam letterhead, in alphabetical order, in
+	// the Drive folder "BreaQ 2026 conference lists"; the page offers it and links it. The counts here are the sheet's
+	// registrations: the doc lists someone registered twice under the same name once.
+	var listDlg = $('list-dlg');
+	var listWho = 'notno';
+
+	function renderListForm() {
+		var n = { notno: 0, yes: 0, all: 0 };
+		state.records.forEach(function (r) {
+			if (r.event !== 'conference') return;
+			var c = comingOf(r);
+			n.all++;
+			if (c === 'yes') n.yes++;
+			if (c !== 'no') n.notno++;
+		});
+		forEach($('list-who').querySelectorAll('button'), function (b) {
+			var w = b.getAttribute('data-who');
+			b.setAttribute('aria-pressed', String(w === listWho));
+			b.querySelector('.n').textContent = n[w];
+		});
+		$('list-go').disabled = !n[listWho];
+	}
+
+	function listLine(cls, text) { $('list-body').appendChild(el('p', cls, text)); }
+
+	function listLink(href, label, primary) {
+		var a = el('a', 'btn small' + (primary ? ' primary' : ''), label);
+		a.href = href;
+		a.target = '_blank';
+		a.rel = 'noopener';
+		return a;
+	}
+
+	$('list-open').addEventListener('click', function () {
+		$('list-body').textContent = '';
+		renderListForm();
+		if (typeof listDlg.showModal === 'function') listDlg.showModal();
+		else listDlg.setAttribute('open', '');
+	});
+
+	$('list-who').addEventListener('click', function (ev) {
+		var b = ev.target.closest('button');
+		if (!b) return;
+		listWho = b.getAttribute('data-who');
+		renderListForm();
+	});
+
+	$('list-form').addEventListener('submit', function (ev) {
+		ev.preventDefault();
+		var go = $('list-go');
+		if (go.disabled) return;
+		go.disabled = true;
+		go.classList.add('is-busy');
+		go.textContent = 'Making the doc…';
+		$('list-body').textContent = '';
+		listLine('muted', 'A minute at most: Google writes the doc a row at a time.');
+		post({ action: 'conference-list', key: state.key, who: listWho, signature: $('list-sign').checked }, 5 * 60 * 1000, function (json, err) {
+			go.classList.remove('is-busy');
+			go.textContent = 'Make the Google Doc';
+			renderListForm();
+			var body = $('list-body');
+			body.textContent = '';
+			if (json && json.denied) { closeList(); lock(json.error); return; }
+			if (!(json && json.ok && json.action === 'conference-list')) {
+				listLine('err', actionProblem(json, err, 'make the conference list'));
+				return;
+			}
+			listLine('send-big', plural(json.count, 'person', 'people') + ' on the list');
+			if (json.twice) listLine('muted', plural(json.twice, 'registration', 'registrations') + ' with a name already on it left out (the same person registered twice).');
+			var links = el('div', 'list-links');
+			links.appendChild(listLink(json.url, 'Open in Google Docs', true));
+			links.appendChild(listLink(json.word, 'Word (.docx)'));
+			links.appendChild(listLink(json.pdf, 'PDF'));
+			links.appendChild(listLink(json.folder, 'All the lists'));
+			body.appendChild(links);
+			listLine('muted', json.name);
+		});
+	});
+
+	function closeList() {
+		if (typeof listDlg.close === 'function') listDlg.close();
+		else listDlg.removeAttribute('open');
+	}
+
+	$('list-close').addEventListener('click', closeList);
+	listDlg.addEventListener('click', function (ev) { if (ev.target === listDlg) closeList(); });
 
 	/* --- picked: people chosen for an email ------------------------------------------- */
 

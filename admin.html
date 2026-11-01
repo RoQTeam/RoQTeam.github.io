@@ -10,7 +10,7 @@
 		     (script.google.com answers through a redirect to script.googleusercontent.com) -->
 		<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https://drive.google.com https://*.googleusercontent.com; connect-src https://script.google.com https://script.googleusercontent.com; frame-src blob:; base-uri 'none'; form-action 'none'" />
 		<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Raleway:700|Source+Sans+Pro:300,400,600&amp;display=swap" />
-		<link rel="stylesheet" href="assets/css/admin.css?v=20261026" />
+		<link rel="stylesheet" href="assets/css/admin.css?v=20261101" />
 		<link rel="icon" type="image/png" href="images/favicon-2026.png">
 	</head>
 	<body>
@@ -135,6 +135,7 @@
 							<span class="note" id="copied" aria-live="polite"></span>
 							<button type="button" class="btn small" id="copy-emails">Copy emails</button>
 							<button type="button" class="btn small" id="download">Download CSV</button>
+							<button type="button" class="btn small" id="list-open" hidden>Conference list (Google Doc)</button>
 						</div>
 					</div>
 					<!-- about the hackathon: hidden in the conference view -->
@@ -588,6 +589,33 @@
 				</div>
 			</dialog>
 
+			<!-- the conference's list of participants, a Google Doc on the RoQTeam letterhead (the "conference-list" action of the Apps Script) -->
+			<dialog class="detail send-dlg list-dlg" id="list-dlg" aria-labelledby="list-dlg-h">
+				<div class="detail-head">
+					<div>
+						<p class="eyebrow">Conference</p>
+						<h2 id="list-dlg-h">List of participants</h2>
+					</div>
+					<button type="button" class="btn ghost small" id="list-close">Close</button>
+				</div>
+				<form class="bform mail-form" id="list-form" novalidate>
+					<div class="bform-field">
+						<span>Who is on it</span>
+						<div class="seg list-who" role="group" aria-label="Who is on it" id="list-who">
+							<button type="button" data-who="notno" aria-pressed="true">All but “cannot come” <span class="n"></span></button>
+							<button type="button" data-who="yes" aria-pressed="false">Coming <span class="n"></span></button>
+							<button type="button" data-who="all" aria-pressed="false">Everyone registered <span class="n"></span></button>
+						</div>
+					</div>
+					<label class="check"><input type="checkbox" id="list-sign" checked /> A Signature column, to sign in at the door</label>
+					<p class="muted mail-help">A new Google Doc on the RoQTeam letterhead, like the board’s decisions: the logo, the address and the CIF, the title, then everyone in alphabetical order (the last name in capitals) with their university or company, and “Întocmit” with the date at the end. It goes in the Drive folder “BreaQ 2026 conference lists”, which the sheet’s editors can open; Word and PDF are its downloads, and it can be changed like any doc. The answers given on the confirmation page are brought in first.</p>
+					<div class="bform-actions">
+						<button type="submit" class="btn primary" id="list-go">Make the Google Doc</button>
+					</div>
+				</form>
+				<div id="list-body" aria-live="polite"></div>
+			</dialog>
+
 			<!-- opened with the shared key: who is reading, so that the grades go in their name -->
 			<dialog class="detail who-dlg" id="who-dlg" aria-labelledby="who-h">
 				<h2 id="who-h">Who are you?</h2>
@@ -616,6 +644,6 @@
 
 		</main>
 
-		<script src="assets/js/admin.js?v=20261101"></script>
+		<script src="assets/js/admin.js?v=20261101b"></script>
 	</body>
 </html>

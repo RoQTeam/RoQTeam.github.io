@@ -85,6 +85,29 @@ Switching it on: put `config.php` in `~/breaq-data` by FTP and upload `api/confi
 
 Sending, from the editor's function list: `previewConferenceAsk` logs who would get it, `sendConferenceAskSample` sends the email to the organisers in `CONF_SAMPLES_TO`, and `sendConferenceAsk` emails each of them once ("conference coming-or-not email sent" in "Emails"), leaving out whoever answered already. It stops before the day's emails run out, keeping 10 for new registrations: run it again the next day for the rest. The admin page does the same for the people selected (**Email them…** → *Conference: coming?*): click the tile *Conference: still to ask*, select everyone in the list, then send. In an email written on the admin page, `{confirm}` becomes each person's link to the page, for the email to everyone on 4 November. The wording is `confAskEmail_` in `tools/register-backend.gs`.
 
+## The conference: the list of participants
+
+On the admin page, the conference view has **Conference list (Google Doc)** next to *Download CSV*. It makes a new Google Doc in the format of the association's documents (the board's decisions):
+
+- **Header:** the RoQTeam logo, the address and the CIF, on every page.
+- **Title:** "ASOCIAȚIA ROQTEAM", "LISTA PARTICIPANȚILOR", "BreaQ Conference, 14 noiembrie 2026", then a sentence on who is on it.
+- **Table:** everyone in alphabetical order, as "IONIȚĂ Alexandru", with their university or company. A *Semnătura* column, to sign in at the door, is optional.
+- **End:** the place and date, then *Întocmit* with the president.
+
+You choose who is on it:
+
+- **All but "cannot come"** (the default)
+- **Coming**: those who said yes on the confirmation page
+- **Everyone registered**
+
+The answers from the confirmation page are brought in first. Someone registered twice under the same name is listed once.
+
+Each list goes in the Drive folder "BreaQ 2026 conference lists" of the account that runs the script. The folder is shared with the sheet's editors, so they can open the list as well.
+
+Word and PDF are the doc's own downloads (the links the page shows, or File → Download). Page numbers are not set by the script: Google does not allow it, so use Insert → Page numbers in the doc if you want them.
+
+**Setup:** the letterhead is `LETTERHEAD` in `tools/register-backend.gs`. Its logo is `images/roqteam_letterhead.png` on roqteam.ro, and until that is uploaded the site's `roqteam_logo.png` is used. After pasting the script, run `conferenceList` once from the editor's function list. Google asks for permission to make Google Docs, and the log has the link of a first list. Then deploy a new version for the button.
+
 ## Admin page
 
 `admin.html` (roqteam.ro/admin) shows the registrations for the organisers: counts, registrations per day, what people answered (status, experience, tracks, T-shirts, universities, dietary needs) and the full list, searchable, with every registration in full, the emails to copy into Bcc and a CSV download. It reads the sheet through the same Apps Script, which answers only to the admin key or an organiser's own key.

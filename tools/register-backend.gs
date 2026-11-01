@@ -170,6 +170,13 @@
  * The admin page sends the same email to the people picked ("Conference: coming?"), and {confirm} in an email written
  * there becomes each one's link to the page. The wording is in confAskEmail_.
  *
+ * The conference's list of participants: the admin page's "Conference list (Google Doc)" makes a new Google Doc, on the
+ * association's letterhead (LETTERHEAD), with those registered in alphabetical order: those coming, everyone but
+ * those who cannot come, or everyone, with or without a column to sign at the door. Each goes in the Drive folder
+ * CONF_LISTS_FOLDER, shared with the sheet's editors; Word and PDF are a click away (the doc's own downloads). After
+ * pasting the version that has it, pick "conferenceList" in the editor's function list and press Run once: Google
+ * asks for permission to make Google Docs, and the log has the link of a first list.
+ *
  * Certificates: after the event, the admin page sends each accepted participant checked in at the door a PDF
  * certificate (the "Certificate" column records it), made from a Google Slides template. Pick
  * "certificateTemplate" in the editor's function list and press Run once: it asks for permission to use Slides,
@@ -412,6 +419,22 @@ var CONF_ASK_BEFORE = "2026-10-24T00:00:00+03:00"; // those registered before 24
 var CONF_STARTS = "2026-11-14T09:00:00+02:00"; // the page takes answers until then
 var CONF_ASK_LOG = "conference coming-or-not email"; // how the Emails column records it
 var CONF_SAMPLES_TO = ["andrei@mcnu.ro", "filipceara@gmail.com", "cristian.ilie@roqteam.ro"]; // sendConferenceAskSample
+
+// the conference's list of participants, a Google Doc on the association's letterhead (confList_)
+var CONF_LISTS_FOLDER = "BreaQ 2026 conference lists"; // Drive folder, created on first use, shared with the sheet's editors
+var LETTERHEAD = {
+  logo: [SITE + "/images/roqteam_letterhead.png", SITE + "/images/roqteam_logo.png"], // the first that loads
+  name: "ASOCIAȚIA ROQTEAM",
+  address: "Mun. București, str. Vlaicu Vodă, nr. 11, bl. V62, sc. 2, parter, ap. 21, sector 3",
+  cif: "54993019",
+  signs: "IONIȚĂ Alexandru - Președinte", // under "Întocmit," at the end of the list
+};
+// who is on it: the admin page's choice -> the file name's note and what the doc says of them (one person, more)
+var CONF_LIST_WHO = {
+  yes: { file: "confirmați", text: [" care și-a confirmat participarea", " care și-au confirmat participarea"] },
+  notno: { file: "fără cei care nu vin", text: [" care nu și-a anulat participarea", " care nu și-au anulat participarea"] },
+  all: { file: "toți înscrișii", text: ["", ""] },
+};
 
 // run once from the editor: asks for Drive access and creates the letters folder
 function setup() {
@@ -682,6 +705,7 @@ function doPost(e) {
     "screen-key",
     "screen-flash",
     "photo-review",
+    "conference-list",
   ];
   if (ADMIN_ACTIONS.indexOf(data.action) !== -1) {
     // an exception here would make Apps Script answer with an HTML error page: send the admin page the reason instead
@@ -710,6 +734,7 @@ function doPost(e) {
       if (data.action === "screen-key") return json_(screenKeySet_(data));
       if (data.action === "screen-flash") return json_(flashSet_(data));
       if (data.action === "photo-review") return json_(photoReview_(data));
+      if (data.action === "conference-list") return json_(confList_(data));
       return json_(list_(data.key));
     } catch (err) {
       console.error(data.action + " failed: " + err);
@@ -4064,6 +4089,229 @@ function confAskEmail_(p) {
     button: { label: "Coming or not", href: CONF_PAGE + "#code=" + dashboardCode_(p.email) },
     sign: "Thank you,",
   };
+}
+
+/* --- the conference: the list of participants, as a Google Doc ------------------------------------- */
+
+// admin.html: the people registered for the conference, in alphabetical order, as a new Google Doc on the
+// association's letterhead (LETTERHEAD: the logo, the address and the CIF on every page; Arial, A4), as its board's
+// decisions are. data.who: "yes" those who said they are coming, "notno" everyone but those who said they cannot
+// (the default), "all" everyone registered; data.signature: false leaves out the column to sign in at the door.
+// The doc goes in CONF_LISTS_FOLDER; Word and PDF are the doc's own downloads (the links answered).
+function confList_(data) {
+  var who = CONF_LIST_WHO[data.who] ? data.who : "notno";
+  confPull_(); // the answers given on roqteam.ro, so that "coming" is today's
+  var values = sheet_().getDataRange().getValues();
+  var header = header_(values);
+  var people = [];
+  var seen = {};
+  var twice = 0;
+  for (var i = 1; i < values.length; i++) {
+    var r = toRecord_(header, values[i]);
+    if (eventKey_(r["Attends"]) !== "conference") continue;
+    var said = comingOf_(r["Coming"]);
+    if (who === "yes" ? said !== "yes" : who === "notno" && said === "no") continue;
+    var last = listName_(r["Last name"], true);
+    var first = listName_(r["First name"], false);
+    if (!last && !first) continue;
+    // the same name twice (two registrations with two emails): once on the list
+    var k = nameKey_(first, last);
+    if (seen[k]) {
+      twice++;
+      continue;
+    }
+    seen[k] = true;
+    people.push({ last: last, first: first, org: listName_(r["University or company"], null) });
+  }
+  people.sort(function (a, b) {
+    return a.last.localeCompare(b.last, "ro") || a.first.localeCompare(b.first, "ro");
+  });
+  if (!people.length)
+    return {
+      ok: false,
+      action: "conference-list",
+      error: who === "yes" ? "Nobody has said yes yet: no list to make." : "Nobody is registered for the conference: no list to make.",
+    };
+
+  var doc = confListDoc_(people, who, data.signature !== false);
+  var id = doc.getId();
+  var folder = listsFolder_();
+  DriveApp.getFileById(id).moveTo(folder);
+  return {
+    ok: true,
+    action: "conference-list",
+    name: doc.getName(),
+    count: people.length,
+    twice: twice,
+    url: doc.getUrl(),
+    word: "https://docs.google.com/document/d/" + id + "/export?format=docx",
+    pdf: "https://docs.google.com/document/d/" + id + "/export?format=pdf",
+    folder: folder.getUrl(),
+  };
+}
+
+// run from the editor once, after pasting this version: Google asks for permission to make Google Docs, then the log
+// has the link of a list of everyone registered (the admin page's button makes the others)
+function conferenceList() {
+  var r = confList_({ who: "notno" });
+  Logger.log(r.ok ? r.count + " people: " + r.url + "\nThe lists folder: " + r.folder : r.error);
+}
+
+// a name or an institution as it goes on an official list: the spaces tidied, ş and ţ (with a cedilla) as ș and ț,
+// a last name (upper: true) in capitals as "IONIȚĂ Alexandru", a first name typed all in small letters or all in
+// capitals with its initial up ("ana - MARIA" -> "Ana-Maria", "McLean" stays); upper null (an institution) leaves it
+// as typed
+function listName_(s, upper) {
+  s = String(s || "")
+    .replace(/ş/g, "ș").replace(/Ş/g, "Ș").replace(/ţ/g, "ț").replace(/Ţ/g, "Ț")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (upper === null) return s;
+  s = s.replace(/\s*-\s*/g, "-");
+  if (upper) return s.toUpperCase();
+  return s.replace(/[^\s\-'’]+/g, function (w) {
+    if (w !== w.toLowerCase() && w !== w.toUpperCase()) return w;
+    return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+  });
+}
+
+// "1 persoană înscrisă", "5 persoane înscrise", "20 de persoane înscrise": Romanian takes "de" from 20 up (101 none)
+function roCount_(n, one, many) {
+  if (n === 1) return "o " + one;
+  var rest = n % 100;
+  return n + (rest === 0 || rest >= 20 ? " de " : " ") + many;
+}
+
+// the doc itself: the letterhead in the header, the title as the board's decisions have it, a sentence on who is on
+// it, the table, then who drew it up
+function confListDoc_(people, who, signature) {
+  var tz = "Europe/Bucharest";
+  var now = new Date();
+  var doc = DocumentApp.create(
+    "BreaQ Conference - lista participanților (" + CONF_LIST_WHO[who].file + ") - " + Utilities.formatDate(now, tz, "yyyy-MM-dd HH:mm"),
+  );
+  var CENTER = DocumentApp.HorizontalAlignment.CENTER;
+  var body = doc.getBody();
+  body.setPageWidth(595.28).setPageHeight(841.89); // A4
+  body.setMarginTop(72).setMarginBottom(72).setMarginLeft(72).setMarginRight(72);
+
+  // the letterhead, on every page: the logo, then the address and the CIF in small letters
+  var head = doc.addHeader();
+  var logo = head.getNumChildren() ? head.getChild(0).asParagraph() : head.appendParagraph("");
+  logo.setAlignment(CENTER).setSpacingBefore(0).setSpacingAfter(2);
+  var img = letterheadLogo_();
+  if (img) logo.appendInlineImage(img).setWidth(69).setHeight(69);
+  [LETTERHEAD.address, "CIF: " + LETTERHEAD.cif].forEach(function (t) {
+    head.appendParagraph(t).setAlignment(CENTER).setSpacingBefore(0).setSpacingAfter(0).setLineSpacing(1)
+      .editAsText().setFontFamily("Arial").setFontSize(8).setBold(false);
+  });
+
+  // parts: [[text, bold], ...]; o: { size, align, before, after, indent, justify }
+  var first = true;
+  function para(parts, o) {
+    o = o || {};
+    var p = first ? body.getChild(0).asParagraph() : body.appendParagraph("");
+    first = false;
+    p.setHeading(DocumentApp.ParagraphHeading.NORMAL)
+      .setAlignment(o.align || (o.justify ? DocumentApp.HorizontalAlignment.JUSTIFY : DocumentApp.HorizontalAlignment.LEFT))
+      .setSpacingBefore(o.before || 0).setSpacingAfter(o.after || 0).setLineSpacing(o.line || 1.05)
+      .setIndentFirstLine(o.indent || 0);
+    var text = parts.map(function (x) { return x[0]; }).join("");
+    if (!text) return p;
+    p.setText(text);
+    var t = p.editAsText().setFontFamily("Arial").setFontSize(o.size || 11).setBold(false);
+    var at = 0;
+    parts.forEach(function (x) {
+      if (x[1] && x[0]) t.setBold(at, at + x[0].length - 1, true);
+      at += x[0].length;
+    });
+    return p;
+  }
+
+  para([[LETTERHEAD.name, true]], { size: 19, align: CENTER });
+  para([["LISTA PARTICIPANȚILOR", true]], { size: 15, align: CENTER });
+  para([["BreaQ Conference, 14 noiembrie 2026", true]], { align: CENTER, after: 9 });
+  para([[""]], { after: 12 });
+  para(
+    [
+      ["Asociația ROQTEAM organizează "],
+      ["BreaQ Conference", true],
+      [" în data de "],
+      ["14 noiembrie 2026", true],
+      [", la Academia Tehnică Militară „Ferdinand I” din București. Lista de mai jos cuprinde, în ordine alfabetică, "],
+      [roCount_(people.length, "persoană înscrisă", "persoane înscrise"), true],
+      [" la conferință" + CONF_LIST_WHO[who].text[people.length === 1 ? 0 : 1] + "."],
+    ],
+    { justify: true, indent: 21, after: 10, line: 1.15 },
+  );
+
+  var cells = [["Nr. crt.", "Nume și prenume", "Instituția / compania"].concat(signature ? ["Semnătura"] : [])].concat(
+    people.map(function (p, n) {
+      return [n + 1 + ".", p.last + " " + p.first, p.org].concat(signature ? [""] : []);
+    }),
+  );
+  var table = body.appendTable(cells);
+  table.setBorderWidth(0.5).setBorderColor("#000000");
+  // A4 less the margins: 451 points
+  (signature ? [40, 160, 156, 95] : [40, 190, 221]).forEach(function (w, c) {
+    table.setColumnWidth(c, w);
+  });
+  table.editAsText().setFontFamily("Arial").setFontSize(10).setBold(false);
+  for (var r = 0; r < table.getNumRows(); r++) {
+    var row = table.getRow(r);
+    if (signature && r) row.setMinimumHeight(26);
+    row.getCell(0).getChild(0).asParagraph().setAlignment(CENTER);
+    if (r) continue;
+    for (var c = 0; c < row.getNumCells(); c++) {
+      row.getCell(c).setBackgroundColor("#f2f2f2").editAsText().setBold(true);
+    }
+  }
+
+  para([["București, " + Utilities.formatDate(now, tz, "dd.MM.yyyy")]], { before: 18, after: 24 });
+  var sign = body.appendTable([["Întocmit,", "Semnătura"], [LETTERHEAD.signs, ""]]);
+  sign.setBorderWidth(0);
+  sign.setColumnWidth(0, 300).setColumnWidth(1, 151);
+  sign.editAsText().setFontFamily("Arial").setFontSize(11).setBold(false);
+  sign.getRow(0).editAsText().setFontSize(12).setBold(true);
+  sign.getRow(0).getCell(1).getChild(0).asParagraph().setAlignment(DocumentApp.HorizontalAlignment.RIGHT);
+  doc.saveAndClose();
+  return doc;
+}
+
+// the logo for the letterhead, from the site: null when none loads (the list goes without it)
+function letterheadLogo_() {
+  for (var i = 0; i < LETTERHEAD.logo.length; i++) {
+    try {
+      var res = UrlFetchApp.fetch(LETTERHEAD.logo[i], { muteHttpExceptions: true });
+      if (res.getResponseCode() === 200) return res.getBlob();
+    } catch (err) {
+      console.error("letterhead logo " + LETTERHEAD.logo[i] + ": " + err);
+    }
+  }
+  return null;
+}
+
+// CONF_LISTS_FOLDER, shared with whoever can edit the sheet (once each), so that the organisers open the lists too
+function listsFolder_() {
+  var folder = folderNamed_(CONF_LISTS_FOLDER);
+  try {
+    var have = {};
+    folder.getEditors().concat([folder.getOwner()]).forEach(function (u) {
+      if (u) have[String(u.getEmail()).toLowerCase()] = true;
+    });
+    var add = SpreadsheetApp.getActiveSpreadsheet()
+      .getEditors()
+      .map(function (u) {
+        return String(u.getEmail()).toLowerCase();
+      })
+      .filter(function (e) {
+        return e && !have[e];
+      });
+    if (add.length) folder.addEditors(add);
+  } catch (err) {
+    console.error("the lists folder is not shared: " + err);
+  }
+  return folder;
 }
 
 /* --- the teams --------------------------------------------------------- */

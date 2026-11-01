@@ -2974,6 +2974,23 @@ input[type="checkbox"] {
 		margin-top: 22px;
 	}
 
+/* the conference's list of participants (a Google Doc) */
+.list-who {
+	flex-wrap: wrap;
+}
+
+	.list-who .n {
+		margin-left: 4px;
+		opacity: 0.65;
+	}
+
+.list-links {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin: 6px 0 12px;
+}
+
 		.mail-subject {
 			font-weight: 600;
 		}
