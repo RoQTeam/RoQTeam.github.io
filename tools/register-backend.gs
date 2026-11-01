@@ -166,7 +166,7 @@
  *   - previewConferenceAsk: logs who would get it. Sends nothing.
  *   - sendConferenceAsk: emails each of them, once (CONF_ASK_LOG in "Emails"), those who answered already left out.
  *     It stops at the day's emails as sendHackingTeams does: run it again the next day for the rest.
- *   - sendConferenceAskSample: sends you (and SAMPLES_TO) the email, to read first.
+ *   - sendConferenceAskSample: sends the email to CONF_SAMPLES_TO, to read first.
  * The admin page sends the same email to the people picked ("Conference: coming?"), and {confirm} in an email written
  * there becomes each one's link to the page. The wording is in confAskEmail_.
  *
@@ -411,6 +411,7 @@ var CONF_API = SITE + "/api/confirm.php";
 var CONF_ASK_BEFORE = "2026-10-24T00:00:00+03:00"; // those registered before 24 October are asked
 var CONF_STARTS = "2026-11-14T09:00:00+02:00"; // the page takes answers until then
 var CONF_ASK_LOG = "conference coming-or-not email"; // how the Emails column records it
+var CONF_SAMPLES_TO = ["andrei@mcnu.ro", "filipceara@gmail.com", "cristian.ilie@roqteam.ro"]; // sendConferenceAskSample
 
 // run once from the editor: asks for Drive access and creates the letters folder
 function setup() {
@@ -3894,15 +3895,10 @@ function sendConferenceAsk() {
   confAsk_(true);
 }
 
-// run from the editor: the email, to read first. It goes to the addresses in the CONF_SAMPLES_TO script property
-// (Project Settings -> Script properties, separated by commas; kept there, not here, as this file is public), else to
-// the account running it and SAMPLES_TO. Each gets their own, its button with their own code: it opens their page
-// only if that address is registered for the conference (the log says whose do).
+// run from the editor: the email, to read first, to each of CONF_SAMPLES_TO. Each gets their own, its button with
+// their own code: it opens their page only if that address is registered for the conference (the log says whose do).
 function sendConferenceAskSample() {
-  var listed = PropertiesService.getScriptProperties().getProperty("CONF_SAMPLES_TO");
-  var to = unique_(String(listed || sampleTo_()).split(/[,;\s]+/)).map(function (e) {
-    return e.toLowerCase();
-  });
+  var to = CONF_SAMPLES_TO;
   var values = sheet_().getDataRange().getValues();
   var header = header_(values);
   var registered = {};
