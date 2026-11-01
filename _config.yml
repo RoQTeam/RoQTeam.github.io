@@ -1,6 +1,8 @@
 # GitHub Pages (roqteam.github.io) builds this repository with Jekyll. Left out of that site: what is here for the
-# organisers, not for visitors (the Apps Script and the other tools, the notes). roqteam.ro keeps them out with .htaccess.
+# organisers, not for visitors (the Apps Script and the other tools, the notes), and api/ (PHP, which GitHub Pages does
+# not run: confirm.html works on roqteam.ro). roqteam.ro keeps the tools and notes out with .htaccess.
 exclude:
+  - api
   - tools
   - README.md
   - QFF24_main/README.md

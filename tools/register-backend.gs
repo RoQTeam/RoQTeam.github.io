@@ -154,6 +154,22 @@
  *   - a feedback form after the awards: the answers go in FEEDBACK_SHEET without names
  * The check-in at the door is a view of the admin page: it fills "Checked in".
  *
+ * The conference: are you coming? Those who registered for the conference before CONF_ASK_BEFORE (24 October) get
+ * an email that says they are registered and asks whether they are coming. Its button opens confirm.html
+ * (roqteam.ro/confirm) with their code (the dashboard code of their email, so it needs no column): there one click
+ * answers yes or no, as often as they change their mind, until the conference starts (CONF_STARTS). So that the
+ * answer is saved at once, the page talks to roqteam.ro itself (api/confirm.php, SQLite), not to this script:
+ * confSync_ sends it the conference registrations (hashes of their emails and codes, their first names) before every
+ * email that carries the link, and brings the answers back into the conference row's "Coming" and "Coming answered"
+ * whenever the admin page loads (and before the sends). It needs the CONF_SYNC_KEY script property, the same key as
+ * on the server; "confSync" in the editor's function list does both at once. From the editor's function list:
+ *   - previewConferenceAsk: logs who would get it. Sends nothing.
+ *   - sendConferenceAsk: emails each of them, once (CONF_ASK_LOG in "Emails"), those who answered already left out.
+ *     It stops at the day's emails as sendHackingTeams does: run it again the next day for the rest.
+ *   - sendConferenceAskSample: sends you (and SAMPLES_TO) the email, to read first.
+ * The admin page sends the same email to the people picked ("Conference: coming?"), and {confirm} in an email written
+ * there becomes each one's link to the page. The wording is in confAskEmail_.
+ *
  * Certificates: after the event, the admin page sends each accepted participant checked in at the door a PDF
  * certificate (the "Certificate" column records it), made from a Google Slides template. Pick
  * "certificateTemplate" in the editor's function list and press Run once: it asks for permission to use Slides,
@@ -388,6 +404,13 @@ var FEEDBACK_RATINGS = { rChallenge: "Challenge rating", rMentors: "Mentors", rO
 var CERTIFICATES_FOLDER = "BreaQ 2026 certificates"; // Drive folder with a copy of each certificate sent
 var EVENT_DATES = "24–25 October 2026";
 var EVENT_END = "2026-10-25T14:00:00+02:00"; // the end of the awards: a team sees its place on the dashboard from then
+
+// the conference: are you coming? (confAsk_; the answers are kept on roqteam.ro, confSync_)
+var CONF_PAGE = SITE + "/confirm";
+var CONF_API = SITE + "/api/confirm.php";
+var CONF_ASK_BEFORE = "2026-10-24T00:00:00+03:00"; // those registered before 24 October are asked
+var CONF_STARTS = "2026-11-14T09:00:00+02:00"; // the page takes answers until then
+var CONF_ASK_LOG = "conference coming-or-not email"; // how the Emails column records it
 
 // run once from the editor: asks for Drive access and creates the letters folder
 function setup() {
@@ -1408,15 +1431,17 @@ function decisionsLocked_(send) {
 }
 
 // how many of the day's emails a send leaves for new registrations: none once registration has closed
+// while either registration is open (the conference's until the end of 5 November), its confirmations come first
 function reserve_() {
-  return Date.now() < Date.parse(REGISTRATION_CLOSES) ? DECISION_RESERVE : 0;
+  return Date.now() < Math.max(Date.parse(REGISTRATION_CLOSES), Date.parse(CONFERENCE_CLOSES)) ? DECISION_RESERVE : 0;
 }
 
 /* --- emails to the people picked on the admin page ------------------------------- */
 
 // what the admin page can send the people picked in it: the decision emails (which set the Decision too, so the
-// dashboard, the regular send and the page agree), the registration's confirmation again, or one written there
-var MAIL_KINDS = ["accepted", "waitlist", "denied", "confirmation", "custom", "eve"];
+// dashboard, the regular send and the page agree), the registration's confirmation again, the day before the
+// hackathon, the conference's "are you coming?" (confAskEmail_), or one written there
+var MAIL_KINDS = ["accepted", "waitlist", "denied", "confirmation", "custom", "eve", "conference"];
 var MAIL_TEXT_MAX = 5000;
 var MAIL_SUBJECT_MAX = 150;
 
@@ -1460,6 +1485,18 @@ function mail_(data) {
       error: "Someone else is sending emails from this script right now. Wait a minute, then try again.",
     };
   try {
+    // an email with the link to confirm.html: roqteam.ro has to know them first, or the link would not open
+    if (data.send && !opts.record && (kind === "conference" || /\{confirm\}/i.test(opts.subject + "\n" + opts.body))) {
+      try {
+        confSync_(true);
+      } catch (err) {
+        return {
+          ok: false,
+          action: "mail",
+          error: "Nothing sent: the answers page on roqteam.ro did not take the list of registrations (" + err + ").",
+        };
+      }
+    }
     return mailLocked_(kind, emails, opts, !!data.send);
   } finally {
     if (lock) lock.releaseLock();
@@ -1573,6 +1610,30 @@ function mailLocked_(kind, emails, opts, send) {
       }
       return;
     }
+    if (kind === "conference") {
+      // their conference registration: the email goes to its address, and the page opens it
+      var conf = rows.filter(function (x) {
+        return x.ev === "conference";
+      })[0];
+      var ask = add(email, conf || rows[0]);
+      if (!conf) {
+        ask.status = "skipped";
+        ask.note = "not registered for the conference";
+        return;
+      }
+      var said = comingOf_(conf.r["Coming"]);
+      if (said) {
+        ask.status = "skipped";
+        ask.note = "answered already: " + (said === "yes" ? "coming" : "cannot come");
+        return;
+      }
+      if (ms_(conf.r["Timestamp"]) >= Date.parse(CONF_ASK_BEFORE) && isDate_(conf.r["Timestamp"]))
+        ask.note =
+          "registered " + Utilities.formatDate(conf.r["Timestamp"], Session.getScriptTimeZone(), "d MMM") +
+          ", on 24 October or after";
+      if (!opts.again && String(conf.r["Emails"]).indexOf(CONF_ASK_LOG + " sent") !== -1) ask.status = "sent before";
+      return;
+    }
     var mine = add(email, rows[0]);
     mine.note = trackless(rows[0].r, opts.subject + "\n" + opts.body);
     mine.warn = !!mine.note;
@@ -1590,6 +1651,7 @@ function mailLocked_(kind, emails, opts, send) {
     }
     if (kind === "confirmation") return confirmationEmail_({ first_name: first, attend: String(r["Attends"]).trim() }, null);
     if (kind === "eve") return eveEmail_(r);
+    if (kind === "conference") return renderEmail_(first, confAskEmail_({ name: first, email: String(r["Email"]).trim() }));
     return renderEmail_(first, {
       subject: fill_(opts.subject, r),
       heading: "Hi " + first + ",",
@@ -1656,7 +1718,13 @@ function mailLocked_(kind, emails, opts, send) {
         var had = String(r["Emails"]).trim();
         r["Emails"] = emailsWith_(
           had,
-          (kind === "confirmation" ? "confirmation" : kind === "eve" ? EVE_LOG : "email “" + opts.subject + "”") + how,
+          (kind === "confirmation"
+            ? "confirmation"
+            : kind === "eve"
+              ? EVE_LOG
+              : kind === "conference"
+                ? CONF_ASK_LOG
+                : "email “" + opts.subject + "”") + how,
         );
         sheet.getRange(it.x.row, col("Emails")).setValue(cellFor_("Emails", r["Emails"]));
       }
@@ -1688,8 +1756,8 @@ function mailLocked_(kind, emails, opts, send) {
   };
 }
 
-// {first name}, {name}, {track} (the one they were given) and {dashboard} (the link with their code) in what the
-// organisers write, each person's own
+// {first name}, {name}, {track} (the one they were given), {dashboard} (the link with their code) and {confirm} (their
+// page to say whether they are coming to the conference) in what the organisers write, each person's own
 function fill_(s, r) {
   var email = String(r["Email"]).trim().toLowerCase();
   var put = function (v) {
@@ -1703,6 +1771,9 @@ function fill_(s, r) {
     .replace(/\{track\}/gi, put(String(r["Hackathon track"] || "").trim()))
     .replace(/\{dashboard\}/gi, function () {
       return TEAMS_PAGE + "#code=" + dashboardCode_(email);
+    })
+    .replace(/\{confirm\}/gi, function () {
+      return CONF_PAGE + "#code=" + dashboardCode_(email);
     });
 }
 
@@ -3010,6 +3081,7 @@ function digest_(bytes) {
 // admin.html: every row of the sheet, the header row first, for whoever sends the admin key
 function list_(key) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
+  confPull_(); // the conference's answers given on roqteam.ro, into "Coming"
   var sheet = sheet_(); // with the headers of any column added since the sheet was made
   var values = sheet.getDataRange().getValues();
   // the dashboard code of each accepted participant, by email, for the admin page's full view
@@ -3420,12 +3492,13 @@ function codeSecret_() {
 }
 
 // someone's dashboard code: eight letters and digits in two groups, without 0/O, 1/I/L, the same for the same
-// email every time (so it needs no column), and not guessable without the secret
-function dashboardCode_(email) {
+// email every time (so it needs no column), and not guessable without the secret. secret: codeSecret_(), read once
+// by whoever makes many codes in a row
+function dashboardCode_(email, secret) {
   var abc = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
   var bytes = Utilities.computeHmacSha256Signature(
     String(email || "").trim().toLowerCase(),
-    codeSecret_(),
+    secret || codeSecret_(),
   );
   var code = "";
   for (var i = 0; i < 8; i++) code += abc.charAt(((bytes[i] + 256) % 256) % abc.length);
@@ -3700,6 +3773,279 @@ function coming_(who, data) {
     lock.releaseLock();
   }
   return { ok: true, action: "coming", me: meOf_(who) };
+}
+
+/* --- the conference: are you coming? ---------------------------------------------------- */
+
+// The answers live on roqteam.ro (api/confirm.php, with SQLite), so that a yes or a no on confirm.html is saved at
+// once, without Google in between. This sends it, with withPeople, everyone registered for the conference (a hash of
+// each one's email, their first name, the SHA-256 of their codes, the answer the sheet has), so that their links open
+// there; and either way brings the answers given there back into "Coming" and "Coming answered", where the sheet's
+// is older. The key is the CONF_SYNC_KEY script property, the same as sync_key in ~/breaq-data/config.php on the
+// server. Returns { people, answers, written }; throws with the reason when the server cannot be reached.
+function confSync_(withPeople) {
+  var key = PropertiesService.getScriptProperties().getProperty("CONF_SYNC_KEY");
+  if (!key)
+    throw new Error("CONF_SYNC_KEY is not set: Project Settings -> Script properties, the same key as on the server");
+  var values = sheet_().getDataRange().getValues();
+  var header = header_(values);
+  var secret = codeSecret_();
+  var people = [];
+  for (var i = 1; withPeople && i < values.length; i++) {
+    var r = toRecord_(header, values[i]);
+    var emails = emailsOf_(r);
+    if (eventKey_(r["Attends"]) !== "conference" || !emails.length) continue;
+    people.push({
+      p: sha256Hex_(emails[0]),
+      n: String(r["First name"]).trim(),
+      c: emails.map(function (e) {
+        return sha256Hex_(codeKey_(dashboardCode_(e, secret)));
+      }),
+      coming: comingOf_(r["Coming"]),
+      at: ms_(r["Coming answered"]),
+    });
+  }
+  var res = UrlFetchApp.fetch(CONF_API, {
+    method: "post",
+    contentType: "application/json",
+    payload: JSON.stringify({ action: "sync", key: key, people: people }),
+    muteHttpExceptions: true,
+  });
+  var json = null;
+  try {
+    json = JSON.parse(res.getContentText());
+  } catch (err) {}
+  if (!json) throw new Error(CONF_API + " answered " + res.getResponseCode() + ", not what it should");
+  if (!json.ok) throw new Error(CONF_API + ": " + json.error);
+
+  // the answers, into the sheet: read again under the lock, so that the rows are where they are now
+  var answers = json.answers || [];
+  var written = 0;
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    var sheet = sheet_();
+    values = sheet.getDataRange().getValues();
+    header = header_(values);
+    var cComing = header.indexOf("Coming");
+    var cAt = header.indexOf("Coming answered");
+    var rowOf = {}; // a hash of each email of a conference registration -> its sheet row (1-based)
+    for (var j = 1; answers.length && j < values.length; j++) {
+      var t = toRecord_(header, values[j]);
+      if (eventKey_(t["Attends"]) !== "conference") continue;
+      emailsOf_(t).forEach(function (e) {
+        rowOf[sha256Hex_(e)] = j + 1;
+      });
+    }
+    answers.forEach(function (a) {
+      var row = rowOf[a.p];
+      var said = comingOf_(a.coming);
+      if (!row || !said) return;
+      var have = values[row - 1];
+      var at = ms_(have[cAt]);
+      // the same answer, or a newer one in the sheet (typed there, with its time in "Coming answered")
+      if (comingOf_(have[cComing]) === said && Math.abs(at - a.at) < 1000) return;
+      if (comingOf_(have[cComing]) && at > a.at + 1000) return;
+      sheet.getRange(row, cComing + 1).setValue(said);
+      sheet.getRange(row, cAt + 1).setValue(a.at ? new Date(a.at) : "");
+      written++;
+    });
+  } finally {
+    lock.releaseLock();
+  }
+  return { people: json.people || 0, answers: answers.length, written: written };
+}
+
+// the answers given on roqteam.ro, into the sheet, for whoever reads it: never fails what it is called from
+function confPull_() {
+  try {
+    return confSync_(false);
+  } catch (err) {
+    console.error("conference answers not brought in: " + err);
+    return null;
+  }
+}
+
+function sha256Hex_(s) {
+  return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, String(s), Utilities.Charset.UTF_8)
+    .map(function (b) {
+      return ("0" + ((b + 256) % 256).toString(16)).slice(-2);
+    })
+    .join("");
+}
+
+// run from the editor: sends roqteam.ro everyone registered for the conference and brings its answers into the sheet.
+// The first run asks for permission to connect to an external service (roqteam.ro).
+function confSync() {
+  var r = confSync_(true);
+  Logger.log(
+    r.people + " conference registrations sent to roqteam.ro, " + r.answers + " answers there, " + r.written +
+      " of them written into the sheet now.",
+  );
+}
+
+// run from the editor: who would get the conference's "are you coming?" email. Sends nothing.
+function previewConferenceAsk() {
+  confAsk_(false);
+}
+
+// run from the editor: emails each conference registration from before CONF_ASK_BEFORE, once
+function sendConferenceAsk() {
+  confAsk_(true);
+}
+
+// run from the editor: the email to the account running it (and SAMPLES_TO), to read first
+function sendConferenceAskSample() {
+  var me = Session.getEffectiveUser().getEmail();
+  var to = sampleTo_();
+  var mail = renderEmail_("Ana", confAskEmail_({ name: "Ana", email: me }));
+  send_({
+    to: to,
+    subject: "[sample] " + mail.subject,
+    body: mail.text,
+    htmlBody: mail.html,
+    name: SENDER_NAME,
+    replyTo: REPLY_TO,
+  });
+  Logger.log(
+    "Sent the sample to " + to + ". Its button carries the code of " + me +
+      ", so the page opens only if that address is registered for the conference.",
+  );
+}
+
+// previewConferenceAsk and sendConferenceAsk: the conference registrations from before CONF_ASK_BEFORE that have
+// neither had the email (CONF_ASK_LOG in "Emails") nor answered; stops as hackingTeams_ does, at the day's emails and
+// well before Apps Script's 6 minutes. Returns { sent, failed, before, answered, later, left, stopped } for the tests.
+function confAsk_(send) {
+  var lock = send ? LockService.getDocumentLock() : null;
+  if (lock && !lock.tryLock(2000)) {
+    Logger.log("Someone else is sending emails from this script right now. Try again in a minute.");
+    return null;
+  }
+  try {
+    // the answers page on roqteam.ro first: it has to know everyone the email goes to, or their links would not open
+    if (send) {
+      try {
+        confSync_(true);
+      } catch (err) {
+        Logger.log("Nothing sent: roqteam.ro did not take the list of registrations (" + err + ").");
+        return null;
+      }
+    } else confPull_();
+    var started = Date.now();
+    var sheet = sheet_();
+    var values = sheet.getDataRange().getValues();
+    var header = header_(values);
+    var col = header.indexOf("Emails") + 1;
+    var cutoff = Date.parse(CONF_ASK_BEFORE);
+    var tz = Session.getScriptTimeZone();
+    var stamp = function () {
+      return Utilities.formatDate(new Date(), tz, "yyyy-MM-dd HH:mm");
+    };
+    var due = [];
+    var before = 0; // had it already
+    var answered = 0; // answered without it (typed in the sheet for someone who wrote to us)
+    var later = 0; // registered on 24 October or after
+    for (var i = 1; i < values.length; i++) {
+      var r = toRecord_(header, values[i]);
+      if (eventKey_(r["Attends"]) !== "conference" || !String(r["Email"]).trim()) continue;
+      if (ms_(r["Timestamp"]) >= cutoff) {
+        later++;
+        continue;
+      }
+      if (String(r["Emails"]).indexOf(CONF_ASK_LOG + " sent") !== -1) {
+        before++;
+        continue;
+      }
+      if (comingOf_(r["Coming"])) {
+        answered++;
+        continue;
+      }
+      due.push({
+        row: i + 1,
+        r: r,
+        name: String(r["First name"] + " " + r["Last name"]).trim(),
+        when: isDate_(r["Timestamp"]) ? Utilities.formatDate(r["Timestamp"], tz, "d MMM") : "",
+      });
+    }
+    var reserve = reserve_();
+    var sent = 0;
+    var failed = 0;
+    var stopped = "";
+    due.forEach(function (d) {
+      var p = { name: String(d.r["First name"]).trim(), email: String(d.r["Email"]).trim() };
+      var who = "Row " + d.row + " · " + d.name + " <" + p.email + ">" + (d.when ? " · registered " + d.when : "");
+      if (!send) {
+        Logger.log(who + " · to send");
+        return;
+      }
+      if (stopped) return;
+      var left = emailsLeft_();
+      if (left !== null && left <= reserve) stopped = "quota";
+      else if (Date.now() - started > 4.5 * 60 * 1000) stopped = "time";
+      if (stopped) return;
+      var mail = renderEmail_(p.name, confAskEmail_(p));
+      var note;
+      try {
+        var via = send_({
+          to: p.email,
+          subject: mail.subject,
+          body: mail.text,
+          htmlBody: mail.html,
+          name: SENDER_NAME,
+          replyTo: REPLY_TO,
+        });
+        note = CONF_ASK_LOG + " sent " + stamp() + " via " + via;
+        sent++;
+      } catch (err) {
+        note = CONF_ASK_LOG + " FAILED " + stamp() + ": " + err;
+        failed++;
+      }
+      sheet.getRange(d.row, col).setValue(cellFor_("Emails", emailsWith_(String(d.r["Emails"]).trim(), note)));
+      Logger.log(who + " · " + note);
+    });
+    var waiting = due.length - sent - failed;
+    var rest =
+      ", " + before + " sent before" +
+      (answered ? ", " + answered + " answered already" : "") +
+      ", " + later + " registered on 24 October or after (not asked)";
+    Logger.log(
+      send
+        ? sent + " sent, " + failed + " failed" + rest +
+            (stopped === "quota"
+              ? (reserve
+                  ? ". Stopped with " + reserve + " emails left for today, kept for new registrations"
+                  : ". Stopped: today's emails are used up") +
+                ": run sendConferenceAsk again tomorrow for the other " + waiting + "."
+              : stopped === "time"
+                ? ". Stopped before Apps Script's time limit: run sendConferenceAsk again for the other " + waiting + "."
+                : failed
+                  ? ". Run sendConferenceAsk again to retry the failed ones."
+                  : "")
+        : due.length + " to send" + rest + ". Run sendConferenceAsk to send them" +
+            (emailsLeft_() !== null ? " (" + emailsLeft_() + " emails left today, " + reserve + " of them kept for new registrations)" : "") +
+            ".",
+    );
+    return { sent: sent, failed: failed, before: before, answered: answered, later: later, left: send ? waiting : due.length, stopped: stopped };
+  } finally {
+    if (lock) lock.releaseLock();
+  }
+}
+
+// The conference's "are you coming?" email. p: { name, email (the button carries that email's code) }. Change the
+// wording here; sendConferenceAskSample shows the result.
+function confAskEmail_(p) {
+  return {
+    subject: "BreaQ Conference, 14 November: are you coming?",
+    heading: "Are you coming on 14 November, " + p.name + "?",
+    paras: [
+      "You are registered for the BreaQ Conference on Saturday 14 November, at the Military Technical Academy “Ferdinand I” in Bucharest: a day of talks on quantum computing, communication and sensing, free to attend.",
+      "The conference is less than two weeks away, and we would like to know whether you are still coming. The button below opens your own page, where one click answers yes or no. It helps us plan the day.",
+      "Plans changed? The same link changes your answer, until the morning of the conference. The programme and the practical details (the times, the room, how to get in) reach you by email closer to the day.",
+    ],
+    button: { label: "Coming or not", href: CONF_PAGE + "#code=" + dashboardCode_(p.email) },
+    sign: "Thank you,",
+  };
 }
 
 /* --- the teams --------------------------------------------------------- */

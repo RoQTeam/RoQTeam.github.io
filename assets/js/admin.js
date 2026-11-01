@@ -232,6 +232,32 @@
 		return null;
 	}
 
+	// a person's conference registration (null: only at the hackathon)
+	function confReg(p) {
+		for (var i = 0; i < p.regs.length; i++) if (p.regs[i].event === 'conference') return p.regs[i];
+		return null;
+	}
+
+	// the conference's "are you coming?": those registered before 24 October are asked by email (CONF_ASK_BEFORE and
+	// CONF_ASK_LOG in the Apps Script, sendConferenceAsk or "Conference: coming?" here), and answer on confirm.html in
+	// "Coming" (comingOf reads it, as for the hackathon)
+	var CONF_ASK_BEFORE = Date.parse('2026-10-24T00:00:00+03:00');
+	var CONF_ASKED = /conference coming-or-not email sent (\d{4}-\d\d-\d\d \d\d:\d\d)/;
+
+	function confAsked(c) { var m = CONF_ASKED.exec(get(c, 'Emails')); return m ? m[1] : ''; }
+
+	// still to ask: registered before 24 October, not emailed it, no answer
+	function confDue(c) { return (!c.time || c.time.getTime() < CONF_ASK_BEFORE) && !confAsked(c) && !comingOf(c); }
+
+	function confTag(c) {
+		var said = comingOf(c), asked = confAsked(c);
+		if (!said && !asked) return el('span', 'muted', confDue(c) ? 'Not asked yet' : '');
+		var t = el('span', 'ctag ctag-' + (said || 'none'), said ? COMING_LABEL[said] : 'Asked, no answer');
+		var at = get(c, 'Coming answered');
+		t.title = said && at && !isNaN(new Date(at)) ? 'Answered ' + fmtShort.format(new Date(at)) : asked ? 'Emailed ' + asked : '';
+		return t;
+	}
+
 	function decisionOf(r) {
 		var d = get(r, 'Decision').toLowerCase();
 		return DECISIONS.indexOf(d) !== -1 ? d : '';
@@ -1186,6 +1212,8 @@
 		}
 		box.appendChild(tile);
 
+		confTile(box, rs);
+
 		// the Quantum Hacking teams email without an answer: a button for the Team page filter, once it went out
 		var emailed = 0, silent = 0, answered = 0, denied = 0;
 		everyone.forEach(function (p) {
@@ -1214,6 +1242,38 @@
 			if (state.extra.tpage) $('people-h').scrollIntoView({ behavior: 'smooth', block: 'start' });
 		});
 		box.appendChild(qt);
+	}
+
+	// The conference's "are you coming?": while some are still to ask, how many (a click lists them, to select and
+	// email); once everyone was, who said yes (a click lists them). The rest on the line under it.
+	function confTile(box, rs) {
+		var conf = rs.filter(function (r) { return r.event === 'conference'; });
+		var n = function (test) { return conf.filter(test).length; };
+		var due = n(confDue);
+		var yes = n(function (r) { return comingOf(r) === 'yes'; });
+		var no = n(function (r) { return comingOf(r) === 'no'; });
+		var silent = n(function (r) { return !comingOf(r) && confAsked(r); });
+		if (!due && !yes && !no && !silent) return;
+		var v = due ? 'ask' : 'yes';
+		var t = el('button', 'tile tile--ask');
+		t.type = 'button';
+		t.id = 'conf-tile';
+		t.setAttribute('data-filter', v);
+		t.appendChild(el('span', 'tile-label', due ? 'Conference: still to ask' : 'Conference: coming'));
+		t.appendChild(el('span', 'tile-value', String(due ? due : yes)));
+		t.appendChild(el('span', 'tile-sub', (due ? yes + ' coming, ' : '') + no + ' cannot come, ' + silent + ' asked with no answer yet'));
+		t.title = due
+			? 'Registered for the conference before 24 October, not asked yet whether they are coming. Click to list only them, then select them all and email them “Conference: coming?”'
+			: 'Said on their page that they are coming to the conference. Click to list only them';
+		t.setAttribute('aria-pressed', String(state.extra.ccoming === v));
+		t.addEventListener('click', function () {
+			if (state.extra.ccoming === v) delete state.extra.ccoming;
+			else state.extra.ccoming = v;
+			if (state.extra.ccoming && state.event === 'hackathon') setEvent('conference');
+			else { renderMore(); renderFiltered(); }
+			if (state.extra.ccoming) $('people-h').scrollIntoView({ behavior: 'smooth', block: 'start' });
+		});
+		box.appendChild(t);
 	}
 
 	/* --- event switch and search ----------------------------------------- */
@@ -1560,6 +1620,15 @@
 				var c = comingOf(h);
 				return v === 'open' ? decisionOf(h) === 'accepted' && !c && !codeOff(h) : c === v;
 			} },
+		// conf: on the person's conference registration (and not in the hackathon view)
+		{ key: 'ccoming', label: 'Conference: coming', conf: true,
+			options: [['ask', 'Registered before 24 Oct, not asked yet'], ['asked', 'Asked, no answer yet'], ['yes', 'Coming'], ['no', 'Cannot come']],
+			test: function (c, v) {
+				var said = comingOf(c);
+				if (v === 'ask') return confDue(c);
+				if (v === 'asked') return !said && !!confAsked(c);
+				return said === v;
+			} },
 		{ key: 'checked', label: 'Checked in', hack: true,
 			options: [['yes', 'Yes'], ['no', 'Not yet']],
 			test: function (h, v) { return !!get(h, 'Checked in') === (v === 'yes'); } },
@@ -1593,7 +1662,12 @@
 	}
 
 	function extraOn(x) {
-		return !!state.extra[x.key] && (!x.when || x.when()) && !(x.hack && state.event === 'conference');
+		return !!state.extra[x.key] && (!x.when || x.when()) && !offEvent(x);
+	}
+
+	// a filter of the other event's registration
+	function offEvent(x) {
+		return (x.hack && state.event === 'conference') || (x.conf && state.event === 'hackathon');
 	}
 
 	function firstTime(p) {
@@ -1607,10 +1681,15 @@
 		if (state.query && p.text.indexOf(state.query) === -1) return false;
 		if (state.problems && !p.problem) return false;
 		if (!inTabs(p)) return false;
-		var h;
+		var h, c;
 		for (var i = 0; i < EXTRAS.length; i++) {
 			var x = EXTRAS[i];
 			if (!extraOn(x)) continue;
+			if (x.conf) {
+				c = c || confReg(p);
+				if (!c || !x.test(c, state.extra[x.key])) return false;
+				continue;
+			}
 			if (!x.hack) { if (!x.test(p, state.extra[x.key])) return false; continue; }
 			h = h || hackReg(p);
 			if (!h || !x.test(h, state.extra[x.key])) return false;
@@ -1652,6 +1731,8 @@
 	function renderChips() {
 		var qt = $('qh-silent');
 		if (qt) qt.setAttribute('aria-pressed', String(state.extra.tpage === 'qh'));
+		var ct = $('conf-tile');
+		if (ct) ct.setAttribute('aria-pressed', String(state.extra.ccoming === ct.getAttribute('data-filter')));
 		var box = $('chips');
 		box.textContent = '';
 		var chips = [];
@@ -1705,7 +1786,7 @@
 			grid.appendChild(f);
 		});
 		EXTRAS.forEach(function (x) {
-			if ((x.when && !x.when()) || (x.hack && state.event === 'conference')) return;
+			if ((x.when && !x.when()) || offEvent(x)) return;
 			var f = el('label', 'more-field');
 			f.appendChild(el('span', 'more-label', x.label));
 			var sel = el('select');
@@ -1835,6 +1916,16 @@
 				var td = el('td', 'hide-sm');
 				var h = hackReg(r);
 				if (h && decisionOf(h) === 'accepted') td.appendChild(comingTag(h));
+				return td;
+			} },
+		// the conference's: once someone was asked or answered, asked and no answer, or not asked yet
+		{ key: 'ccoming', label: 'Coming', cls: 'hide-sm',
+			when: function () { return state.event === 'conference' && state.records.some(function (r) { return r.event === 'conference' && (confAsked(r) || comingOf(r)); }); },
+			sort: function (r) { var c = confReg(r); return c ? (comingOf(c) ? ['yes', 'no'].indexOf(comingOf(c)) : confAsked(c) ? 2 : 3) : 9; },
+			cell: function (r) {
+				var td = el('td', 'hide-sm');
+				var c = confReg(r);
+				if (c) td.appendChild(confTag(c));
 				return td;
 			} },
 		{ key: 'letter', label: 'Letter', col: 'Motivation letter', cls: 'hide-sm',
@@ -3852,6 +3943,7 @@
 		confirmation: 'The “You are registered” email again, one for each event they registered for.',
 		custom: 'Your own email, in the look of ours: “Hi” and their first name at the top, your sign-off and RoQTeam at the end. Links starting with https:// can be clicked.',
 		eve: 'The last details before the hackathon, in a look of its own: their challenge, the schedule, how to find CAMPUS, the laptop and the WhatsApp group. Only the accepted get it (not those whose code is off); for those with no track, it leaves the challenge out.',
+		conference: 'For the conference: that they are registered, and are they coming? Its button opens their own page (roqteam.ro/confirm), where one click answers yes or no, saved at once; the answers show in the Coming column. Those not registered for the conference, and those who answered already, are left out. To pick whom to ask: the tile “Conference: still to ask”, or More filters → Conference: coming.',
 		link: 'For the accepted whose acceptance went out by hand, without their link (More filters → Dashboard link: Accepted, never emailed it): each one’s own team dashboard link, which signs them in, and the ask to press “I am coming” there. Change the text as you like; it goes out as one of your own.'
 	};
 
@@ -3916,7 +4008,7 @@
 		$('mail-custom').hidden = !written(mailKind);
 		$('mail-record-field').hidden = !decision;
 		$('mail-note-field').hidden = $('mail-mates-field').hidden = !decision || recording();
-		$('mail-fill').hidden = mailKind === 'confirmation' || mailKind === 'eve' || recording();
+		$('mail-fill').hidden = mailKind === 'confirmation' || mailKind === 'eve' || mailKind === 'conference' || recording();
 		$('mail-check').textContent = recording() ? 'Check who it records' : 'Check who gets it';
 	}
 
@@ -4013,6 +4105,7 @@
 		var can = typeof json.emailsLeft === 'number' ? Math.max(0, json.emailsLeft - json.reserve) : due.length;
 		mailLine('send-big', due.length ? plural(due.length, 'email', 'emails') + ' to send' : 'Nothing to send');
 		dashboardWarnings(due);
+		confirmWarnings(due);
 		if (due.length > can)
 			mailLine('send-warn', 'Google allows ' + json.emailsLeft + ' more emails today' + (json.reserve ? ' and ' + json.reserve + ' stay free for new registrations' : '') + ', so ' +
 				(can ? 'the first ' + can + ' go today. Send again tomorrow for the other ' + (due.length - can) + ': they stay selected.' : 'none can go out today. Try again tomorrow.'));
@@ -4048,6 +4141,15 @@
 		var had = rs.filter(function (x) { return x.h && decisionOf(x.h) === 'accepted' && hasLink(x.h); });
 		if (shut.length) mailLine('send-warn', 'Not accepted, so the link does not open the dashboard for them: ' + shut.map(function (x) { return x.name; }).join(', ') + '. Unselect them first.');
 		if (had.length) mailLine('send-warn', 'Had their link already, in our acceptance or an email about the dashboard: ' + had.map(function (x) { return x.name; }).join(', ') + '.');
+	}
+
+	// {confirm} for someone not registered for the conference: the page does not open for them
+	function confirmWarnings(due) {
+		if (!written(mailKind) || !/\{confirm\}/i.test($('mail-subject').value + $('mail-text').value)) return;
+		var out = due.filter(function (it) {
+			return !state.records.some(function (r) { return r.email === it.email && r.event === 'conference'; });
+		});
+		if (out.length) mailLine('send-warn', 'Not registered for the conference, so the link does not open for them: ' + out.map(function (it) { return it.name || it.email; }).join(', ') + '. Unselect them first.');
 	}
 
 	// "only record it": who it records, and the decision it sets

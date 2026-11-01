@@ -1,0 +1,104 @@
+/*
+	BreaQ Conference: are you coming? (confirm.html), on top of team-board.css (the BreaQ 2026 design system): its
+	ground, the lock card cut like the participant badge, the chip, the pills. Only what this page adds is here.
+*/
+
+.cc-brand {
+	align-self: center;
+	line-height: 0;
+}
+
+.cc-step {
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+}
+
+.cc-wait {
+	color: var(--mist);
+}
+
+/* where and when: a quiet panel, read from the left */
+.cc-facts {
+	display: grid;
+	gap: 12px;
+	margin: 2px 0 0 0;
+	padding: 16px 18px;
+	border: 1.5px solid var(--card-line);
+	border-radius: var(--radius-tile);
+	background: rgba(6, 26, 64, 0.45);
+	list-style: none;
+	text-align: left;
+}
+
+	.cc-facts li {
+		display: flex;
+		align-items: flex-start;
+		gap: 12px;
+		color: var(--mist);
+		font-size: 0.86rem;
+		font-weight: 600;
+		line-height: 1.45;
+	}
+
+	.cc-facts .ic {
+		width: 1.25em;
+		height: 1.25em;
+		margin-top: 0.12em;
+	}
+
+	.cc-facts b {
+		display: block;
+		color: var(--white);
+		font-size: 0.95rem;
+		font-weight: 700;
+	}
+
+.cc-buttons {
+	display: grid;
+	gap: 10px;
+	margin-top: 4px;
+}
+
+/* answered yes: a gold ring with the tick */
+.cc-mark {
+	display: grid;
+	place-items: center;
+	width: 68px;
+	height: 68px;
+	margin: 2px auto 0 auto;
+	border: 2px solid var(--gold);
+	border-radius: 50%;
+	background: rgba(250, 177, 6, 0.08);
+}
+
+	.cc-mark .ic {
+		width: 30px;
+		height: 30px;
+		stroke-width: 2.6;
+	}
+
+.cc-card #title {
+	outline: 0;
+}
+
+.cc-card.is-yes #title {
+	color: var(--gold);
+}
+
+.cc-card.is-no {
+	border-color: var(--line-mist);
+}
+
+.cc-cal {
+	color: var(--mist);
+	font-size: 0.86rem;
+	font-weight: 600;
+}
+
+/* changing the answer: a smaller pill, not across the card */
+.lock-card .cc-step .btn.small {
+	width: auto;
+	align-self: center;
+	margin-top: 2px;
+}
