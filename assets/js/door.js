@@ -1,5 +1,9 @@
 /*
-	BreaQ Hackathon: the check-in at the door (door.html, roqteam.ro/door)
+	BreaQ: the check-in at the door (door.html, roqteam.ro/door)
+	- two doors, picked on the start screen and kept on the phone: the conference's (from 26 October on, the first
+	  one) and the hackathon's. The conference has no passes: Find by name finds anyone registered for it, by any of
+	  their names in any order, diacritics aside, or their university or email, and checks them in its own column
+	  ("checkin" with event "conference"); those who said they cannot come are there too, marked
 	- opens with the admin key (kept on the phone, as the admin page keeps it), and reads the admin page's list (the
 	  "list" action of tools/register-backend.gs): the accepted hackathon participants, each with their dashboard
 	  code, team, T-shirt, diet and check-in; again every minute, so another phone's check-ins show
@@ -27,10 +31,14 @@
 	var LIST_MS = 60000;
 	var SAME_MS = 3000;     // the same pass is read again only once it has been out of view this long
 	var CLOSE_MS = 2600;    // a check-in's sheet goes by itself after this
+	var EVENT_STORE = 'breaq-2026-door-event';
+	var HACKATHON_OVER = Date.parse('2026-10-26T00:00:00+02:00');   // from then on the conference's door comes first
 
 	var state = {
 		key: '',
-		people: [],         // { email, name, team, tshirt, diet, at (checked in), code (key, no dash) }
+		people: [],         // { id, email, row, name, team, tshirt, diet, org, status, cannot, at (checked in), code (key, no dash) }
+		json: null,         // the last list, to make the other door's people from without asking again
+		event: storedEvent(),   // conference or hackathon
 		scanning: false,
 		stream: null,
 		read: null,
@@ -52,7 +60,21 @@
 		return node;
 	}
 
-	function fold(s) { return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); }
+	function fold(s) { return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); }
+
+	function storedEvent() {
+		var e = '';
+		try { e = window.localStorage.getItem(EVENT_STORE) || ''; } catch (err) {}
+		return e === 'conference' || e === 'hackathon' ? e : Date.now() >= HACKATHON_OVER ? 'conference' : 'hackathon';
+	}
+
+	function conf() { return state.event === 'conference'; }
+
+	// each word typed is in the name (or the team, the university, the email), in any order: "popescu ana" finds Ana Popescu
+	function matches(p, q) {
+		var hay = fold([p.name, p.team, p.org, p.email].join(' '));
+		return q.split(/\s+/).filter(Boolean).every(function (w) { return hay.indexOf(w) !== -1; });
+	}
 	function codeKey(s) { return String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); }
 
 	var hm = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Bucharest', hour: '2-digit', minute: '2-digit' });
@@ -73,16 +95,39 @@
 			.catch(function () { if (timer) window.clearTimeout(timer); done(null); });
 	}
 
-	// the accepted hackathon participants, from the list's rows
+	// the people at this door, from the list's rows: the accepted hackathon participants, or everyone registered for
+	// the conference (once each, by email)
 	function take(json) {
+		state.json = json;
 		var cols = json.columns.map(function (c) { return String(c).trim(); });
 		var at = function (c) { return cols.indexOf(c); };
 		var people = [];
-		json.rows.forEach(function (row) {
+		var seen = {};
+		json.rows.forEach(function (row, i) {
 			var get = function (c) { var j = at(c); return j === -1 || row[j] === null || row[j] === undefined ? '' : String(row[j]).trim(); };
-			if (!/hackathon|both/i.test(get('Attends')) || get('Decision').toLowerCase() !== 'accepted') return;
 			var email = get('Email').toLowerCase();
+			if (conf()) {
+				if (!/^(conference|presentations)$/i.test(get('Attends'))) return;
+				var name = (get('First name') + ' ' + get('Last name')).trim();
+				if (!name || (email && seen[email])) return;
+				if (email) seen[email] = true;
+				people.push({
+					id: email || 'row' + (i + 2),
+					email: email,
+					row: i + 2,     // the sheet's row: the list's rows are the sheet's, under its header
+					name: name,
+					first: get('First name'),
+					org: get('University or company'),
+					status: get('Status'),
+					cannot: /^(no|nu)\b/i.test(get('Coming')),
+					at: get('Conference check-in'),
+					code: ''
+				});
+				return;
+			}
+			if (!/hackathon|both/i.test(get('Attends')) || get('Decision').toLowerCase() !== 'accepted') return;
 			people.push({
+				id: email,
 				email: email,
 				name: (get('First name') + ' ' + get('Last name')).trim(),
 				team: get('Hackathon team'),
@@ -106,11 +151,41 @@
 
 	function here() { return state.people.filter(function (p) { return p.at; }).length; }
 
+	// at the conference, those who said they cannot come count only once they are here after all
+	function expected() { return state.people.filter(function (p) { return !p.cannot || p.at; }).length; }
+
 	function renderCount() {
-		var text = here() + ' of ' + state.people.length + ' here';
+		var text = here() + ' of ' + expected() + ' here';
 		$('count').textContent = text;
-		$('start-count').textContent = state.people.length ? text : 'Nobody is accepted yet.';
+		$('start-count').textContent = state.people.length ? text : conf() ? 'Nobody is registered for the conference.' : 'Nobody is accepted yet.';
 	}
+
+	// the start screen for this door: the conference has no passes, so Find by name comes first
+	function renderEvent() {
+		forEach(document.querySelectorAll('#door-event button'), function (b) {
+			b.setAttribute('aria-pressed', String(b.getAttribute('data-event') === state.event));
+		});
+		$('start-title').textContent = conf() ? 'Ready at the gate.' : 'Ready at the door.';
+		$('go').hidden = conf();
+		$('fine-scanner').hidden = conf();
+		var find = $('start-find');
+		find.className = conf() ? 'btn primary door-go' : 'btn ghost';
+		find.lastChild.textContent = conf() ? 'Find by name' : 'Find by name or code';
+		$('find-q').placeholder = conf() ? 'Any of their names, or university' : 'Name, team or code';
+		document.title = 'Check-in · BreaQ ' + (conf() ? 'Conference' : 'Hackathon');
+	}
+
+	function forEach(list, fn) { Array.prototype.forEach.call(list, fn); }
+
+	forEach(document.querySelectorAll('#door-event button'), function (b) {
+		b.addEventListener('click', function () {
+			state.event = b.getAttribute('data-event');
+			try { window.localStorage.setItem(EVENT_STORE, state.event); } catch (e) {}
+			renderEvent();
+			if (state.json) take(state.json);   // at once, then today's from the sheet
+			if (state.key) load(function () {});
+		});
+	});
 
 	// another phone's check-ins: the list again every minute, while no sheet is up
 	function keepListing() {
@@ -140,7 +215,7 @@
 			$('lock-btn').textContent = 'Open';
 			if (!problem) {
 				try { window.localStorage.setItem(KEY_STORE, key); } catch (e) {}
-				$('start-title').textContent = 'Ready at the door.';
+				renderEvent();
 				show('start');
 				keepListing();
 				return;
@@ -374,8 +449,8 @@
 		var was = p.at;
 		p.at = undo ? '' : new Date().toISOString();   // at once on the screen; put back if it does not go through
 		renderCount();
-		post({ action: 'checkin', key: state.key, email: p.email, undo: !!undo }, 30000, function (json) {
-			var showing = $('res-name').getAttribute('data-email') === p.email;
+		post({ action: 'checkin', key: state.key, email: p.email, event: conf() ? 'conference' : 'hackathon', row: p.row, name: p.name, undo: !!undo }, 30000, function (json) {
+			var showing = $('res-name').getAttribute('data-id') === p.id;
 			if (json && json.ok && json.action === 'checkin') {
 				p.at = json.checkedIn ? String(json.checkedIn) : '';
 				renderCount();
@@ -407,15 +482,17 @@
 		$('res-kicker').textContent = KIND[kind].kicker;
 		var name = $('res-name');
 		name.textContent = '';
-		name.setAttribute('data-email', p.email || '');
+		name.setAttribute('data-id', p.id || '');
 		var words = String(p.name || '').split(/\s+/).filter(Boolean);
-		if (p.email && words.length > 1) {
+		if (p.id && words.length > 1) {
 			name.appendChild(document.createTextNode(words.slice(0, -1).join(' ') + ' '));
 			name.appendChild(el('span', 'gold', words[words.length - 1]));
 		} else name.textContent = p.name || '';
-		$('res-team').textContent = p.email ? (p.team || 'No team yet') : '';
+		$('res-team').textContent = !p.id ? '' : conf() ? p.org : p.team || 'No team yet';
 		var facts = $('res-facts');
 		facts.textContent = '';
+		if (p.status) facts.appendChild(el('span', 'tag', p.status));
+		if (p.cannot) facts.appendChild(el('span', 'tag tag-pin', 'Had said they cannot come'));
 		if (p.tshirt) facts.appendChild(el('span', 'tag', 'T-shirt ' + p.tshirt));
 		if (p.diet) facts.appendChild(el('span', 'tag tag-pin', p.diet));
 		$('res-note').textContent = note || '';
@@ -517,18 +594,18 @@
 		var list = $('find-list');
 		list.textContent = '';
 		var found = state.people.filter(function (p) {
-			if (!q) return !p.at;
-			return fold(p.name + ' ' + p.team + ' ' + p.email).indexOf(q) !== -1 || (k.length >= 4 && p.code.indexOf(k) === 0);
+			if (!q) return !p.at && !p.cannot;
+			return matches(p, q) || (k.length >= 4 && !!p.code && p.code.indexOf(k) === 0);
 		}).sort(function (a, b) { return Number(!!a.at) - Number(!!b.at) || fold(a.name).localeCompare(fold(b.name)); }).slice(0, 40);
 		if (!found.length) {
-			list.appendChild(el('li', 'find-empty', q ? 'Nobody accepted matches that.' : 'Everyone is here.'));
+			list.appendChild(el('li', 'find-empty', q ? (conf() ? 'Nobody registered for the conference matches that. Try another of their names, or the paper list.' : 'Nobody accepted matches that.') : 'Everyone is here.'));
 			return;
 		}
 		found.forEach(function (p) {
 			var li = el('li', 'find-row' + (p.at ? ' is-in' : ''));
 			var main = el('div', 'find-main');
 			main.appendChild(el('p', 'find-name', p.name));
-			main.appendChild(el('p', 'find-sub', [p.team || 'No team', p.tshirt ? 'T-shirt ' + p.tshirt : ''].filter(Boolean).join(' · ')));
+			main.appendChild(el('p', 'find-sub', (conf() ? [p.org, p.cannot ? 'had said they cannot come' : ''] : [p.team || 'No team', p.tshirt ? 'T-shirt ' + p.tshirt : '']).filter(Boolean).join(' · ')));
 			li.appendChild(main);
 			if (p.at) li.appendChild(el('span', 'find-at', 'Here · ' + hm.format(new Date(p.at))));
 			else {

@@ -1,7 +1,7 @@
 <!DOCTYPE HTML>
 <html lang="en">
 	<head>
-		<title>Check-in · BreaQ Hackathon</title>
+		<title>Check-in · BreaQ</title>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 		<meta name="robots" content="noindex, nofollow" />
@@ -18,12 +18,15 @@
 		<link rel="icon" type="image/png" href="images/favicon-2026.png" />
 		<link rel="preload" href="assets/fonts/raleway-800.woff2" as="font" type="font/woff2" crossorigin />
 		<link rel="stylesheet" href="assets/css/team-board.css?v=20261017b" />
-		<link rel="stylesheet" href="assets/css/door.css?v=20261017" />
+		<link rel="stylesheet" href="assets/css/door.css?v=20261106" />
 	</head>
 	<body class="is-door">
 
 		<!--
-			The BreaQ Hackathon's check-in at the door (roqteam.ro/door), for a phone: the camera fills the screen, each
+			BreaQ's check-in at the door (roqteam.ro/door), for a phone. At the conference (the gate of the Military
+			Technical Academy) there are no passes: "Find by name" finds anyone registered for it, by any of their names
+			in any order, diacritics aside, and checks them in ("Conference check-in" in the sheet). At the hackathon,
+			the camera fills the screen, each
 			pass it reads (the QR code on the participant's team dashboard) checks its owner in at once, and a sheet
 			says who it was (team, T-shirt, diet) with a buzz and a beep, or that they are here already, or that the
 			code is not one we know. "Find by name or code" does it by hand. It reads the admin page's list (the "list"
@@ -65,11 +68,16 @@
 					<img class="door-logo" src="images/brand/breaq-horizontal.svg" alt="BreaQ" width="150" height="65" />
 					<p class="chip is-outline">Check-in</p>
 					<h1 id="start-title">Ready at the door.</h1>
+					<!-- which door: the conference's (by name) or the hackathon's (passes); kept on the phone -->
+					<div class="seg door-events" role="group" aria-label="Which event" id="door-event">
+						<button type="button" data-event="conference" aria-pressed="true">Conference</button>
+						<button type="button" data-event="hackathon" aria-pressed="false">Hackathon</button>
+					</div>
 					<p class="door-count" id="start-count"></p>
 					<button type="button" class="btn primary door-go" id="go"><svg class="ic" aria-hidden="true"><use href="#i-scan" /></svg>Start scanning</button>
 					<button type="button" class="btn ghost" id="start-find"><svg class="ic" aria-hidden="true"><use href="#i-search" /></svg>Find by name or code</button>
 					<p class="err" id="start-err" role="alert" hidden></p>
-					<p class="door-fine">Got a QR scanner? Plug it in or pair it, and scan: no camera needed.</p>
+					<p class="door-fine" id="fine-scanner">Got a QR scanner? Plug it in or pair it, and scan: no camera needed.</p>
 					<p class="door-fine">On an iPhone: Share, then Add to Home Screen, and it opens as an app.</p>
 				</div>
 			</section>
@@ -120,6 +128,6 @@
 
 		</main>
 
-		<script src="assets/js/door.js?v=20261023"></script>
+		<script src="assets/js/door.js?v=20261106"></script>
 	</body>
 </html>

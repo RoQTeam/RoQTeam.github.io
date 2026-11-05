@@ -103,6 +103,16 @@ body.is-door {
 		font-size: 1.1rem;
 	}
 
+	/* which door: the conference's or the hackathon's */
+	.door-events {
+		justify-content: center;
+		width: 100%;
+	}
+
+		.door-events button {
+			flex: 1;
+		}
+
 /* scanning: the camera across the screen */
 .cam {
 	position: absolute;

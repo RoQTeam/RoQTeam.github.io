@@ -250,6 +250,8 @@ var COLUMNS = [
   "Hackathon track",
   // since when their dashboard code is off (access_); empty while it works
   "Code off",
+  // the conference: when they came in at the gate (checkin_ with event "conference", door.html)
+  "Conference check-in",
 ];
 // each organiser's note and grade, just before the Decision the grades add up to
 COLUMNS.splice.apply(COLUMNS, [COLUMNS.indexOf("Decision"), 0].concat(NOTE_COLUMNS, VOTE_COLUMNS));
@@ -271,6 +273,7 @@ var NOT_ANSWERS = [
   "Certificate",
   "Hackathon track",
   "Code off",
+  "Conference check-in",
 ].concat(VOTE_COLUMNS, NOTE_COLUMNS);
 
 // what the organisers and the dashboard write in a row: a merge keeps the earlier row's, the later one's only fills
@@ -285,6 +288,7 @@ var ORGANISER_COLUMNS = [
   "Certificate",
   "Hackathon track",
   "Code off",
+  "Conference check-in",
 ].concat(VOTE_COLUMNS, NOTE_COLUMNS);
 
 // what the organisers can pick in the "Decision" column; each has its email in decisionEmail_
@@ -3751,6 +3755,17 @@ function personOf_(roster, email) {
 }
 
 // the hackathon registration of one of these emails: its sheet row (1-based), or -1
+// the sheet's row of someone's conference registration: by email, or (a row added by hand without one) the row
+// given, while its name is still the one given; -1 when there is none
+function confRow_(values, header, email, row, name) {
+  for (var i = 1; i < values.length; i++) {
+    var r = toRecord_(header, values[i]);
+    if (eventKey_(r["Attends"]) !== "conference") continue;
+    if (email ? emailsOf_(r).indexOf(email) !== -1 : i + 1 === Number(row) && nameKey_(r["First name"], r["Last name"]) === nameKey_(name, "")) return i + 1;
+  }
+  return -1;
+}
+
 function regRow_(values, header, email) {
   for (var i = 1; i < values.length; i++) {
     var r = toRecord_(header, values[i]);
@@ -5165,19 +5180,27 @@ function teamAssign_(data) {
 
 /* --- the check-in at the door ------------------------------------------------ */
 
-// admin.html: someone is here (or, undo, not after all)
+// admin.html and door.html: someone is here (or, undo, not after all). data.event "conference": at the conference's
+// gate, in its own column ("Conference check-in"), on the conference registration with that email, or, for a row
+// added by hand without one, on data.row (the sheet's row) when its name is still data.name
 function checkin_(data) {
   var email = String(data.email || "").trim().toLowerCase();
+  var conf = data.event === "conference";
   var lock = LockService.getScriptLock();
   lock.waitLock(10000);
   try {
     var sheet = sheet_();
     var values = sheet.getDataRange().getValues();
     var header = header_(values);
-    var row = regRow_(values, header, email);
-    if (row === -1) return { ok: false, action: "checkin", error: "There is no hackathon registration for " + email + " in the sheet any more. Refresh the page." };
+    var row = conf ? confRow_(values, header, email, data.row, data.name) : regRow_(values, header, email);
+    if (row === -1)
+      return {
+        ok: false,
+        action: "checkin",
+        error: "There is no " + (conf ? "conference" : "hackathon") + " registration for " + (email || data.name || "them") + " in the sheet any more. Refresh the page.",
+      };
     var at = data.undo ? "" : new Date();
-    sheet.getRange(row, header.indexOf("Checked in") + 1).setValue(at);
+    sheet.getRange(row, header.indexOf(conf ? "Conference check-in" : "Checked in") + 1).setValue(at);
     rosterChanged_();
     return { ok: true, action: "checkin", email: email, checkedIn: at || null };
   } finally {
