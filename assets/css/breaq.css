@@ -34,6 +34,7 @@
 	.cta, .cta *,
 	.fc-grid, .fc-grid *,
 	.soon-grid, .soon-grid *,
+	.soon-card, .soon-card *,
 	.soon-tl, .soon-tl *,
 	.soon-cta {
 		text-align: left;
@@ -2727,6 +2728,24 @@
 		.sp-grid--dense .sp-role { font-size: 0.56em; }
 		.sp-grid--dense .sp-info { padding: 2.25em 0.8em 0.7em 0.8em; }
 
+	/* ghost cards after the speakers announced so far (breaq-conference.html): the seats still to come. They come in
+	   with the real cards and match their caption; the breakpoints below keep them to whole rows */
+	.sp-grid .soon-card {
+		opacity: 0;
+		transform: translateY(1.25em);
+		transition: opacity 0.7s var(--bq-ease-out), transform 0.7s var(--bq-ease-out);
+		transition-delay: calc(min(var(--i, 0), 10) * 60ms);
+	}
+
+		.sp-grid.is-in .soon-card {
+			opacity: 1;
+			transform: none;
+		}
+
+		.sp-grid--dense .soon-strip { padding: 2.25em 0.8em 0.7em 0.8em; }
+		.sp-grid--dense .soon-name { font-size: 0.64em; }
+		.sp-grid--dense .soon-sub { font-size: 0.56em; }
+
 	/* the core team shows its roles outright: four people, nothing to discover, so the
 	   cards are not interactive. Taller than square so the face stays clear of the caption.
 	   The photo keeps the grey resting state and colours on hover, purely decorative. */
@@ -2778,6 +2797,7 @@
 	@media screen and (max-width: 980px) {
 		.sp-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 		.sp-grid.sp-grid--dense { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+		.sp-grid > .soon-card:nth-child(n+10) { display: none; }
 	}
 
 	@media screen and (max-width: 736px) {
@@ -2786,6 +2806,7 @@
 		.sp-info { padding: 2.25em 0.8em 0.7em 0.8em; }
 		.sp-name { font-size: 0.66em; }
 		.sp-role { font-size: 0.58em; }
+		.sp-grid > .soon-card:nth-child(n+9) { display: none; }
 	}
 
 	@media screen and (max-width: 360px) {
@@ -3683,6 +3704,7 @@
 	@media (prefers-reduced-motion: reduce) {
 
 		.sp-card,
+		.sp-grid .soon-card,
 		.sp-photo img,
 		.sp-photo::before,
 		.sp-photo::after,
