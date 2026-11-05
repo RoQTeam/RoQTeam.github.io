@@ -2975,7 +2975,7 @@ function eventKey_(attend) {
 function nameKey_(first, last) {
   return (String(first) + " " + String(last))
     .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
+    .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .split(/[^a-z0-9]+/)
     .filter(String)
@@ -4197,7 +4197,7 @@ var ORG_WORDS = {
 function orgWords_(s) {
   return String(s)
     .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
+    .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, " ")
     .trim()
