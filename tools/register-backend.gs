@@ -4098,57 +4098,91 @@ function confAskEmail_(p) {
 // decisions are; each with a category (Licență, Master, Doctorat, Cercetare, Industrie…: confListCategory_) and the
 // institution by its official name, the faculty in brackets (confListOrg_). data.who: "yes" those who said they are coming, "notno" everyone but those who said they cannot
 // (the default), "all" everyone registered; data.signature: false leaves out the column to sign in at the door.
-// The doc goes in CONF_LISTS_FOLDER; Word and PDF are the doc's own downloads (the links answered).
+// The doc goes in CONF_LISTS_FOLDER; Word and PDF are the doc's own downloads (the links answered). data.doc, a list
+// made before (its link): that doc is updated instead, on the same link (confListUpdate_), keeping what was changed
+// or added in it by hand.
 function confList_(data) {
   var who = CONF_LIST_WHO[data.who] ? data.who : "notno";
+  var signature = data.signature !== false;
   confPull_(); // the answers given on roqteam.ro, so that "coming" is today's
+  var from = confListPeople_(who);
+  var doc, kept = 0;
+  if (data.doc) {
+    var id = docId_(data.doc);
+    if (!id) return { ok: false, action: "conference-list", error: "That is not a Google Doc link." };
+    try {
+      doc = DocumentApp.openById(id);
+    } catch (err) {
+      return { ok: false, action: "conference-list", error: "The doc does not open for the script: is it one of the lists, and not deleted?" };
+    }
+    var up = confListUpdate_(doc, from, signature);
+    if (up.error) return { ok: false, action: "conference-list", error: up.error };
+    kept = up.kept;
+    from.people = up.people;
+  } else {
+    if (!from.people.length)
+      return {
+        ok: false,
+        action: "conference-list",
+        error: who === "yes" ? "Nobody has said yes yet: no list to make." : "Nobody is registered for the conference: no list to make.",
+      };
+    doc = confListDoc_(from.people, who, signature);
+    DriveApp.getFileById(doc.getId()).moveTo(listsFolder_());
+  }
+  var docId = doc.getId();
+  var folder = listsFolder_();
+  return {
+    ok: true,
+    action: "conference-list",
+    updated: !!data.doc,
+    name: doc.getName(),
+    count: from.people.length,
+    twice: from.twice,
+    kept: kept,
+    id: docId,
+    url: doc.getUrl(),
+    word: "https://docs.google.com/document/d/" + docId + "/export?format=docx",
+    pdf: "https://docs.google.com/document/d/" + docId + "/export?format=pdf",
+    folder: folder.getUrl(),
+  };
+}
+
+// the people of the conference in the sheet, as the list has them: { people: [{ last, first, cat, org, key }] in the
+// list's order, twice: registrations left out as a name already there, said: { key: what they answered } for every
+// conference registration (who said "no" too) }. who: CONF_LIST_WHO.
+function confListPeople_(who) {
   var values = sheet_().getDataRange().getValues();
   var header = header_(values);
   var people = [];
   var seen = {};
+  var said = {};
   var twice = 0;
   for (var i = 1; i < values.length; i++) {
     var r = toRecord_(header, values[i]);
     if (eventKey_(r["Attends"]) !== "conference") continue;
-    var said = comingOf_(r["Coming"]);
-    if (who === "yes" ? said !== "yes" : who === "notno" && said === "no") continue;
     var last = listName_(r["Last name"], true);
     var first = listName_(r["First name"], false);
     if (!last && !first) continue;
-    // the same name twice (two registrations with two emails): once on the list
     var k = nameKey_(first, last);
+    var answer = comingOf_(r["Coming"]);
+    if (!(k in said) || answer !== "no") said[k] = answer;
+    if (who === "yes" ? answer !== "yes" : who === "notno" && answer === "no") continue;
+    // the same name twice (two registrations with two emails): once on the list
     if (seen[k]) {
       twice++;
       continue;
     }
     seen[k] = true;
-    people.push({ last: last, first: first, cat: confListCategory_(r["Status"]), org: confListOrg_(r["University or company"]) });
+    people.push({ last: last, first: first, cat: confListCategory_(r["Status"]), org: confListOrg_(r["University or company"]), key: k });
   }
-  people.sort(function (a, b) {
-    return a.last.localeCompare(b.last, "ro") || a.first.localeCompare(b.first, "ro");
-  });
-  if (!people.length)
-    return {
-      ok: false,
-      action: "conference-list",
-      error: who === "yes" ? "Nobody has said yes yet: no list to make." : "Nobody is registered for the conference: no list to make.",
-    };
+  return { people: confListSort_(people), twice: twice, said: said };
+}
 
-  var doc = confListDoc_(people, who, data.signature !== false);
-  var id = doc.getId();
-  var folder = listsFolder_();
-  DriveApp.getFileById(id).moveTo(folder);
-  return {
-    ok: true,
-    action: "conference-list",
-    name: doc.getName(),
-    count: people.length,
-    twice: twice,
-    url: doc.getUrl(),
-    word: "https://docs.google.com/document/d/" + id + "/export?format=docx",
-    pdf: "https://docs.google.com/document/d/" + id + "/export?format=pdf",
-    folder: folder.getUrl(),
-  };
+// a Google Doc's id, from its link or the id itself
+function docId_(s) {
+  s = String(s || "").trim();
+  var m = s.match(/\/document\/(?:u\/\d+\/)?d\/([\w-]{20,})/) || s.match(/^([\w-]{20,})$/);
+  return m ? m[1] : "";
 }
 
 // run from the editor once, after pasting this version: Google asks for permission to make Google Docs, then the log
@@ -4391,27 +4425,7 @@ function confListDoc_(people, who, signature) {
     { justify: true, indent: 21, after: 10, line: 1.15 },
   );
 
-  var cells = [["Nr. crt.", "Nume și prenume", "Categoria", "Instituția / compania"].concat(signature ? ["Semnătura"] : [])].concat(
-    people.map(function (p, n) {
-      return [n + 1 + ".", p.last + " " + p.first, p.cat, p.org].concat(signature ? [""] : []);
-    }),
-  );
-  var table = body.appendTable(cells);
-  table.setBorderWidth(0.5).setBorderColor("#000000");
-  // A4 less the margins: 451 points
-  (signature ? [40, 118, 64, 154, 75] : [40, 150, 66, 195]).forEach(function (w, c) {
-    table.setColumnWidth(c, w);
-  });
-  table.editAsText().setFontFamily("Arial").setFontSize(10).setBold(false);
-  for (var r = 0; r < table.getNumRows(); r++) {
-    var row = table.getRow(r);
-    if (signature && r) row.setMinimumHeight(26);
-    row.getCell(0).getChild(0).asParagraph().setAlignment(CENTER);
-    if (r) continue;
-    for (var c = 0; c < row.getNumCells(); c++) {
-      row.getCell(c).setBackgroundColor("#f2f2f2").editAsText().setBold(true);
-    }
-  }
+  confListTable_(body, null, people, signature);
 
   para([["București, " + Utilities.formatDate(now, tz, "dd.MM.yyyy")]], { before: 18, after: 24 });
   var sign = body.appendTable([["Întocmit,", "Semnătura"], [LETTERHEAD.signs, ""]]);
@@ -4422,6 +4436,187 @@ function confListDoc_(people, who, signature) {
   sign.getRow(0).getCell(1).getChild(0).asParagraph().setAlignment(DocumentApp.HorizontalAlignment.RIGHT);
   doc.saveAndClose();
   return doc;
+}
+
+// The list's table, made for the gate as much as for the record: Nr., Nume (the surname, in capitals and bold) and
+// Prenume apart, as on an identity card, then Categoria, Instituția / compania and Semnătura; in alphabetical order as
+// one looks a name up (confListSort_: diacritics aside, so STEFANESCU and ȘTEFĂNESCU, typed either way, are in one
+// place), a shaded row with the letter before each new one, every other row tinted so the eye keeps to its line on the
+// way to the signature. at: where in the body (null: at the end); into: a list's table to fill instead, its rows kept
+// (the header row pinned to every page, a row kept from breaking across pages, as set in Docs: Table options), more
+// made as copies of its last row, the extra ones removed. A4 less the margins: 451 points.
+function confListTable_(body, at, people, signature, into) {
+  var CENTER = DocumentApp.HorizontalAlignment.CENTER;
+  var head = ["Nr.", "Nume", "Prenume", "Categoria", "Instituția / compania"].concat(signature ? ["Semnătura"] : []);
+  var cells = [head];
+  var kinds = ["head"];
+  var letter = "";
+  people.forEach(function (p, n) {
+    var l = listLetter_(p.last);
+    if (l !== letter) {
+      letter = l;
+      cells.push(head.map(function (x, c) { return c === 1 ? l : ""; }));
+      kinds.push("letter");
+    }
+    cells.push([n + 1 + ".", p.last, p.first, p.cat || "", p.org || ""].concat(signature ? [""] : []));
+    kinds.push("person");
+  });
+  var table = into && into.getRow(0).getNumCells() === head.length ? into : null;
+  if (table) {
+    while (table.getNumRows() > cells.length) table.removeRow(table.getNumRows() - 1);
+    while (table.getNumRows() < cells.length) table.appendTableRow(table.getRow(table.getNumRows() - 1).copy());
+    cells.forEach(function (texts, r) {
+      var row = table.getRow(r);
+      texts.forEach(function (text, c) {
+        row.getCell(c).setText(text);
+      });
+    });
+  } else {
+    // a table of another shape (a list made before Nume and Prenume were apart): a new one in its place
+    if (into) {
+      at = body.getChildIndex(into);
+      into.removeFromParent();
+    }
+    table = at === null ? body.appendTable(cells) : body.insertTable(at, cells);
+  }
+  table.setBorderWidth(0.5).setBorderColor("#000000");
+  (signature ? [28, 102, 92, 56, 108, 65] : [28, 112, 112, 60, 139]).forEach(function (w, c) {
+    table.setColumnWidth(c, w);
+  });
+  table.editAsText().setFontFamily("Arial").setFontSize(10).setBold(false);
+  var stripe = 0;
+  for (var r = 0; r < table.getNumRows(); r++) {
+    var row = table.getRow(r);
+    for (var c = 0; c < row.getNumCells(); c++) row.getCell(c).setPaddingLeft(3).setPaddingRight(3).setPaddingTop(2).setPaddingBottom(2);
+    row.getCell(0).getChild(0).asParagraph().setAlignment(CENTER);
+    if (kinds[r] === "head") {
+      for (var c = 0; c < row.getNumCells(); c++) row.getCell(c).setBackgroundColor("#d9d9d9").editAsText().setBold(true).setFontSize(9);
+      continue;
+    }
+    if (kinds[r] === "letter") {
+      for (var c = 0; c < row.getNumCells(); c++) row.getCell(c).setBackgroundColor("#bfbfbf");
+      row.getCell(1).editAsText().setBold(true).setFontSize(11);
+      row.setMinimumHeight(0);
+      stripe = 0;
+      continue;
+    }
+    row.setMinimumHeight(signature ? 24 : 0);
+    var tint = stripe++ % 2 ? "#f2f2f2" : "#ffffff";
+    for (var c = 0; c < row.getNumCells(); c++) row.getCell(c).setBackgroundColor(tint);
+    row.getCell(0).editAsText().setFontSize(9);
+    row.getCell(1).editAsText().setBold(true);
+    row.getCell(3).editAsText().setFontSize(8);
+    row.getCell(4).editAsText().setFontSize(8);
+  }
+  return table;
+}
+
+function listFold_(s) {
+  return String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
+// by surname, then first names, diacritics aside
+function confListSort_(people) {
+  return people.sort(function (a, b) {
+    var x = listFold_(a.last), y = listFold_(b.last);
+    if (x !== y) return x < y ? -1 : 1;
+    x = listFold_(a.first);
+    y = listFold_(b.first);
+    return x < y ? -1 : x > y ? 1 : 0;
+  });
+}
+
+// the letter a surname is under: Ș with S, Ț with T, Ă and Â with A, Î with I
+function listLetter_(last) {
+  var c = listFold_(last).replace(/[^a-z]/g, "").charAt(0);
+  return c ? c.toUpperCase() : "#";
+}
+
+// the list's table in a doc: the one whose first row has the names' column
+function listTableOf_(body) {
+  var tables = body.getTables();
+  for (var t = 0; t < tables.length; t++) {
+    if (tables[t].getNumRows() && /Nume/.test(tables[t].getRow(0).getText()) && /Nr\./.test(tables[t].getRow(0).getText())) return tables[t];
+  }
+  return null;
+}
+
+// the people on a list doc as it is now, whichever way it was made, changes by hand included: { last, first, cat,
+// org, key } each. A row added by hand may have the name in "Nume" alone ("POPESCU Ana", or "Ana Popescu": the last
+// word is the surname then); the letter rows are left out.
+function confListDocRows_(table) {
+  var head = [];
+  var top = table.getRow(0);
+  for (var c = 0; c < top.getNumCells(); c++) head.push(top.getCell(c).getText().trim());
+  var col = function (re) {
+    for (var c = 0; c < head.length; c++) if (re.test(head[c])) return c;
+    return -1;
+  };
+  var iName = col(/^Nume/), iFirst = col(/^Prenume/), iCat = col(/^Categoria/), iOrg = col(/^Institu/);
+  var rows = [];
+  for (var r = 1; r < table.getNumRows(); r++) {
+    var row = table.getRow(r);
+    var cell = function (i) {
+      return i === -1 || i >= row.getNumCells() ? "" : row.getCell(i).getText().replace(/\s+/g, " ").trim();
+    };
+    var name = cell(iName), first = cell(iFirst);
+    if (!first) {
+      // "POPESCU Ana Maria": the words in capitals are the surname; "Ana Popescu", the last word
+      var words = name.split(" ").filter(String);
+      if (!words.length) continue;
+      var caps = 0;
+      while (caps < words.length && /\p{L}/u.test(words[caps]) && words[caps] === words[caps].toUpperCase()) caps++;
+      if (words.length === 1 && name.length <= 2) continue; // a letter row
+      if (caps && caps < words.length) {
+        name = words.slice(0, caps).join(" ");
+        first = words.slice(caps).join(" ");
+      } else if (caps === words.length) {
+        name = words[0];
+        first = words.slice(1).join(" ");
+      } else {
+        name = words[words.length - 1];
+        first = words.slice(0, -1).join(" ");
+      }
+    }
+    if (!name) continue;
+    var last = listName_(name, true);
+    first = listName_(first, false);
+    rows.push({ last: last, first: first, cat: cell(iCat), org: confListOrg_(cell(iOrg)), key: nameKey_(first, last) });
+  }
+  return rows;
+}
+
+// a list doc already made, updated in place (the same link): its people as they are in it, changes by hand and people
+// added by hand included, less those who have since said they cannot come; then the people of the sheet not on it yet.
+// A category or an institution left empty in the doc is taken from the sheet. The table is made again (confListTable_)
+// and the count above it follows. from: confListPeople_. Answers { people, kept (those not in the sheet) } or { error }.
+function confListUpdate_(doc, from, signature) {
+  var body = doc.getBody();
+  var table = listTableOf_(body);
+  if (!table) return { error: "That doc has no list of participants in it." };
+  var bySheet = {};
+  from.people.forEach(function (p) {
+    bySheet[p.key] = p;
+  });
+  var people = [];
+  var seen = {};
+  var kept = 0;
+  confListDocRows_(table).forEach(function (p) {
+    if (seen[p.key]) return;
+    var s = bySheet[p.key];
+    if (!s && p.key in from.said) return; // in the sheet, and not on the list any more (said they cannot come)
+    if (!s) kept++;
+    seen[p.key] = true;
+    people.push({ last: p.last, first: p.first, cat: p.cat || (s ? s.cat : ""), org: p.org || (s ? s.org : ""), key: p.key });
+  });
+  from.people.forEach(function (p) {
+    if (!seen[p.key]) people.push(p);
+  });
+  confListSort_(people);
+  confListTable_(body, null, people, signature, table);
+  body.replaceText("\\d+ (de )?persoane înscrise|o persoană înscrisă", roCount_(people.length, "persoană înscrisă", "persoane înscrise"));
+  doc.saveAndClose();
+  return { people: people, kept: kept };
 }
 
 // the logo for the letterhead, from the site: null when none loads (the list goes without it)

@@ -608,7 +608,10 @@
 						</div>
 					</div>
 					<label class="check"><input type="checkbox" id="list-sign" checked /> A Signature column, to sign in at the door</label>
-					<p class="muted mail-help">A new Google Doc on the RoQTeam letterhead, like the board’s decisions: the logo, the address and the CIF, the title, then everyone in alphabetical order (the last name in capitals) with their university or company, and “Întocmit” with the date at the end. It goes in the Drive folder “BreaQ 2026 conference lists”, which the sheet’s editors can open; Word and PDF are its downloads, and it can be changed like any doc. The answers given on the confirmation page are brought in first.</p>
+					<label class="bform-field"><span>Update the list already made <small class="muted">(empty: a new doc)</small></span>
+						<input type="url" id="list-doc" placeholder="https://docs.google.com/document/d/…" spellcheck="false" autocomplete="off" />
+					</label>
+					<p class="muted mail-help">On the RoQTeam letterhead, like the board’s decisions: the logo, the address and the CIF, the title, then everyone by surname as the gate looks them up (diacritics aside, a row with each new letter), Nume and Prenume apart as on an identity card, their category, university or company, and “Întocmit” with the date at the end. With a link above, that doc is updated on the same link: what was changed or added in it by hand stays, those who said they cannot come go, and new people come in. Otherwise a new doc, in the Drive folder “BreaQ 2026 conference lists”, which the sheet’s editors can open; Word and PDF are its downloads. The answers given on the confirmation page are brought in first.</p>
 					<div class="bform-actions">
 						<button type="submit" class="btn primary" id="list-go">Make the Google Doc</button>
 					</div>
@@ -644,6 +647,6 @@
 
 		</main>
 
-		<script src="assets/js/admin.js?v=20261105"></script>
+		<script src="assets/js/admin.js?v=20261106"></script>
 	</body>
 </html>

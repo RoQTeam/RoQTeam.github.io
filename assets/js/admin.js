@@ -3861,6 +3861,17 @@
 	// registrations: the doc lists someone registered twice under the same name once.
 	var listDlg = $('list-dlg');
 	var listWho = 'notno';
+	var LIST_DOC_STORE = 'breaq-2026-conference-list-doc';   // the last list made or updated: updated again by default
+
+	function storedListDoc() {
+		try { return window.localStorage.getItem(LIST_DOC_STORE) || ''; } catch (e) { return ''; }
+	}
+
+	function storeListDoc(url) {
+		try { window.localStorage.setItem(LIST_DOC_STORE, url); } catch (e) {}
+	}
+
+	function listGoLabel() { return $('list-doc').value.trim() ? 'Update the Google Doc' : 'Make the Google Doc'; }
 
 	function renderListForm() {
 		var n = { notno: 0, yes: 0, all: 0 };
@@ -3876,7 +3887,8 @@
 			b.setAttribute('aria-pressed', String(w === listWho));
 			b.querySelector('.n').textContent = n[w];
 		});
-		$('list-go').disabled = !n[listWho];
+		$('list-go').disabled = !n[listWho] && !$('list-doc').value.trim();
+		$('list-go').textContent = listGoLabel();
 	}
 
 	function listLine(cls, text) { $('list-body').appendChild(el('p', cls, text)); }
@@ -3891,10 +3903,13 @@
 
 	$('list-open').addEventListener('click', function () {
 		$('list-body').textContent = '';
+		$('list-doc').value = storedListDoc();
 		renderListForm();
 		if (typeof listDlg.showModal === 'function') listDlg.showModal();
 		else listDlg.setAttribute('open', '');
 	});
+
+	$('list-doc').addEventListener('input', renderListForm);
 
 	$('list-who').addEventListener('click', function (ev) {
 		var b = ev.target.closest('button');
@@ -3909,12 +3924,12 @@
 		if (go.disabled) return;
 		go.disabled = true;
 		go.classList.add('is-busy');
-		go.textContent = 'Making the doc…';
+		var doc = $('list-doc').value.trim();
+		go.textContent = doc ? 'Updating the doc…' : 'Making the doc…';
 		$('list-body').textContent = '';
 		listLine('muted', 'A minute at most: Google writes the doc a row at a time.');
-		post({ action: 'conference-list', key: state.key, who: listWho, signature: $('list-sign').checked }, 5 * 60 * 1000, function (json, err) {
+		post({ action: 'conference-list', key: state.key, who: listWho, signature: $('list-sign').checked, doc: doc }, 5 * 60 * 1000, function (json, err) {
 			go.classList.remove('is-busy');
-			go.textContent = 'Make the Google Doc';
 			renderListForm();
 			var body = $('list-body');
 			body.textContent = '';
@@ -3923,7 +3938,9 @@
 				listLine('err', actionProblem(json, err, 'make the conference list'));
 				return;
 			}
-			listLine('send-big', plural(json.count, 'person', 'people') + ' on the list');
+			if (json.url) { storeListDoc(json.url); $('list-doc').value = json.url; renderListForm(); }
+			listLine('send-big', plural(json.count, 'person', 'people') + ' on the list' + (json.updated ? ', updated on the same link' : ''));
+			if (json.kept) listLine('muted', plural(json.kept, 'person', 'people') + ' added in the doc by hand, not in the sheet, kept.');
 			if (json.twice) listLine('muted', plural(json.twice, 'registration', 'registrations') + ' with a name already on it left out (the same person registered twice).');
 			var links = el('div', 'list-links');
 			links.appendChild(listLink(json.url, 'Open in Google Docs', true));
