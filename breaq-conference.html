@@ -20,7 +20,7 @@
 		<!--
 			Event structured data for the conference day. The hours are approximate, as on breaq.html:
 			adjust them with the programme, together with the countdown and breaq-2026.ics.
-			Add a "performer" list (Person entries) once speakers are announced.
+			"performer" lists the speakers announced so far, as the Speakers section does.
 		-->
 		<script type="application/ld+json">
 		{
@@ -60,6 +60,13 @@
 				"availability": "https://schema.org/InStock",
 				"validThrough": "2026-11-05"
 			},
+			"performer": [
+				{ "@type": "Person", "name": "Radu Ionicioiu", "affiliation": { "@type": "Organization", "name": "Horia Hulubei National Institute of Physics and Nuclear Engineering (IFIN-HH)" } },
+				{ "@type": "Person", "name": "Ștefan Ataman", "affiliation": { "@type": "Organization", "name": "Extreme Light Infrastructure – Nuclear Physics (ELI-NP)" } },
+				{ "@type": "Person", "name": "Laurențiu Dosan", "affiliation": { "@type": "Organization", "name": "Quantum Optics Jena" } },
+				{ "@type": "Person", "name": "Javier Núñez-Bon", "affiliation": { "@type": "Organization", "name": "ID Quantique" } },
+				{ "@type": "Person", "name": "Filip Ceară", "affiliation": { "@type": "Organization", "name": "Advanced Technologies Institute" } }
+			],
 			"superEvent": {
 				"@type": "Event",
 				"name": "BreaQ 2026",
@@ -78,8 +85,8 @@
 		<!--
 			BREAQ CONFERENCE
 			The day of talks of BreaQ 2026. breaq.html is the event page and the hackathon's; each page
-			has a panel (.twin) that leads to the other half. Speakers and the programme are "coming soon":
-			replace the ghost cards with the hover cards from breaq.html (.sp-grid) once they are announced.
+			has a panel (.twin) that leads to the other half. The speakers are hover cards (.sp-grid), added as they
+			are announced; the programme is still to come.
 		-->
 
 		<!-- Video Background: the same footage as breaq.html -->
@@ -181,26 +188,69 @@
 										</ul>
 									</section>
 
-									<!-- Speakers: coming soon. One block, as on breaq.html: ghost portraits, the countdown and the news. -->
+									<!-- Speakers: the hover cards of challenges/entangled-learning.html (.sp-grid), five across (--dense), in the
+									     order of their Speaker posts. Javier's and Laurențiu's photos are cut from their posts (245 px): swap in the
+									     originals when we have them. The others join as they are announced; the countdown and the news stay below. -->
 									<section id="speakers" class="section_space">
-										<h3 class="major">Speakers <span class="soon-tag">Coming soon</span></h3>
-										<div class="soon-grid" aria-hidden="true">
-											<div class="soon-card" style="--i: 0">
-												<span class="soon-index">01</span>
-												<div class="soon-strip"><h4 class="soon-name">Speaker</h4><p class="soon-sub">To be announced</p></div>
-											</div>
-											<div class="soon-card" style="--i: 1">
-												<span class="soon-index">02</span>
-												<div class="soon-strip"><h4 class="soon-name">Speaker</h4><p class="soon-sub">To be announced</p></div>
-											</div>
-											<div class="soon-card" style="--i: 2">
-												<span class="soon-index">03</span>
-												<div class="soon-strip"><h4 class="soon-name">Speaker</h4><p class="soon-sub">To be announced</p></div>
-											</div>
-											<div class="soon-card" style="--i: 3">
-												<span class="soon-index">04</span>
-												<div class="soon-strip"><h4 class="soon-name">Speaker</h4><p class="soon-sub">To be announced</p></div>
-											</div>
+										<h3 class="major">Speakers</h3>
+										<p class="sp-hint">Hover or tap a portrait to reveal who is behind it.</p>
+										<div class="sp-grid sp-grid--dense">
+
+										<figure class="sp-card" tabindex="0" style="--i: 0">
+											<div class="sp-photo"><img src="images/opt/Radu-Ionicioiu.webp" alt="Radu Ionicioiu" loading="lazy" /></div>
+											<span class="sp-index">01</span>
+											<figcaption class="sp-info">
+												<h4 class="sp-name">Radu Ionicioiu</h4>
+												<div class="sp-more"><div>
+													<p class="sp-role">Senior Researcher (CS I) in Quantum Technologies, <abbr title="Horia Hulubei National Institute of Physics and Nuclear Engineering">IFIN-HH</abbr></p>
+												</div></div>
+											</figcaption>
+										</figure>
+
+										<figure class="sp-card" tabindex="0" style="--i: 1">
+											<div class="sp-photo"><img src="images/opt/Stefan-Ataman.webp" alt="Ștefan Ataman" loading="lazy" /></div>
+											<span class="sp-index">02</span>
+											<figcaption class="sp-info">
+												<h4 class="sp-name">Ștefan Ataman</h4>
+												<div class="sp-more"><div>
+													<p class="sp-role">Senior Researcher (CS II), <abbr title="Extreme Light Infrastructure – Nuclear Physics">ELI-NP</abbr></p>
+												</div></div>
+											</figcaption>
+										</figure>
+
+										<figure class="sp-card" tabindex="0" style="--i: 2">
+											<div class="sp-photo"><img src="images/opt/Laurentiu-Dosan.webp" alt="Laurențiu Dosan" loading="lazy" /></div>
+											<span class="sp-index">03</span>
+											<figcaption class="sp-info">
+												<h4 class="sp-name">Laurențiu Dosan</h4>
+												<div class="sp-more"><div>
+													<p class="sp-role">Quantum Optical System Engineer, Quantum Optics Jena; PhD student</p>
+												</div></div>
+											</figcaption>
+										</figure>
+
+										<figure class="sp-card" tabindex="0" style="--i: 3">
+											<div class="sp-photo"><img src="images/opt/Javier-Nunez-Bon.webp" alt="Javier Núñez-Bon" loading="lazy" /></div>
+											<span class="sp-index">04</span>
+											<figcaption class="sp-info">
+												<h4 class="sp-name">Javier Núñez-Bon</h4>
+												<div class="sp-more"><div>
+													<p class="sp-role">R&amp;D Scientist, ID Quantique; PhD candidate, University of Geneva</p>
+												</div></div>
+											</figcaption>
+										</figure>
+
+										<figure class="sp-card" tabindex="0" style="--i: 4">
+											<div class="sp-photo"><img src="images/opt/Filip.webp" alt="Filip Ceară" loading="lazy" /></div>
+											<span class="sp-index">05</span>
+											<figcaption class="sp-info">
+												<h4 class="sp-name">Filip Ceară</h4>
+												<div class="sp-more"><div>
+													<p class="sp-role">R&amp;D Expert, Advanced Technologies Institute (ATI); PhD candidate, <abbr title="National University of Science and Technology POLITEHNICA Bucharest">UNSTPB</abbr></p>
+												</div></div>
+											</figcaption>
+										</figure>
+
 										</div>
 										<div class="soon-next">
 											<div class="next-count" data-countdown-stages='[{"label":"The conference opens in","target":"2026-11-14T09:00:00+02:00"},{"label":"The BreaQ Conference is on. Welcome to the Military Technical Academy!","until":"2026-11-14T18:00:00+02:00"},{"label":"That was the BreaQ 2026 Conference. Thank you, and see you in 2027!"}]'>
@@ -213,7 +263,7 @@
 												</div>
 											</div>
 											<div class="soon-next-body">
-												<p>Speakers and the programme are announced in the coming weeks, here and on <a href="https://www.linkedin.com/company/roqteam/" target="_blank" rel="noopener">RoQTeam’s LinkedIn</a>. Want to give a talk? <a href="mailto:breaq2026@roqteam.ro">Write to us</a>.</p>
+												<p>More speakers and the programme follow in the coming days, here and on <a href="https://www.linkedin.com/company/roqteam/" target="_blank" rel="noopener">RoQTeam’s LinkedIn</a>.</p>
 												<p class="next-gcal">Add it to your calendar: <a href="breaq-2026-conference.ics" type="text/calendar">calendar file</a> · <a href="https://calendar.google.com/calendar/render?action=TEMPLATE&amp;text=BreaQ+2026+Conference&amp;dates=20261114T070000Z%2F20261114T160000Z&amp;location=Military+Technical+Academy+Ferdinand+I%2C+Bulevardul+George+Co%C8%99buc+39-49%2C+Bucure%C8%99ti&amp;details=Talks+by+researchers+and+industry+experts.+Details%3A+https%3A%2F%2Froqteam.ro%2Fbreaq-conference.html" target="_blank" rel="noopener">Google Calendar</a> · iPhone and Mac: <a href="webcal://roqteam.ro/breaq-2026-conference.ics">subscribe</a>, it updates itself if the times change</p>
 											</div>
 										</div>
