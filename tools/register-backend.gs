@@ -4095,7 +4095,8 @@ function confAskEmail_(p) {
 
 // admin.html: the people registered for the conference, in alphabetical order, as a new Google Doc on the
 // association's letterhead (LETTERHEAD: the logo, the address and the CIF on every page; Arial, A4), as its board's
-// decisions are. data.who: "yes" those who said they are coming, "notno" everyone but those who said they cannot
+// decisions are; each with a category (Licență, Master, Doctorat, Cercetare, Industrie…: confListCategory_) and the
+// institution by its official name, the faculty in brackets (confListOrg_). data.who: "yes" those who said they are coming, "notno" everyone but those who said they cannot
 // (the default), "all" everyone registered; data.signature: false leaves out the column to sign in at the door.
 // The doc goes in CONF_LISTS_FOLDER; Word and PDF are the doc's own downloads (the links answered).
 function confList_(data) {
@@ -4121,7 +4122,7 @@ function confList_(data) {
       continue;
     }
     seen[k] = true;
-    people.push({ last: last, first: first, org: listName_(r["University or company"], null) });
+    people.push({ last: last, first: first, cat: confListCategory_(r["Status"]), org: confListOrg_(r["University or company"]) });
   }
   people.sort(function (a, b) {
     return a.last.localeCompare(b.last, "ro") || a.first.localeCompare(b.first, "ro");
@@ -4173,6 +4174,151 @@ function listName_(s, upper) {
     if (w !== w.toLowerCase() && w !== w.toUpperCase()) return w;
     return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
   });
+}
+
+// The list's "Instituția / compania": a known institution by its official name, with the faculty in brackets, however
+// it was written ("UPB ACS", "Automatica si Calculatoare, Politehnica", "unstpb - acs" and "Faculty of Automatic Control
+// and Computers, University Politehnica of Bucharest" are all "Universitatea Națională de Știință și Tehnologie
+// POLITEHNICA București (Facultatea de Automatică și Calculatoare)"); anything else, a company, as typed (listName_);
+// what is not an answer ("-", "n/a", a phone number) left empty. The rules follow the admin page's (INSTITUTIONS in
+// assets/js/admin.js), which merges the same spellings for its counts under shorter names.
+
+// words written in English, abbreviated or misspelt, and the one form the rules look for
+var ORG_WORDS = {
+  politehnica: ["politehnica", "polytechnic", "politechnica", "politecnica", "polytechnica", "polytehnica"],
+  universitatea: ["universitatea", "university", "universitate", "universitatii", "univ"],
+  bucuresti: ["bucuresti", "bucharest", "bucurest", "bucarest"],
+  timisoara: ["timisoara"],
+  unstpb: ["unstpb"],
+};
+
+// lower case, no diacritics or punctuation, each word above in its one form (a letter off counts: "polithenica",
+// "untspb"; two in a long word), never a different word such as "polytechnique"
+function orgWords_(s) {
+  return String(s)
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+    .split(" ")
+    .map(function (t) {
+      for (var canon in ORG_WORDS) {
+        var forms = ORG_WORDS[canon];
+        for (var i = 0; i < forms.length; i++) {
+          var f = forms[i];
+          if (t === f) return canon;
+          if (t.length >= 5 && Math.abs(t.length - f.length) <= 1 && distance_(t, f) <= (f.length >= 9 ? 2 : 1)) return canon;
+        }
+      }
+      return t;
+    })
+    .join(" ");
+}
+
+// the faculties named most often, each university's own; the first that matches
+var UNSTPB_FACULTIES = [
+  ["Facultatea de Automatică și Calculatoare", /\bacs\b|automatica|automatic control|calculatoare|computer (science and )?engineering/],
+  ["Facultatea de Electronică, Telecomunicații și Tehnologia Informației", /\betti\b|electronica|electronics|telecomunicatii|telecommunications/],
+  ["Facultatea de Inginerie în Limbi Străine", /\bfils\b|limbi straine|foreign languages/],
+  ["Facultatea de Științe Aplicate", /\bfsa\b|stiinte aplicate|applied sciences/],
+  ["Facultatea de Inginerie Aerospațială", /aerospatiala|aerospace/],
+  ["Facultatea de Inginerie Electrică", /inginerie electrica|electrical engineering/],
+  ["Facultatea de Energetică", /energetica|power engineering|energy engineering/],
+  ["Facultatea de Inginerie Mecanică și Mecatronică", /mecatronica|mechatronics|inginerie mecanica|mechanical engineering/],
+  ["Facultatea de Inginerie Industrială și Robotică", /\bfiir\b|robotica|robotics|inginerie industriala|industrial engineering/],
+  ["Facultatea de Inginerie Medicală", /inginerie medicala|medical engineering|biomedical/],
+  ["Facultatea de Transporturi", /transporturi|transportation/],
+  ["Facultatea de Chimie Aplicată și Știința Materialelor", /chimie|chemi/],
+  ["Facultatea de Știința și Ingineria Materialelor", /ingineria materialelor|materials (science|engineering)/],
+  ["Facultatea de Ingineria Sistemelor Biotehnice", /biotehnic|biotechnical/],
+  ["Facultatea de Antreprenoriat, Ingineria și Managementul Afacerilor", /\bfaima\b|antreprenoriat|entrepreneurship/],
+];
+var UB_FACULTIES = [
+  ["Facultatea de Matematică și Informatică", /\bfmi\b|matematica|mathematics|informatica|computer science/],
+  ["Facultatea de Fizică", /fizica|physics/],
+  ["Facultatea de Chimie", /chimie|chemistry/],
+  ["Facultatea de Geologie și Geofizică", /geologie|geology|geofizica|geophysics/],
+  ["Facultatea de Biologie", /biologie|biology/],
+];
+var IASI_FACULTIES = [
+  ["Facultatea de Automatică și Calculatoare", /\bac\b|automatica|automatic control|calculatoare|computer/],
+  ["Facultatea de Electronică, Telecomunicații și Tehnologia Informației", /\betti\b|electronica|electronics/],
+];
+var ASE_FACULTIES = [["Facultatea de Cibernetică, Statistică și Informatică Economică", /\bcsie\b|cibernetica|cybernetics/]];
+
+// in order: the specific before the general (Politehnica Timișoara before Politehnica, ASE before "Bucharest
+// University", the Institute of Space Science before INFLPR, a faculty written on its own after every university);
+// [official name, rule, its faculties]
+var LIST_INSTITUTIONS = [
+  ["Universitatea Politehnica Timișoara", /\bupt\b|\bpolitehnica\b.*\btimisoara\b|\btimisoara\b.*\bpolitehnica\b/],
+  ["Universitatea Tehnică „Gheorghe Asachi” din Iași", /\btuiasi\b|gheorghe asachi|\bpolitehnica\b.*\biasi\b|\biasi\b.*\bpolitehnica\b/, IASI_FACULTIES],
+  ["Universitatea Tehnică din Cluj-Napoca", /\butcn\b|universitatea tehnica (din )?cluj|technical universitatea (of )?cluj|\bpolitehnica\b.*\bcluj\b/],
+  ["Academia de Studii Economice din București", /\base\b|academia de studii economice|economic studies/, ASE_FACULTIES],
+  ["Universitatea de Medicină și Farmacie „Carol Davila” din București", /carol davila/],
+  ["Școala Națională de Studii Politice și Administrative", /\bsnspa\b|studii politice|political studies/],
+  ["École Nationale Polytechnique d’Alger", /^(?!.*\b(oran|constantine)\b).*(ecole nationale polytechnique|national politehnica school|\benp\b.*\b(alger|algiers)\b)/],
+  ["Universitatea Națională de Știință și Tehnologie POLITEHNICA București", /\b(unstpb|upb|acs|etti|fils|faima|fiir)\b|\bpolitehnica\b|nationala de stiinta si tehnologie|national universitatea of science and technology|science and technology\b.*\bbucuresti|stiinta si tehnologie\b.*\bbucuresti/, UNSTPB_FACULTIES],
+  ["Universitatea din București", /\b(ub|unibuc)\b|universitatea (din |of )?bucuresti|bucuresti universitatea|geologie si geofizica|geology and geophysics/, UB_FACULTIES],
+  ["Academia Tehnică Militară „Ferdinand I”", /\b(atm|mta)\b|academia tehnica militara|(military technical|technical military) academy/],
+  ["Universitatea Babeș-Bolyai", /\bubb\b|babes bolyai/],
+  ["Universitatea „Alexandru Ioan Cuza” din Iași", /\buaic\b|alexandru ioan cuza/],
+  ["Universitatea de Vest din Timișoara", /\buvt\b|universitatea de vest|west universitatea/],
+  ["Universitatea din Craiova", /\bucv\b|universitatea (din |of )?craiova|craiova universitatea/],
+  ["Universitatea Transilvania din Brașov", /\bunitbv\b|universitatea transilvania|transilvania universitatea/],
+  ["Universitatea „Ovidius” din Constanța", /\bovidius\b/],
+  ["Universitatea Tehnică de Construcții București", /\butcb\b|constructii bucuresti|civil engineering bucuresti/],
+  ["Universitatea „Lucian Blaga” din Sibiu", /\bulbs\b|lucian blaga/],
+  ["Universitatea „Ștefan cel Mare” din Suceava", /\busv\b|stefan cel mare/],
+  ["Universitatea „Dunărea de Jos” din Galați", /dunarea de jos/],
+  ["Universitatea Româno-Americană", /romano americana|romanian american/],
+  ["Universitatea „Titu Maiorescu”", /titu maiorescu/],
+  ["Institutul de Științe Spațiale (filială INFLPR)", /space science|stiinte spatiale/],
+  ["Institutul Național de Cercetare-Dezvoltare pentru Fizică și Inginerie Nucleară „Horia Hulubei” (IFIN-HH)", /\bifin\b|horia hulubei/],
+  ["Extreme Light Infrastructure – Nuclear Physics (ELI-NP)", /\beli ?np\b|extreme light/],
+  ["Institutul Național de Cercetare-Dezvoltare pentru Fizica Laserilor, Plasmei și Radiației (INFLPR)", /\binflpr\b|fizica laserilor|lasers plasma and radiation/],
+  ["Institutul de Matematică „Simion Stoilow” al Academiei Române", /\bimar\b|simion stoilow/],
+  // a faculty written on its own: in Bucharest unless another city says it is elsewhere
+  ["Universitatea Națională de Știință și Tehnologie POLITEHNICA București", /^(?!.*\b(cluj|iasi|timisoara|craiova|brasov|galati|constanta|sibiu|suceava|oradea|pitesti|ploiesti)\b).*\b(automatica si calculatoare|automatic control (and )?comput|electronica telecomunicatii|electronics telecommunications|inginerie aerospatiala|aerospace engineering|ingineria materialelor)\b/, UNSTPB_FACULTIES],
+  ["Universitatea din București", /^(?!.*\b(cluj|iasi|timisoara|craiova|brasov|galati|constanta|sibiu|suceava|oradea|pitesti|ploiesti)\b).*\b(matematica si informatica|mathematics and computer science|facultatea de fizica|faculty of physics)\b/, UB_FACULTIES],
+];
+
+// a high school named after someone ("Colegiul Național Alexandru Ioan Cuza") is not that person's university
+var LIST_SCHOOL = /\b(liceul|liceu|colegiul|colegiu|high ?school|lyceum)\b|\bscoala\b(?! nationala de studii)/;
+
+function confListOrg_(raw) {
+  var typed = listName_(raw, null).replace(/\s+,/g, ",");
+  var s = orgWords_(typed);
+  if (/^(n ?a|none|no|nope|nu|nimic|nicio|niciuna|x|null)?$/.test(s) || /^[\d\s+()./-]+$/.test(typed)) return "";
+  if (LIST_SCHOOL.test(s)) return typed;
+  for (var i = 0; i < LIST_INSTITUTIONS.length; i++) {
+    var inst = LIST_INSTITUTIONS[i];
+    if (!inst[1].test(s)) continue;
+    var faculties = inst[2] || [];
+    for (var j = 0; j < faculties.length; j++) {
+      if (faculties[j][1].test(s)) return inst[0] + " (" + faculties[j][0] + ")";
+    }
+    return inst[0];
+  }
+  return typed;
+}
+
+// the list's "Categoria": what the form's "You are" says, as a word that is neither "student" nor "studentă"
+// (the forms once sent it in the browser's translation: "Student la licență")
+var LIST_CATEGORIES = [
+  [/high.?school|liceu|\belev/i, "Liceu"],
+  [/bachelor|licen/i, "Licență"],
+  [/master/i, "Master"],
+  [/phd|doctor/i, "Doctorat"],
+  [/research|cercet/i, "Cercetare"],
+  [/industry|industrie/i, "Industrie"],
+];
+
+function confListCategory_(status) {
+  var s = String(status || "").trim();
+  if (!s) return "";
+  for (var i = 0; i < LIST_CATEGORIES.length; i++) if (LIST_CATEGORIES[i][0].test(s)) return LIST_CATEGORIES[i][1];
+  return "Altele";
 }
 
 // "1 persoană înscrisă", "5 persoane înscrise", "20 de persoane înscrise": Romanian takes "de" from 20 up (101 none)
@@ -4245,15 +4391,15 @@ function confListDoc_(people, who, signature) {
     { justify: true, indent: 21, after: 10, line: 1.15 },
   );
 
-  var cells = [["Nr. crt.", "Nume și prenume", "Instituția / compania"].concat(signature ? ["Semnătura"] : [])].concat(
+  var cells = [["Nr. crt.", "Nume și prenume", "Categoria", "Instituția / compania"].concat(signature ? ["Semnătura"] : [])].concat(
     people.map(function (p, n) {
-      return [n + 1 + ".", p.last + " " + p.first, p.org].concat(signature ? [""] : []);
+      return [n + 1 + ".", p.last + " " + p.first, p.cat, p.org].concat(signature ? [""] : []);
     }),
   );
   var table = body.appendTable(cells);
   table.setBorderWidth(0.5).setBorderColor("#000000");
   // A4 less the margins: 451 points
-  (signature ? [40, 160, 156, 95] : [40, 190, 221]).forEach(function (w, c) {
+  (signature ? [40, 118, 64, 154, 75] : [40, 150, 66, 195]).forEach(function (w, c) {
     table.setColumnWidth(c, w);
   });
   table.editAsText().setFontFamily("Arial").setFontSize(10).setBold(false);
