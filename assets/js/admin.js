@@ -214,6 +214,7 @@
 			event: both ? 'both' : regs[0].event,
 			org: first('org'),
 			city: first('city'),
+			foreign: foreignName(first('name')),   // the name does not look Romanian (a guess, see RO_NAMES)
 			mail: mails.indexOf('failed') !== -1 ? 'failed' : mails.indexOf('held') !== -1 ? 'held' : mails.indexOf('sent') !== -1 ? 'sent' : '',
 			problem: regs.some(function (r) { return r.problem; }),
 			text: regs.map(function (r) { return r.text; }).join(' ')
@@ -743,6 +744,59 @@
 			if (r.orgKey) r.org = name[into[r.orgKey]];
 			if (r.org) r.text += ' ' + fold(r.org);   // a search for "politehnica" finds "UNTSPB" too
 			r.city = CITY[r.org] || '';
+		});
+	}
+
+	/* --- names that do not look Romanian -------------------------------------- */
+
+	// The forms do not ask for citizenship, so More filters guesses it from the name: a list to go through by hand,
+	// not an answer. A name looks Romanian when one of its words does: written with ă, â, ș or ț (and no letter
+	// Romanian does not have), a common Romanian first name or surname (RO_NAMES), or a Romanian ending (-escu,
+	// -eanu, -aru, -ache, -iu, -ovici…) on a word without what Romanian never writes (w, y, k, sh, th, cs, gy, a
+	// double consonant…). Names common everywhere (Maria, Daniel, David, Elena) count for neither. So a Romanian
+	// with a Hungarian or German name, or with only uncommon names, shows as foreign; someone from Moldova, as Romanian.
+	var RO_NAMES = {};
+	(
+		// first names
+		'alexandru alin andrei aurel aurelian beniamin bogdan catalin cezar ciprian claudiu codrin codrut constantin ' +
+		'cornel cosmin costel costi costin cristi cristinel dacian danut decebal dorel dorin doru dragos dumitru eugen ' +
+		'fanel flavius florin florinel gelu gheorghe ghita horatiu horia iancu ilie ioan ion ionel ionica ionut iulian ' +
+		'iustin laurentiu laurian liviu lucian marian marius matei mihai mihaita mihnea mircea mitica neculai nelu ' +
+		'nicolae nicu nicusor octavian ovidiu petrica petrisor petru petrut radu radut rares razvan relu remus sabin ' +
+		'sandu serban sergiu silviu sorin sorinel stefan stelian tavi teodor tiberiu toader toma traian tudor vali ' +
+		'valeriu vasile vasilica viorel virgil virgiliu vlad vladut ' +
+		'adina alexandrina anca ancuta anda andra andrada andreea aura bogdana camelia catrinel cerasela cezara codruta ' +
+		'cosmina crina denisa doina dorina ecaterina florentina florina georgiana geanina ileana ilinca ioana ionela ' +
+		'iulia iuliana iustina lavinia loredana lucretia luminita madalina marinela medeea mihaela minodora mirela ' +
+		'miruna narcisa nicoleta oana otilia petronela raluca rodica roxana ruxandra sanda sanziana smaranda sorana ' +
+		'sorina steliana teodora tudora viorica zamfira ' +
+		// surnames the endings miss, with those of the registrations so far
+		'achim agache albu anghel avram axinte badea banu barbu bejan bidu boboc bodea bostan bota bratu bucur calin ' +
+		'catana cazan ceausu chiriac chirila chis ciocan ciorba ciuca coman condrea cosma covaci cozma craciun cretu ' +
+		'cucu dinca dinu dobos dobre dobrin dragan dragnea dragoi dragomir dragu drumea dumbrava ene gane ganea gavrila ' +
+		'gherman ghinea gligor grama grigore gusa hanga hristea husar iacob ichim iftode ignat ilisei ionita iordan ' +
+		'iosif irimia ispas istrate lazar leahu lixandru lucaci lupei lupu macovei maftei manea manole marcu marin ' +
+		'micu miron mitrea mitroi mitu moga moise moldovan muresan mustata nae nastase neacsu neagoe neagu necula ' +
+		'nechita nedelea negoita nica nichita nicula nistor nita oancea oltean onea onu oprea oros panait panaite pandele pana ' +
+		'paraschiv pascu petcu petre pintea pintilie pirvan plesa pop popa preda pricop prodan puiu racu rata rosca ' +
+		'rosu rusu sabau sarbu sasu sava savu simion sirbu soare sofronie stamate stan stanica stoian stoica stroe ' +
+		'suciu surdu talpa tanasa tanase timofte tiron toderas tofan trandafir tudose turcu ungur ursu vaduva vieru ' +
+		'visan voicu voinea zaharia zamfir zota ' +
+		'adelin airinei aldea alecsie antip antonie belu bucin catan chelan chirita citireag costanda curtmola eftimie ' +
+		'estera ghibirdic ghica ianis isfan leanca mastacan neculae niculae nitu obreja popelca pospai stoican tatomir ' +
+		'trifan vrabie'
+	).split(' ').forEach(function (n) { RO_NAMES[n] = true; });
+
+	var RO_ENDING = /^(?:.+(?:escu|ache|oiu)|.{2,}(?:anu|aru|ovici|evici|[bcdfglmnprstvz]ea)|.{3,}(?:iu|iuc|[bcdfglmnprstvz]u)|.{4,}ean)$/;
+	var NOT_RO = /[wyqk]|sh|th|ph|kh|dh|bh|aa|sz|cs|zs|gy|ck|dj|ch[aou]|gh[aou]|([bcdfglmnprstvz])\1|^andrea$/;
+
+	function foreignName(name) {
+		var s = String(name || '').normalize('NFC').trim();
+		if (!s) return false;
+		// ş and ţ with a cedilla too, as older keyboards write them; î is French as well (Benoît)
+		if (/[ăâșțşţ]/i.test(s) && !/[^\x00-\x7f]/.test(s.replace(/[ăâîșțşţ]/gi, ''))) return false;
+		return !fold(s).split(/[^a-z]+/).some(function (w) {
+			return RO_NAMES[w] || (RO_ENDING.test(w) && !NOT_RO.test(w));
 		});
 	}
 
@@ -1648,6 +1702,9 @@
 		{ key: 'hteam', label: 'Put in a team', hack: true,
 			options: [['yes', 'Yes'], ['no', 'Not yet']],
 			test: function (h, v) { return !!get(h, 'Hackathon team') === (v === 'yes'); } },
+		{ key: 'foreign', label: 'Name (a guess)',
+			options: [['foreign', 'Does not look Romanian'], ['ro', 'Looks Romanian']],
+			test: function (p, v) { return p.foreign === (v === 'foreign'); } },
 		{ key: 'applied', label: 'Applied',
 			options: [['twice', 'More than once'], ['once', 'Once']],
 			test: function (p, v) {
