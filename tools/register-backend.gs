@@ -4463,6 +4463,10 @@ function confListDoc_(people, who, signature) {
 function confListTable_(body, at, people, signature, into) {
   var CENTER = DocumentApp.HorizontalAlignment.CENTER;
   var head = ["Nr.", "Nume", "Prenume", "Categoria", "Instituția / compania"].concat(signature ? ["Semnătura"] : []);
+  var had = into ? listHead_(into) : [];
+  had.forEach(function (h) {
+    if (h && !LIST_OWN_COLUMNS.test(h)) head.push(h); // a column added in Docs ("Obs."): it stays, with what is in it
+  });
   var cells = [head];
   var kinds = ["head"];
   var letter = "";
@@ -4473,10 +4477,15 @@ function confListTable_(body, at, people, signature, into) {
       cells.push(head.map(function (x, c) { return c === 1 ? l : ""; }));
       kinds.push("letter");
     }
-    cells.push([n + 1 + ".", p.last, p.first, p.cat || "", p.org || ""].concat(signature ? [""] : []));
+    var more = p.more || {};
+    cells.push(
+      [n + 1 + ".", p.last, p.first, p.cat || "", p.org || ""].concat(head.slice(5).map(function (h) {
+        return more[h] || "";
+      }))
+    );
     kinds.push("person");
   });
-  var table = into && into.getRow(0).getNumCells() === head.length ? into : null;
+  var table = into && had.join("|") === head.join("|") ? into : null;
   if (table) {
     while (table.getNumRows() > cells.length) table.removeRow(table.getNumRows() - 1);
     while (table.getNumRows() < cells.length) table.appendTableRow(table.getRow(table.getNumRows() - 1).copy());
@@ -4493,11 +4502,12 @@ function confListTable_(body, at, people, signature, into) {
       into.removeFromParent();
     }
     table = at === null ? body.appendTable(cells) : body.insertTable(at, cells);
+    // the widths on a new table only: those set by hand in Docs stay
+    (signature ? [28, 102, 92, 56, 108, 65] : [28, 112, 112, 60, 139]).forEach(function (w, c) {
+      table.setColumnWidth(c, w);
+    });
   }
   table.setBorderWidth(0.5).setBorderColor("#000000");
-  (signature ? [28, 102, 92, 56, 108, 65] : [28, 112, 112, 60, 139]).forEach(function (w, c) {
-    table.setColumnWidth(c, w);
-  });
   table.editAsText().setFontFamily("Arial").setFontSize(10).setBold(false);
   var stripe = 0;
   for (var r = 0; r < table.getNumRows(); r++) {
@@ -4509,7 +4519,7 @@ function confListTable_(body, at, people, signature, into) {
       continue;
     }
     if (kinds[r] === "letter") {
-      for (var c = 0; c < row.getNumCells(); c++) row.getCell(c).setBackgroundColor("#bfbfbf");
+      for (var c = 0; c < row.getNumCells(); c++) row.getCell(c).setBackgroundColor("#b7b7b7");
       row.getCell(1).editAsText().setBold(true).setFontSize(11);
       row.setMinimumHeight(0);
       stripe = 0;
@@ -4547,6 +4557,32 @@ function listLetter_(last) {
   return c ? c.toUpperCase() : "#";
 }
 
+// the columns the list makes itself; any other in a list's table was added in Docs
+var LIST_OWN_COLUMNS = /^(Nr\.?|Nume( și prenume)?|Prenume|Categoria|Institu.*|Semnătura)$/;
+
+// a table's header row, each column's text
+function listHead_(table) {
+  var head = [];
+  var top = table.getRow(0);
+  for (var c = 0; c < top.getNumCells(); c++) head.push(top.getCell(c).getText().replace(/\s+/g, " ").trim());
+  return head;
+}
+
+// "Organizator/ Doctorat", "X /Y": the slash with a space either side
+function listSlash_(s) {
+  return s.replace(/\s*\/\s*/g, " / ");
+}
+
+// an institution as the list has it, from a list doc's row: by its official name as from the sheet (confListOrg_),
+// but one written in by hand as two ("ASE / Asociația RoQTeam") stays as written, and a detail in brackets that is not
+// a faculty ("POLITEHNICA (AIMultimedia Quantum Lab)") stays after the official name
+function listDocOrg_(typed) {
+  if (/\//.test(typed)) return listSlash_(typed);
+  var known = confListOrg_(typed);
+  var detail = (typed.match(/\(([^()]+)\)\s*$/) || [])[1];
+  return detail && known.indexOf("(") === -1 && known.indexOf(detail) === -1 ? known + " (" + detail.trim() + ")" : known;
+}
+
 // the list's table in a doc: the one whose first row has the names' column
 function listTableOf_(body) {
   var tables = body.getTables();
@@ -4560,9 +4596,7 @@ function listTableOf_(body) {
 // org, key } each. A row added by hand may have the name in "Nume" alone ("POPESCU Ana", or "Ana Popescu": the last
 // word is the surname then); the letter rows are left out.
 function confListDocRows_(table) {
-  var head = [];
-  var top = table.getRow(0);
-  for (var c = 0; c < top.getNumCells(); c++) head.push(top.getCell(c).getText().trim());
+  var head = listHead_(table);
   var col = function (re) {
     for (var c = 0; c < head.length; c++) if (re.test(head[c])) return c;
     return -1;
@@ -4596,7 +4630,11 @@ function confListDocRows_(table) {
     if (!name) continue;
     var last = listName_(name, true);
     first = listName_(first, false);
-    rows.push({ last: last, first: first, cat: cell(iCat), org: confListOrg_(cell(iOrg)), key: nameKey_(first, last) });
+    var more = {};
+    head.forEach(function (h, c) {
+      if (h && !LIST_OWN_COLUMNS.test(h)) more[h] = cell(c);
+    });
+    rows.push({ last: last, first: first, cat: listSlash_(cell(iCat)), org: listDocOrg_(cell(iOrg)), more: more, key: nameKey_(first, last) });
   }
   return rows;
 }
@@ -4622,7 +4660,7 @@ function confListUpdate_(doc, from, signature) {
     if (!s && p.key in from.said) return; // in the sheet, and not on the list any more (said they cannot come)
     if (!s) kept++;
     seen[p.key] = true;
-    people.push({ last: p.last, first: p.first, cat: p.cat || (s ? s.cat : ""), org: p.org || (s ? s.org : ""), key: p.key });
+    people.push({ last: p.last, first: p.first, cat: p.cat || (s ? s.cat : ""), org: p.org || (s ? s.org : ""), more: p.more, key: p.key });
   });
   from.people.forEach(function (p) {
     if (!seen[p.key]) people.push(p);
