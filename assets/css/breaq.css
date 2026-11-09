@@ -5126,11 +5126,11 @@
 			color: var(--bq-fg-light);
 		}
 
-			.pgm-hours span:first-child {
+			.pgm-hours span.is-start {
 				transform: none;
 			}
 
-			.pgm-hours span:last-child {
+			.pgm-hours span.is-end {
 				transform: translateX(-100%);
 			}
 

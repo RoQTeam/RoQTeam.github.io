@@ -890,6 +890,8 @@
 				var label = document.createElement('span');
 				label.style.left = pct(t);
 				label.textContent = h + ':00';
+				if (t === dayStart) label.className = 'is-start';
+				else if (t === dayEnd) label.className = 'is-end';
 				hours.appendChild(label);
 				if (wave && t > dayStart && t < dayEnd) {
 					var line = document.createElement('span');
