@@ -19,10 +19,10 @@ URL:https://roqteam.ro/breaq-hackathon.html
 END:VEVENT
 BEGIN:VEVENT
 UID:breaq-2026-presentations@roqteam.ro
-DTSTAMP:20260928T090000Z
-SEQUENCE:1
+DTSTAMP:20261109T203000Z
+SEQUENCE:2
 DTSTART:20261114T070000Z
-DTEND:20261114T160000Z
+DTEND:20261114T140000Z
 SUMMARY:BreaQ 2026 Conference
 LOCATION:Military Technical Academy Ferdinand I\, Bulevardul George Coșbuc
   39-49\, București

@@ -467,7 +467,7 @@
 			}
 
 			var singles = ':scope > h3.major, :scope > p, :scope > .button, :scope > a.special, :scope > .sp-hint, :scope > .tier, :scope > .logos-note, :scope > .gal, :scope > h4';
-			var groups = ':scope > .glance, :scope > .kit, :scope > .logos, :scope > .venues, :scope > .faq, :scope > .ch-grid, :scope > .next-wrap, :scope > .soon-grid, :scope > .res, :scope > .ch-cols, :scope > .ch-list, :scope > .catalog, :scope > .mosaic, :scope > .stats, :scope > .twin, :scope > .soon-next, :scope > .talks';
+			var groups = ':scope > .glance, :scope > .kit, :scope > .logos, :scope > .venues, :scope > .faq, :scope > .ch-grid, :scope > .next-wrap, :scope > .soon-grid, :scope > .res, :scope > .ch-cols, :scope > .ch-list, :scope > .catalog, :scope > .mosaic, :scope > .stats, :scope > .twin, :scope > .soon-next, :scope > .talks, :scope > .pgm';
 
 			forEach(document.querySelectorAll('.wrapper .inner > section'), function (section) {
 				// only what is below the first screen: the hero has its own entrance
@@ -773,6 +773,270 @@
 
 		if (location.hash && location.hash.indexOf('#talk-') === 0) {
 			window.setTimeout(function () { revealTalk(location.hash.slice(1), false); }, 120);
+		}
+	});
+
+	/* ------------------------------------------------------------ */
+	/* Programme (conference page): the day drawn as pulses over the  */
+	/* list, abstracts on demand, the talk in progress on the day     */
+	/* ------------------------------------------------------------ */
+
+	// The list is the source. A row starts at its data-t, on the date in data-pgm and in the zone in data-zone,
+	// and runs to the next row; the last has no end yet and fades out towards data-end. Breaks (.pgm-break) are
+	// gaps with their data-icon, the opening (.pgm-host) a half pulse. The strip is for the eye and the pointer
+	// (aria-hidden): hovering a pulse names its talk in the readout, a click opens the talk's row.
+	forEach(document.querySelectorAll('[data-pgm]'), function (pgm) {
+
+		var date = pgm.getAttribute('data-pgm');
+		var zone = pgm.getAttribute('data-zone') || '+02:00';
+		var rows = Array.prototype.slice.call(pgm.querySelectorAll('.pgm-list > li[data-t]'));
+		if (!rows.length) return;
+
+		function at(hm) { return Date.parse(date + 'T' + hm + ':00' + zone); }
+
+		var dayStart = at(rows[0].getAttribute('data-t'));
+		var dayEnd = at(pgm.getAttribute('data-end') || '18:00');
+		var span = dayEnd - dayStart;
+		var slots = rows.map(function (li, i) {
+			var next = rows[i + 1];
+			return { li: li, from: at(li.getAttribute('data-t')), to: next ? at(next.getAttribute('data-t')) : null };
+		});
+
+		function pct(t) { return ((t - dayStart) / span * 100) + '%'; }
+
+		pgm.classList.add('is-js');
+
+		// Abstracts fold open under their talk.
+		function setOpen(li, open) {
+			var btn = li.querySelector('.pgm-toggle');
+			if (!btn) return;
+			li.classList.toggle('is-open', open);
+			btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+		}
+
+		forEach(pgm.querySelectorAll('.pgm-toggle'), function (btn) {
+			btn.addEventListener('click', function () {
+				var li = btn.closest('li');
+				setOpen(li, !li.classList.contains('is-open'));
+			});
+		});
+
+		function showRow(li, smooth) {
+			setOpen(li, true);
+			li.classList.remove('is-flash');
+			void li.offsetWidth;
+			li.classList.add('is-flash');
+			window.setTimeout(function () {
+				li.scrollIntoView({ behavior: (smooth && !reduceMotion) ? 'smooth' : 'auto', block: 'center' });
+			}, 40);
+		}
+
+		// "Talk · 9:50" on a speaker card, or any #talk-… link: open that row.
+		document.addEventListener('click', function (ev) {
+			var link = ev.target.closest('a[href^="#talk-"]');
+			if (!link) return;
+			var li = document.getElementById(link.getAttribute('href').slice(1));
+			if (!li || !pgm.contains(li)) return;
+			ev.preventDefault();
+			showRow(li, true);
+			if (history.replaceState) history.replaceState(null, '', '#' + li.id);
+		});
+
+		if (location.hash.indexOf('#talk-') === 0) {
+			var linked = document.getElementById(location.hash.slice(1));
+			if (linked && pgm.contains(linked)) window.setTimeout(function () { showRow(linked, false); }, 120);
+		}
+
+		// The strip: pulses, gaps, the hours under the line.
+		var day = pgm.querySelector('.pgm-day');
+		var wave = pgm.querySelector('.pgm-wave');
+		var hours = pgm.querySelector('.pgm-hours');
+		var readout = pgm.querySelector('.pgm-readout');
+		var restText = readout ? readout.textContent : '';
+		var hotSlot = null, nowSlot = null, needle = null;
+
+		if (wave) {
+			slots.forEach(function (s, i) {
+				var li = s.li;
+				var el = document.createElement('span');
+				var width = ((s.to || dayEnd) - s.from) / span * 100;
+				if (li.classList.contains('pgm-break')) {
+					el.className = 'pgm-gap';
+					var ic = document.createElement('span');
+					ic.className = 'icon solid ' + (li.getAttribute('data-icon') || 'fa-coffee');
+					el.appendChild(ic);
+					el.style.width = width + '%';
+				} else {
+					el.className = 'pgm-pulse';
+					el.style.setProperty('--i', i);
+					// a hair apart, so two talks back to back read as two pulses
+					el.style.width = 'calc(' + width + '% - 2px)';
+					el.addEventListener('mouseenter', function () { setHot(s); });
+					el.addEventListener('click', function () { showRow(li, true); });
+					s.pulse = { host: li.classList.contains('pgm-host'), open: !s.to };
+				}
+				el.style.left = pct(s.from);
+				s.el = el;
+				wave.appendChild(el);
+			});
+			wave.addEventListener('mouseleave', function () { setHot(null); });
+		}
+
+		if (hours) {
+			var h0 = parseInt(rows[0].getAttribute('data-t'), 10);
+			for (var h = h0; at(pad2(h) + ':00') <= dayEnd; h++) {
+				var t = at(pad2(h) + ':00');
+				if (t < dayStart) continue;
+				var label = document.createElement('span');
+				label.style.left = pct(t);
+				label.textContent = h + ':00';
+				hours.appendChild(label);
+				if (wave && t > dayStart && t < dayEnd) {
+					var line = document.createElement('span');
+					line.className = 'pgm-grid';
+					line.style.left = pct(t);
+					wave.insertBefore(line, wave.firstChild);
+				}
+			}
+		}
+
+		// Each pulse drawn to the pixel: a carrier of about 6 px under a Gaussian-square envelope (Gaussian
+		// edges, flat top), as a qubit is driven. The opening is half as strong; the last talk, with no end
+		// yet, has a long Gaussian tail instead of an edge.
+		var SVG = 'http://www.w3.org/2000/svg';
+
+		function drawPulse(s) {
+			var w = s.el.clientWidth, hgt = s.el.clientHeight;
+			if (!w || !hgt) return;
+			var mid = hgt / 2;
+			var amp = (mid - 1.5) * (s.pulse.host ? 0.5 : 1);
+			var edge = Math.min(w * 0.3, 14);
+			var tail = s.pulse.open ? w * 0.8 : edge;
+			var period = 6;
+			function env(x) {
+				if (x < edge) return Math.exp(-Math.pow((edge - x) / (edge / 2.4), 2));
+				if (x > w - tail) return Math.exp(-Math.pow((x - (w - tail)) / (tail / 2.4), 2));
+				return 1;
+			}
+			var car = [], top = [], bottom = [];
+			for (var x = 0; x <= w; x += 0.5) {
+				var e = amp * env(x);
+				car.push(x.toFixed(1) + ' ' + (mid - e * Math.sin(2 * Math.PI * x / period)).toFixed(2));
+				top.push(x.toFixed(1) + ' ' + (mid - e).toFixed(2));
+				bottom.unshift(x.toFixed(1) + ' ' + (mid + e).toFixed(2));
+			}
+			var svg = document.createElementNS(SVG, 'svg');
+			svg.setAttribute('width', w);
+			svg.setAttribute('height', hgt);
+			svg.setAttribute('viewBox', '0 0 ' + w + ' ' + hgt);
+			var fill = document.createElementNS(SVG, 'path');
+			fill.setAttribute('class', 'pgm-env');
+			fill.setAttribute('d', 'M' + top.join(' L') + ' L' + bottom.join(' L') + ' Z');
+			var line = document.createElementNS(SVG, 'path');
+			line.setAttribute('class', 'pgm-car');
+			line.setAttribute('d', 'M' + car.join(' L'));
+			svg.appendChild(fill);
+			svg.appendChild(line);
+			s.el.textContent = '';
+			s.el.appendChild(svg);
+		}
+
+		var drawnWidth = 0;
+		function drawAll() {
+			if (!wave || wave.clientWidth === drawnWidth) return;
+			drawnWidth = wave.clientWidth;
+			slots.forEach(function (s) { if (s.pulse) drawPulse(s); });
+		}
+
+		drawAll();
+		var redraw = null;
+		window.addEventListener('resize', function () {
+			window.clearTimeout(redraw);
+			redraw = window.setTimeout(drawAll, 120);
+		});
+
+		// A row hovered in the list lights its pulse too.
+		if (canHover) {
+			slots.forEach(function (s) {
+				if (!s.pulse) return;
+				s.li.addEventListener('mouseenter', function () { setHot(s); });
+				s.li.addEventListener('mouseleave', function () { setHot(null); });
+			});
+		}
+
+		function describe(s) {
+			var frag = document.createDocumentFragment();
+			var time = document.createElement('time');
+			time.textContent = s.li.querySelector('.pgm-time').textContent;
+			frag.appendChild(time);
+			var who = s.li.querySelector('.pgm-who b');
+			if (who) {
+				var b = document.createElement('b');
+				b.textContent = who.textContent;
+				frag.appendChild(b);
+			}
+			var title = s.li.querySelector('.pgm-title, .pgm-break-row em');
+			if (title) {
+				var t = document.createElement('span');
+				t.textContent = title.textContent;
+				frag.appendChild(t);
+			}
+			return frag;
+		}
+
+		function paint() {
+			slots.forEach(function (s) {
+				if (s.el) s.el.classList.toggle('is-hot', s === hotSlot);
+			});
+			if (!readout) return;
+			var s = hotSlot || nowSlot;
+			readout.textContent = '';
+			readout.classList.toggle('is-now', !hotSlot && !!nowSlot);
+			if (s) readout.appendChild(describe(s));
+			else readout.textContent = restText;
+		}
+
+		function setHot(s) {
+			if (s === hotSlot) return;
+			hotSlot = s;
+			paint();
+		}
+
+		// On the day: a needle at the time, the talk in progress marked in the list.
+		function markNow() {
+			var now = Date.now();
+			var live = now >= dayStart && now < dayEnd;
+			nowSlot = null;
+			slots.forEach(function (s) {
+				var on = live && now >= s.from && now < (s.to || dayEnd);
+				s.li.classList.toggle('is-now', on);
+				if (s.el) s.el.classList.toggle('is-now', on);
+				if (on) nowSlot = s;
+			});
+			if (wave && live && !needle) {
+				needle = document.createElement('span');
+				needle.className = 'pgm-needle';
+				wave.appendChild(needle);
+			}
+			if (needle) {
+				needle.hidden = !live;
+				needle.style.left = pct(now);
+			}
+			paint();
+		}
+
+		markNow();
+		window.setInterval(markNow, 30000);
+
+		// The pulses rise from the line once, as the day scrolls into view.
+		if (day && !reduceMotion && 'IntersectionObserver' in window) {
+			day.classList.add('is-armed');
+			var io = new IntersectionObserver(function (entries) {
+				if (!entries[0].isIntersecting) return;
+				io.disconnect();
+				window.requestAnimationFrame(function () { day.classList.add('is-in'); });
+			}, { threshold: 0.6 });
+			io.observe(day);
 		}
 	});
 
